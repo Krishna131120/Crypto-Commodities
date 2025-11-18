@@ -1,0 +1,8 @@
+websocket-client==1.6.4
+websockets==12.0
+requests==2.31.0
+ccxt==4.2.25
+yfinance==0.2.32
+pandas==2.1.4
+numpy==1.26.2
+
