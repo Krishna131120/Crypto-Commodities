@@ -1,0 +1,557 @@
+{
+	"info": {
+		"_postman_id": "mcp-api-server-collection-v2",
+		"name": "MCP API Server - Horizon & Feedback Collection",
+		"description": "Postman collection for MCP API Server with horizon predictions and feedback endpoints only",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "mcp-api-server"
+	},
+	"item": [
+		{
+			"name": "Health Check",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://localhost:8000/tools/health",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8000",
+					"path": [
+						"tools",
+						"health"
+					]
+				},
+				"description": "Get service status and resource usage (memory, CPU, disk)"
+			},
+			"response": []
+		},
+		{
+			"name": "Crypto - Single Symbol - Long Horizon",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"symbols\": [\"BTC-USDT\"],\n    \"horizon\": \"long\",\n    \"risk_profile\": \"conservative\",\n    \"asset_type\": \"crypto\",\n    \"timeframe\": \"1d\"\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://localhost:8000/tools/predict",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8000",
+					"path": [
+						"tools",
+						"predict"
+					]
+				},
+				"description": "Get prediction for a single crypto symbol with long-term horizon (30 days)"
+			},
+			"response": []
+		},
+		{
+			"name": "Crypto - Single Symbol - Short Horizon",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"symbols\": [\"BTC-USDT\"],\n    \"horizon\": \"short\",\n    \"risk_profile\": \"moderate\",\n    \"asset_type\": \"crypto\",\n    \"timeframe\": \"1d\"\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://localhost:8000/tools/predict",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8000",
+					"path": [
+						"tools",
+						"predict"
+					]
+				},
+				"description": "Get prediction for a single crypto symbol with short-term horizon (3-5 days)"
+			},
+			"response": []
+		},
+		{
+			"name": "Crypto - Single Symbol - Intraday Horizon",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"symbols\": [\"BTC-USDT\"],\n    \"horizon\": \"intraday\",\n    \"risk_profile\": \"aggressive\",\n    \"asset_type\": \"crypto\",\n    \"timeframe\": \"1d\"\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://localhost:8000/tools/predict",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8000",
+					"path": [
+						"tools",
+						"predict"
+					]
+				},
+				"description": "Get prediction for a single crypto symbol with intraday horizon (same-day, 1-2 bars)"
+			},
+			"response": []
+		},
+		{
+			"name": "Crypto - Multiple Symbols - Long Horizon",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"symbols\": [\"BTC-USDT\", \"ETH-USDT\", \"SOL-USDT\"],\n    \"horizon\": \"long\",\n    \"risk_profile\": \"moderate\",\n    \"asset_type\": \"crypto\",\n    \"timeframe\": \"1d\"\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://localhost:8000/tools/predict",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8000",
+					"path": [
+						"tools",
+						"predict"
+					]
+				},
+				"description": "Get predictions for multiple crypto symbols with long-term horizon"
+			},
+			"response": []
+		},
+		{
+			"name": "Crypto - Multiple Symbols - Short Horizon",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"symbols\": [\"BTC-USDT\", \"ETH-USDT\", \"SOL-USDT\"],\n    \"horizon\": \"short\",\n    \"risk_profile\": \"moderate\",\n    \"asset_type\": \"crypto\",\n    \"timeframe\": \"1d\"\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://localhost:8000/tools/predict",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8000",
+					"path": [
+						"tools",
+						"predict"
+					]
+				},
+				"description": "Get predictions for multiple crypto symbols with short-term horizon"
+			},
+			"response": []
+		},
+		{
+			"name": "Crypto - Multiple Symbols - Intraday Horizon",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"symbols\": [\"BTC-USDT\", \"ETH-USDT\", \"SOL-USDT\"],\n    \"horizon\": \"intraday\",\n    \"risk_profile\": \"aggressive\",\n    \"asset_type\": \"crypto\",\n    \"timeframe\": \"1d\"\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://localhost:8000/tools/predict",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8000",
+					"path": [
+						"tools",
+						"predict"
+					]
+				},
+				"description": "Get predictions for multiple crypto symbols with intraday horizon"
+			},
+			"response": []
+		},
+		{
+			"name": "Commodities - Single Symbol - Long Horizon",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"symbols\": [\"GC=F\"],\n    \"horizon\": \"long\",\n    \"risk_profile\": \"conservative\",\n    \"asset_type\": \"commodities\",\n    \"timeframe\": \"1d\"\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://localhost:8000/tools/predict",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8000",
+					"path": [
+						"tools",
+						"predict"
+					]
+				},
+				"description": "Get prediction for a single commodity symbol with long-term horizon (30 days)"
+			},
+			"response": []
+		},
+		{
+			"name": "Commodities - Single Symbol - Short Horizon",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"symbols\": [\"GC=F\"],\n    \"horizon\": \"short\",\n    \"risk_profile\": \"moderate\",\n    \"asset_type\": \"commodities\",\n    \"timeframe\": \"1d\"\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://localhost:8000/tools/predict",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8000",
+					"path": [
+						"tools",
+						"predict"
+					]
+				},
+				"description": "Get prediction for a single commodity symbol with short-term horizon (3-5 days)"
+			},
+			"response": []
+		},
+		{
+			"name": "Commodities - Single Symbol - Intraday Horizon",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"symbols\": [\"GC=F\"],\n    \"horizon\": \"intraday\",\n    \"risk_profile\": \"aggressive\",\n    \"asset_type\": \"commodities\",\n    \"timeframe\": \"1d\"\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://localhost:8000/tools/predict",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8000",
+					"path": [
+						"tools",
+						"predict"
+					]
+				},
+				"description": "Get prediction for a single commodity symbol with intraday horizon (same-day, 1-2 bars)"
+			},
+			"response": []
+		},
+		{
+			"name": "Commodities - Multiple Symbols - Long Horizon",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"symbols\": [\"GC=F\", \"SI=F\", \"CL=F\"],\n    \"horizon\": \"long\",\n    \"risk_profile\": \"moderate\",\n    \"asset_type\": \"commodities\",\n    \"timeframe\": \"1d\"\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://localhost:8000/tools/predict",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8000",
+					"path": [
+						"tools",
+						"predict"
+					]
+				},
+				"description": "Get predictions for multiple commodity symbols with long-term horizon"
+			},
+			"response": []
+		},
+		{
+			"name": "Commodities - Multiple Symbols - Short Horizon",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"symbols\": [\"GC=F\", \"SI=F\", \"CL=F\"],\n    \"horizon\": \"short\",\n    \"risk_profile\": \"moderate\",\n    \"asset_type\": \"commodities\",\n    \"timeframe\": \"1d\"\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://localhost:8000/tools/predict",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8000",
+					"path": [
+						"tools",
+						"predict"
+					]
+				},
+				"description": "Get predictions for multiple commodity symbols with short-term horizon"
+			},
+			"response": []
+		},
+		{
+			"name": "Commodities - Multiple Symbols - Intraday Horizon",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"symbols\": [\"GC=F\", \"SI=F\", \"CL=F\"],\n    \"horizon\": \"intraday\",\n    \"risk_profile\": \"aggressive\",\n    \"asset_type\": \"commodities\",\n    \"timeframe\": \"1d\"\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://localhost:8000/tools/predict",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8000",
+					"path": [
+						"tools",
+						"predict"
+					]
+				},
+				"description": "Get predictions for multiple commodity symbols with intraday horizon"
+			},
+			"response": []
+		},
+		{
+			"name": "Add Feedback - Complete",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"symbol\": \"BTC-USDT\",\n    \"asset_type\": \"crypto\",\n    \"timeframe\": \"1d\",\n    \"prediction_timestamp\": \"2025-01-28T12:00:00Z\",\n    \"action_taken\": \"long\",\n    \"predicted_return\": 0.05,\n    \"predicted_price\": 105000.0,\n    \"actual_price\": 106000.0,\n    \"actual_return\": 0.06,\n    \"features\": {\n        \"RSI_14\": 45.2,\n        \"MACD_histogram\": 0.001,\n        \"SMA_50\": 100000.0\n    }\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://localhost:8000/tools/feedback",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8000",
+					"path": [
+						"tools",
+						"feedback"
+					]
+				},
+				"description": "Add complete feedback with actual outcomes for RL learning"
+			},
+			"response": []
+		},
+		{
+			"name": "Add Feedback - Minimal",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"symbol\": \"BTC-USDT\",\n    \"asset_type\": \"crypto\",\n    \"timeframe\": \"1d\",\n    \"prediction_timestamp\": \"2025-01-28T12:00:00Z\",\n    \"action_taken\": \"short\",\n    \"predicted_return\": -0.03,\n    \"predicted_price\": 97000.0\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://localhost:8000/tools/feedback",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8000",
+					"path": [
+						"tools",
+						"feedback"
+					]
+				},
+				"description": "Add minimal feedback (required fields only) - actual outcomes can be added later"
+			},
+			"response": []
+		},
+		{
+			"name": "Add Feedback - Commodities",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"symbol\": \"GC=F\",\n    \"asset_type\": \"commodities\",\n    \"timeframe\": \"1d\",\n    \"prediction_timestamp\": \"2025-01-28T12:00:00Z\",\n    \"action_taken\": \"long\",\n    \"predicted_return\": 0.02,\n    \"predicted_price\": 2050.0,\n    \"actual_price\": 2070.0,\n    \"actual_return\": 0.03\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://localhost:8000/tools/feedback",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8000",
+					"path": [
+						"tools",
+						"feedback"
+					]
+				},
+				"description": "Add feedback for commodity symbol"
+			},
+			"response": []
+		}
+	]
+}

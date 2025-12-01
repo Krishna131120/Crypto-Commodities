@@ -1,0 +1,1 @@
+{"timestamp": "2025-12-01T07:38:09.851412Z", "tool": "predict", "request": {"symbols": ["ADA-USDT"], "horizon": "intraday", "risk_profile": "aggressive", "asset_type": "crypto", "timeframe": "1d"}}

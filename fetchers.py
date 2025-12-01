@@ -3,6 +3,7 @@ Complete data ingestion system - all fetchers and utilities merged into one file
 """
 import csv
 import json
+import math
 import time
 import threading
 import requests
@@ -10,6 +11,8 @@ import websocket
 import ccxt
 import yfinance as yf
 import pandas as pd
+import numpy as np
+from dataclasses import dataclass
 from pathlib import Path
 from datetime import datetime, timezone, timedelta
 from typing import Dict, Any, List, Optional, Tuple, Callable
@@ -17,6 +20,18 @@ from enum import Enum
 import logging
 
 import config
+from ml.horizons import (
+    DEFAULT_HORIZON_PROFILE,
+    available_profiles as available_horizon_profiles,
+    describe_profile,
+)
+from train_models import train_symbols
+from core.model_paths import (
+    list_horizon_dirs,
+    summary_path as build_summary_path,
+    horizon_dir,
+    timeframe_dir,
+)
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -372,6 +387,447 @@ def write_candle_to_daily(
     # Also update latest.json
     update_latest_file(asset_type, symbol, timeframe, candle, source_hint)
 
+    try:
+        update_feature_store(asset_type, symbol, timeframe, base_path)
+    except Exception as exc:
+        print(f"[FEATURE] Unable to update features for {asset_type}/{symbol}/{timeframe}: {exc}")
+    
+    # Update summary.json with latest market price if it exists
+    try:
+        update_summary_with_live_price(asset_type, symbol, timeframe, candle)
+    except Exception as exc:
+        # Silently fail if summary.json doesn't exist yet (model not trained)
+        pass
+
+
+# Global cache for inference pipelines (loaded once per symbol)
+_inference_pipelines: Dict[str, Any] = {}
+
+def update_summary_with_live_price(
+    asset_type: str,
+    symbol: str,
+    timeframe: str,
+    candle: Dict[str, Any]
+):
+    """Update summary.json with NEW predictions from live inference (not just recalculating old predictions)."""
+    import pandas as pd
+    from ml.inference import InferencePipeline
+    from ml.risk import RiskManagerConfig
+    
+    # Check for any available horizon profiles (prefer default, but use any if available)
+    summary_path = build_summary_path(asset_type, symbol, timeframe, DEFAULT_HORIZON_PROFILE)
+    if not summary_path.exists():
+        # Try to find any available horizon
+        horizon_dirs = list_horizon_dirs(asset_type, symbol, timeframe)
+        for horizon_dir_path in horizon_dirs:
+            candidate = horizon_dir_path / "summary.json"
+            if candidate.exists():
+                summary_path = candidate
+                break
+        # Fallback to legacy path
+        if not summary_path.exists():
+            legacy_path = Path("models") / asset_type / symbol / timeframe / "summary.json"
+            if legacy_path.exists():
+                summary_path = legacy_path
+    
+    if not summary_path.exists():
+        # Model hasn't been trained yet, skip update
+        return
+    
+    try:
+        # Extract price and timestamp from candle
+        latest_price = float(candle.get("close", 0))
+        timestamp_str = candle.get("timestamp", "")
+        
+        # Parse timestamp
+        if isinstance(timestamp_str, str):
+            try:
+                dt = datetime.fromisoformat(timestamp_str.replace('Z', '+00:00'))
+                if dt.tzinfo is None:
+                    dt = dt.replace(tzinfo=timezone.utc)
+                latest_timestamp = dt.isoformat().replace('+00:00', 'Z')
+            except:
+                latest_timestamp = datetime.now(timezone.utc).isoformat().replace('+00:00', 'Z')
+        elif isinstance(timestamp_str, (int, float)):
+            ts = float(timestamp_str)
+            if ts > 1e10:  # Milliseconds
+                ts = ts / 1000
+            dt = datetime.fromtimestamp(ts, tz=timezone.utc)
+            latest_timestamp = dt.isoformat().replace('+00:00', 'Z')
+        else:
+            latest_timestamp = datetime.now(timezone.utc).isoformat().replace('+00:00', 'Z')
+        
+        # Load or create inference pipeline (cached per symbol)
+        model_dir = summary_path.parent
+        cache_key = f"{asset_type}/{symbol}/{timeframe}"
+        
+        if cache_key not in _inference_pipelines:
+            try:
+                pipeline = InferencePipeline(model_dir, risk_config=RiskManagerConfig())
+                pipeline.load()  # Load models once
+                _inference_pipelines[cache_key] = pipeline
+            except Exception as exc:
+                print(f"[INFERENCE] Failed to load models for {cache_key}: {exc}")
+                # Fallback to old method (just update price, don't run inference)
+                _update_summary_price_only(summary_path, latest_price, latest_timestamp)
+                return
+        
+        pipeline = _inference_pipelines[cache_key]
+        
+        # Load latest features from features.json
+        feature_path = Path("data/features") / asset_type / symbol / timeframe / "features.json"
+        if not feature_path.exists():
+            # Features not ready yet, just update price
+            _update_summary_price_only(summary_path, latest_price, latest_timestamp)
+            return
+        
+        try:
+            with open(feature_path, "r", encoding="utf-8") as f:
+                feature_data = json.load(f)
+            
+            # Convert features.json format to pandas Series
+            features_dict = {}
+            if "features" in feature_data:
+                for feat_name, feat_data in feature_data["features"].items():
+                    if isinstance(feat_data, dict) and "value" in feat_data:
+                        features_dict[feat_name] = feat_data["value"]
+                    elif isinstance(feat_data, (int, float)):
+                        features_dict[feat_name] = feat_data
+            
+            if not features_dict:
+                # No features available, fallback
+                _update_summary_price_only(summary_path, latest_price, latest_timestamp)
+                return
+            
+            feature_series = pd.Series(features_dict)
+            
+            # Calculate volatility proxy (use ATR if available, else default)
+            volatility = abs(feature_data.get("features", {}).get("ATR_14", {}).get("value", 0) / latest_price) if latest_price > 0 else 0.01
+            if volatility == 0:
+                volatility = 0.01
+            
+            # Run inference to get NEW predictions
+            inference_result = pipeline.predict(feature_series, current_price=latest_price, volatility=volatility)
+            
+            # Load existing summary
+            with open(summary_path, "r", encoding="utf-8") as f:
+                summary = json.load(f)
+            
+            # Remove old format fields if they exist (cleanup)
+            old_fields = ["latest_market_price", "latest_market_timestamp", "model_reference_price", "rows", "rows_used"]
+            for field in old_fields:
+                if field in summary:
+                    del summary[field]
+            
+            # Ensure new format structure exists
+            if "prediction" not in summary:
+                summary["prediction"] = {
+                    "current_price": latest_price,
+                    "predicted_price": latest_price,
+                    "predicted_return_pct": 0.0,
+                    "action": "hold",
+                    "confidence": 0.0,
+                    "horizon_days": 30,
+                    "last_updated": latest_timestamp,
+                    "explanation": "No prediction available"
+                }
+            if "model_predictions" not in summary:
+                summary["model_predictions"] = {}
+            if "consensus" not in summary:
+                summary["consensus"] = {}
+            
+            # Update models with NEW predictions from inference
+            model_outputs = inference_result.get("models", {})
+            
+            # Update simplified model_predictions section (new format only)
+            for model_name, model_data in summary["model_predictions"].items():
+                if model_name in model_outputs:
+                    new_pred_return = float(model_outputs[model_name].get("predicted_return", 0))
+                    model_data["predicted_price"] = float(latest_price * (1.0 + new_pred_return))
+                    model_data["predicted_return_pct"] = float(new_pred_return * 100)
+                    # Update action based on new prediction
+                    model_data["action"] = "long" if new_pred_return > 0.01 else "short" if new_pred_return < -0.01 else "hold"
+            
+            # Update main prediction section
+            consensus_result = inference_result.get("consensus", {})
+            if consensus_result:
+                new_consensus_return = float(consensus_result.get("consensus_return", 0))
+                new_consensus_price = float(latest_price * (1.0 + new_consensus_return))
+                consensus_action = consensus_result.get("consensus_action", "hold")
+                
+                summary["prediction"]["current_price"] = latest_price
+                summary["prediction"]["predicted_price"] = new_consensus_price
+                summary["prediction"]["predicted_return_pct"] = float(new_consensus_return * 100)
+                summary["prediction"]["action"] = consensus_action
+                summary["prediction"]["confidence"] = float(consensus_result.get("consensus_confidence", 0) * 100)
+                summary["prediction"]["last_updated"] = latest_timestamp
+                horizon_days = summary["prediction"].get("horizon_days", 30)
+                summary["prediction"]["explanation"] = (
+                    f"Price expected to "
+                    f"{'rise' if consensus_action == 'long' else 'fall' if consensus_action == 'short' else 'stay flat'} "
+                    f"from ${latest_price:,.2f} to ${new_consensus_price:,.2f} "
+                    f"({new_consensus_return*100:+.2f}%) over {horizon_days} days"
+                )
+            
+            # Update consensus section
+            if consensus_result:
+                new_consensus_return = float(consensus_result.get("consensus_return", 0))
+                summary["consensus"]["predicted_return_pct"] = float(new_consensus_return * 100)
+                summary["consensus"]["action"] = consensus_result.get("consensus_action", summary["consensus"].get("action", "hold"))
+                summary["consensus"]["confidence_pct"] = float(consensus_result.get("consensus_confidence", 0) * 100)
+            
+            # Update top-level last_updated
+            summary["last_updated"] = latest_timestamp
+            
+            # Save updated summary with NEW predictions (new format only)
+            with open(summary_path, "w", encoding="utf-8") as f:
+                json.dump(summary, f, indent=2)
+            
+            # Output formatted prediction in requested format
+            _output_live_prediction_format(asset_type, symbol, timeframe, latest_timestamp, latest_price, inference_result, summary)
+            
+            # Log to bucket
+            try:
+                from ml.bucket_logger import get_bucket_logger
+                bucket = get_bucket_logger()
+                
+                # Extract data for bucket logging
+                model_outputs = inference_result.get("models", {})
+                consensus_result = inference_result.get("consensus", {})
+                
+                # Build predictions list
+                predictions_list = []
+                for model_name, model_data in model_outputs.items():
+                    if "_quantile" in model_name:
+                        continue
+                    pred_return = float(model_data.get("predicted_return", 0))
+                    predicted_price = float(latest_price * (1.0 + pred_return))
+                    model_metrics = summary.get("model_predictions", {}).get(model_name, {})
+                    if not model_metrics:
+                        model_metrics = summary.get("models", {}).get(model_name, {})
+                    
+                    predictions_list.append({
+                        "algorithm": model_name,
+                        "predicted_return": pred_return,
+                        "predicted_price": predicted_price,
+                        "current_price": latest_price,
+                        "confidence": float(model_metrics.get("confidence", model_metrics.get("vote_weight", 0.5) * 100 if model_metrics.get("vote_weight") else 50)),
+                        "r2_score": float(model_metrics.get("r2_score", model_metrics.get("r2", 0.0))) if model_metrics.get("r2_score") or model_metrics.get("r2") else None,
+                        "action": "long" if pred_return > 0.01 else "short" if pred_return < -0.01 else "hold"
+                    })
+                
+                # Build consensus dict
+                consensus_dict = {
+                    "action": consensus_result.get("consensus_action", "hold"),
+                    "predicted_return": float(consensus_result.get("consensus_return", 0)),
+                    "predicted_price": float(latest_price * (1.0 + consensus_result.get("consensus_return", 0))),
+                    "confidence": float(consensus_result.get("consensus_confidence", 0)),
+                    "reasoning": summary.get("consensus", {}).get("reasoning", "")
+                }
+                
+                # Build sentiment summary
+                action_scores = consensus_result.get("action_scores", {})
+                sentiment_summary = {
+                    "overall_sentiment": consensus_result.get("consensus_action", "hold"),
+                    "confidence": float(consensus_result.get("consensus_confidence", 0)),
+                    "action_distribution": {
+                        "long": float(action_scores.get("long", 0)),
+                        "hold": float(action_scores.get("hold", 0)),
+                        "short": float(action_scores.get("short", 0))
+                    },
+                    "expected_return_pct": float(consensus_result.get("consensus_return", 0)) * 100,
+                    "price_target": float(latest_price * (1.0 + consensus_result.get("consensus_return", 0))),
+                    "horizon_bars": summary.get("consensus", {}).get("target_horizon_bars", 30)
+                }
+                
+                # Build events
+                events_list = []
+                consensus_return = float(consensus_result.get("consensus_return", 0))
+                if abs(consensus_return) > 0.05:
+                    events_list.append({
+                        "type": "significant_prediction",
+                        "message": f"Strong {consensus_dict['action'].upper()} signal: {consensus_return*100:+.2f}% expected return",
+                        "severity": "high" if abs(consensus_return) > 0.10 else "medium"
+                    })
+                
+                # Log to bucket
+                bucket.log_prediction(
+                    symbol=symbol,
+                    asset_type=asset_type,
+                    timeframe=timeframe,
+                    timestamp=latest_timestamp,
+                    current_price=latest_price,
+                    predictions=predictions_list,
+                    consensus=consensus_dict,
+                    sentiment_summary=sentiment_summary,
+                    events=events_list,
+                    metadata={
+                        "inference_cache_key": cache_key,
+                        "feature_count": len(features_dict),
+                        "volatility": volatility
+                    }
+                )
+            except Exception as bucket_exc:
+                # Don't fail if bucket logging fails
+                print(f"[BUCKET] Failed to log prediction: {bucket_exc}")
+            
+            # Also prepare feedback data for RL learning (when actual outcomes are available)
+            # This will be used when feedback is submitted via API
+            try:
+                from ml.rl_feedback import get_feedback_learner
+                feedback_learner = get_feedback_learner()
+                
+                # Store prediction data for potential feedback learning
+                # The actual feedback will be submitted via /tools/feedback endpoint
+                # when actual outcomes are known
+                pass  # Feedback is submitted separately via API
+            except Exception:
+                pass  # Feedback learning is optional
+        
+        except Exception as exc:
+            # If inference fails, fallback to just updating price
+            print(f"[INFERENCE] Error running inference for {cache_key}: {exc}")
+            _update_summary_price_only(summary_path, latest_price, latest_timestamp)
+        
+    except Exception as exc:
+        # Log error but don't crash the data ingestion
+        print(f"[SUMMARY] Unable to update summary.json for {asset_type}/{symbol}/{timeframe}: {exc}")
+
+
+def _output_live_prediction_format(
+    asset_type: str,
+    symbol: str,
+    timeframe: str,
+    timestamp: str,
+    current_price: float,
+    inference_result: Dict[str, Any],
+    summary: Dict[str, Any]
+):
+    """Output live predictions in the requested JSON format."""
+    model_outputs = inference_result.get("models", {})
+    consensus = inference_result.get("consensus", {})
+    
+    # Build predictions array (individual algorithms)
+    predictions = []
+    for model_name, model_data in model_outputs.items():
+        # Skip quantile models
+        if "_quantile" in model_name:
+            continue
+        
+        pred_return = float(model_data.get("predicted_return", 0))
+        predicted_price = float(current_price * (1.0 + pred_return))
+        
+        # Get model metrics from summary (try new format first, then old)
+        model_metrics = summary.get("model_predictions", {}).get(model_name, {})
+        if not model_metrics:
+            model_metrics = summary.get("models", {}).get(model_name, {})
+        
+        predictions.append({
+            "algorithm": model_name,
+            "predicted_return": pred_return,
+            "predicted_price": predicted_price,
+            "current_price": current_price,
+            "confidence": float(model_metrics.get("confidence", model_metrics.get("vote_weight", 0.5) * 100 if model_metrics.get("vote_weight") else 50)),
+            "r2_score": float(model_metrics.get("r2_score", model_metrics.get("r2", 0.0))) if model_metrics.get("r2_score") or model_metrics.get("r2") else None,
+            "action": "long" if pred_return > 0.01 else "short" if pred_return < -0.01 else "hold"
+        })
+    
+    # Unified/Consensus prediction
+    consensus_return = float(consensus.get("consensus_return", 0))
+    consensus_price = float(current_price * (1.0 + consensus_return))
+    consensus_action = consensus.get("consensus_action", "hold")
+    consensus_confidence = float(consensus.get("consensus_confidence", 0))
+    
+    unified_prediction = {
+        "algorithm": "consensus",
+        "predicted_return": consensus_return,
+        "predicted_price": consensus_price,
+        "current_price": current_price,
+        "confidence": consensus_confidence,
+        "action": consensus_action,
+        "model_count": len([m for m in model_outputs.keys() if "_quantile" not in m]),
+        "reasoning": summary.get("consensus", {}).get("reasoning", "")
+    }
+    
+    # Add unified prediction at the beginning
+    predictions.insert(0, unified_prediction)
+    
+    # Build events (price changes, significant predictions)
+    events = []
+    if abs(consensus_return) > 0.05:  # Significant prediction (>5%)
+        events.append({
+            "type": "significant_prediction",
+            "message": f"Strong {consensus_action.upper()} signal: {consensus_return*100:+.2f}% expected return",
+            "severity": "high" if abs(consensus_return) > 0.10 else "medium"
+        })
+    
+    # Build executed_trades (empty for now - can be populated if trading is enabled)
+    executed_trades = []
+    
+    # Build sentiment_summary
+    action_scores = consensus.get("action_scores", {})
+    sentiment_summary = {
+        "overall_sentiment": consensus_action,
+        "confidence": consensus_confidence,
+        "action_distribution": {
+            "long": float(action_scores.get("long", 0)),
+            "hold": float(action_scores.get("hold", 0)),
+            "short": float(action_scores.get("short", 0))
+        },
+        "expected_return_pct": consensus_return * 100,
+        "price_target": consensus_price,
+        "horizon_bars": summary.get("consensus", {}).get("target_horizon_bars", 30)
+    }
+    
+    # Output formatted JSON
+    output = {
+        "timestamp": timestamp,
+        "symbol": symbol,
+        "asset_type": asset_type,
+        "timeframe": timeframe,
+        "predictions": predictions,
+        "events": events,
+        "executed_trades": executed_trades,
+        "sentiment_summary": sentiment_summary
+    }
+    
+    # Print formatted output
+    print("\n" + "="*80)
+    print("LIVE PREDICTION UPDATE")
+    print("="*80)
+    print(json.dumps(output, indent=2))
+    print("="*80 + "\n")
+
+
+def _update_summary_price_only(summary_path: Path, latest_price: float, latest_timestamp: str):
+    """Fallback: Just update price without running inference (new format only)."""
+    try:
+        with open(summary_path, "r", encoding="utf-8") as f:
+            summary = json.load(f)
+        
+        # Update new simplified format
+        if "prediction" in summary:
+            summary["prediction"]["current_price"] = latest_price
+            summary["prediction"]["last_updated"] = latest_timestamp
+            if "predicted_return_pct" in summary["prediction"]:
+                pred_return = summary["prediction"]["predicted_return_pct"] / 100
+                summary["prediction"]["predicted_price"] = float(latest_price * (1.0 + pred_return))
+                action = summary["prediction"].get("action", "hold")
+                horizon_days = summary["prediction"].get("horizon_days", 30)
+                summary["prediction"]["explanation"] = (
+                    f"Price expected to "
+                    f"{'rise' if action == 'long' else 'fall' if action == 'short' else 'stay flat'} "
+                    f"from ${latest_price:,.2f} to ${summary['prediction']['predicted_price']:,.2f} "
+                    f"({summary['prediction']['predicted_return_pct']:+.2f}%) over {horizon_days} days"
+                )
+        
+        summary["last_updated"] = latest_timestamp
+        
+        with open(summary_path, "w", encoding="utf-8") as f:
+            json.dump(summary, f, indent=2)
+    except:
+        pass
+
 
 def generate_manifest(
     asset_type: str,
@@ -429,6 +885,663 @@ def generate_manifest(
         json.dump(manifest, f, indent=2, ensure_ascii=False)
     
     return manifest
+
+
+# ============================================================================
+# FEATURE CALCULATION
+# ============================================================================
+
+FEATURE_ROOT = Path("data/features")
+
+
+def ema(series: pd.Series, length: int) -> pd.Series:
+    return series.ewm(span=length, adjust=False).mean()
+
+
+def calc_rsi(series: pd.Series, length: int = 14) -> pd.Series:
+    delta = series.diff()
+    gain = np.where(delta > 0, delta, 0)
+    loss = np.where(delta < 0, -delta, 0)
+    roll_up = pd.Series(gain, index=series.index).ewm(alpha=1 / length, adjust=False).mean()
+    roll_down = pd.Series(loss, index=series.index).ewm(alpha=1 / length, adjust=False).mean()
+    rs = roll_up / roll_down
+    return 100 - (100 / (1 + rs))
+
+
+def calc_roc(series: pd.Series, length: int) -> pd.Series:
+    return series.pct_change(length, fill_method=None)
+
+
+def calc_macd(series: pd.Series, fast: int = 12, slow: int = 26, signal: int = 9):
+    ema_fast = ema(series, fast)
+    ema_slow = ema(series, slow)
+    macd_line = ema_fast - ema_slow
+    signal_line = ema(macd_line, signal)
+    hist = macd_line - signal_line
+    return macd_line, signal_line, hist
+
+
+def calc_trix(series: pd.Series, length: int = 15) -> pd.Series:
+    e1 = ema(series, length)
+    e2 = ema(e1, length)
+    e3 = ema(e2, length)
+    return e3.pct_change(fill_method=None)
+
+
+def calc_tsi(series: pd.Series, slow: int = 25, fast: int = 13) -> pd.Series:
+    pc = series.diff()
+    abs_pc = pc.abs()
+    double_smooth = ema(ema(pc, slow), fast)
+    double_abs = ema(ema(abs_pc, slow), fast)
+    double_abs = double_abs.replace(0, np.nan)
+    return 100 * (double_smooth / double_abs)
+
+
+def calc_stochastic(high: pd.Series, low: pd.Series, close: pd.Series, k: int = 14, d: int = 3):
+    lowest_low = low.rolling(k).min()
+    highest_high = high.rolling(k).max()
+    range_ = (highest_high - lowest_low).replace(0, np.nan)
+    k_percent = 100 * (close - lowest_low) / range_
+    d_percent = k_percent.rolling(d).mean()
+    return k_percent, d_percent
+
+
+def calc_williams_r(high: pd.Series, low: pd.Series, close: pd.Series, length: int = 14) -> pd.Series:
+    highest_high = high.rolling(length).max()
+    lowest_low = low.rolling(length).min()
+    return -100 * (highest_high - close) / (highest_high - lowest_low)
+
+
+def calc_cci(high: pd.Series, low: pd.Series, close: pd.Series, length: int = 20) -> pd.Series:
+    tp = (high + low + close) / 3
+    ma = tp.rolling(length).mean()
+    md = tp.rolling(length).apply(lambda x: np.mean(np.abs(x - np.mean(x))), raw=True)
+    return (tp - ma) / (0.015 * md)
+
+
+def true_range(high: pd.Series, low: pd.Series, close: pd.Series) -> pd.Series:
+    prev_close = close.shift(1)
+    return pd.concat([
+        high - low,
+        (high - prev_close).abs(),
+        (low - prev_close).abs()
+    ], axis=1).max(axis=1)
+
+
+def calc_atr(high: pd.Series, low: pd.Series, close: pd.Series, length: int = 14) -> pd.Series:
+    tr = true_range(high, low, close)
+    return tr.rolling(length).mean()
+
+
+def calc_bbands(series: pd.Series, length: int = 20, std: float = 2.0):
+    ma = series.rolling(length).mean()
+    dev = series.rolling(length).std()
+    upper = ma + std * dev
+    lower = ma - std * dev
+    return upper, ma, lower
+
+
+def calc_keltner(high: pd.Series, low: pd.Series, close: pd.Series, length: int = 20, mult: float = 2.0):
+    mid = ema(close, length)
+    atr_val = calc_atr(high, low, close, length)
+    upper = mid + mult * atr_val
+    lower = mid - mult * atr_val
+    return upper, lower
+
+
+def calc_adx(high: pd.Series, low: pd.Series, close: pd.Series, length: int = 14):
+    up_move = high.diff()
+    down_move = -low.diff()
+    plus_dm = np.where((up_move > down_move) & (up_move > 0), up_move, 0)
+    minus_dm = np.where((down_move > up_move) & (down_move > 0), down_move, 0)
+    tr = true_range(high, low, close)
+    atr_val = calc_atr(high, low, close, length).replace(0, np.nan)
+    plus_di = 100 * pd.Series(plus_dm, index=high.index).rolling(length).sum() / atr_val
+    minus_di = 100 * pd.Series(minus_dm, index=high.index).rolling(length).sum() / atr_val
+    dx = (abs(plus_di - minus_di) / (plus_di + minus_di)).abs() * 100
+    adx_series = dx.rolling(length).mean()
+    return adx_series, plus_di, minus_di
+
+
+def calc_vwap(high: pd.Series, low: pd.Series, close: pd.Series, volume: pd.Series) -> pd.Series:
+    typical = (high + low + close) / 3
+    cum_vol_price = (typical * volume).cumsum()
+    cum_volume = volume.cumsum().replace(0, np.nan)
+    return cum_vol_price / cum_volume
+
+
+def calc_obv(close: pd.Series, volume: pd.Series) -> pd.Series:
+    direction = np.sign(close.diff()).fillna(0)
+    return (direction * volume).cumsum()
+
+
+def calc_cmf(high: pd.Series, low: pd.Series, close: pd.Series, volume: pd.Series, length: int = 20) -> pd.Series:
+    mf_multiplier = ((close - low) - (high - close)) / (high - low)
+    mf_multiplier = mf_multiplier.replace([np.inf, -np.inf], 0).fillna(0)
+    mf_volume = mf_multiplier * volume
+    denom = volume.rolling(length).sum().replace(0, np.nan)
+    return mf_volume.rolling(length).sum() / denom
+
+
+def calc_mfi(high: pd.Series, low: pd.Series, close: pd.Series, volume: pd.Series, length: int = 14) -> pd.Series:
+    typical = (high + low + close) / 3
+    money_flow = typical * volume
+    positive_flow = np.where(typical > typical.shift(1), money_flow, 0)
+    negative_flow = np.where(typical < typical.shift(1), money_flow, 0)
+    pos_mf = pd.Series(positive_flow, index=high.index).rolling(length).sum()
+    neg_mf = pd.Series(negative_flow, index=high.index).rolling(length).sum()
+    ratio = pos_mf / neg_mf.replace(0, np.nan)
+    mfi = 100 - (100 / (1 + ratio))
+    return mfi
+
+
+def calc_emv(high: pd.Series, low: pd.Series, volume: pd.Series, length: int = 14) -> pd.Series:
+    dm = ((high + low) / 2) - ((high.shift(1) + low.shift(1)) / 2)
+    br = (volume / 1_000_000) / (high - low)
+    br = br.replace([np.inf, -np.inf], np.nan).fillna(0)
+    emv = dm / br.replace(0, np.nan)
+    return emv.rolling(length).mean()
+
+
+def calc_force_index(close: pd.Series, volume: pd.Series, length: int = 1) -> pd.Series:
+    return (close - close.shift(length)) * volume
+
+
+def calc_adl(high: pd.Series, low: pd.Series, close: pd.Series, volume: pd.Series) -> pd.Series:
+    clv = ((close - low) - (high - close)) / (high - low)
+    clv = clv.replace([np.inf, -np.inf], 0).fillna(0)
+    return (clv * volume).cumsum()
+
+
+def calc_chaikin(high: pd.Series, low: pd.Series, close: pd.Series, volume: pd.Series) -> pd.Series:
+    ad_line = calc_adl(high, low, close, volume)
+    return ema(ad_line, 3) - ema(ad_line, 10)
+
+
+def calc_ichimoku(high: pd.Series, low: pd.Series, close: pd.Series):
+    conversion = (high.rolling(9).max() + low.rolling(9).min()) / 2
+    base = (high.rolling(26).max() + low.rolling(26).min()) / 2
+    span_a = ((conversion + base) / 2).shift(26)
+    span_b = ((high.rolling(52).max() + low.rolling(52).min()) / 2).shift(26)
+    lagging = close.shift(-26)
+    return conversion, base, span_a, span_b, lagging
+
+
+def calc_psar(high: pd.Series, low: pd.Series, step: float = 0.02, max_step: float = 0.2) -> pd.Series:
+    sar = pd.Series(index=high.index, dtype=float)
+    bull = True
+    af = step
+    ep = low.iloc[0]
+    sar.iloc[0] = low.iloc[0]
+    for i in range(1, len(high)):
+        prev_sar = sar.iloc[i - 1]
+        if bull:
+            sar_val = prev_sar + af * (ep - prev_sar)
+            sar_val = min(sar_val, low.iloc[i - 1], low.iloc[i])
+            if low.iloc[i] < sar_val:
+                bull = False
+                sar_val = ep
+                ep = low.iloc[i]
+                af = step
+        else:
+            sar_val = prev_sar + af * (ep - prev_sar)
+            sar_val = max(sar_val, high.iloc[i - 1], high.iloc[i])
+            if high.iloc[i] > sar_val:
+                bull = True
+                sar_val = ep
+                ep = high.iloc[i]
+                af = step
+        if bull and high.iloc[i] > ep:
+            ep = high.iloc[i]
+            af = min(af + step, max_step)
+        elif (not bull) and low.iloc[i] < ep:
+            ep = low.iloc[i]
+            af = min(af + step, max_step)
+        sar.iloc[i] = sar_val
+    return sar
+
+
+def _ensure_feature_dir(asset_type: str, symbol: str, timeframe: str) -> Path:
+    path = FEATURE_ROOT / asset_type / symbol / timeframe
+    path.mkdir(parents=True, exist_ok=True)
+    return path
+
+
+def _load_candles(data_file: Path) -> pd.DataFrame:
+    if not data_file.exists():
+        raise FileNotFoundError(f"Data file not found: {data_file}")
+    with open(data_file, "r", encoding="utf-8") as fh:
+        raw = json.load(fh)
+    if not isinstance(raw, list) or not raw:
+        raise ValueError(f"No candle data in {data_file}")
+
+    df = pd.DataFrame(raw)
+    required_cols = {"open", "high", "low", "close", "timestamp"}
+    missing = required_cols.difference(df.columns)
+    if missing:
+        raise ValueError(f"Missing candle fields {missing} in {data_file}")
+
+    if "volume" not in df.columns:
+        df["volume"] = np.nan
+
+    df["timestamp"] = pd.to_datetime(df["timestamp"], utc=True)
+    df = df.sort_values("timestamp").set_index("timestamp")
+    cols = ["open", "high", "low", "close", "volume"]
+    return df[cols].astype(float)
+
+
+@dataclass
+class FeatureResult:
+    value: Optional[float] = None
+    timestamp: Optional[pd.Timestamp] = None
+    status: Optional[str] = None
+    reason: Optional[str] = None
+
+
+class FeatureCalculator:
+    SCHEMA_VERSION = 2
+    """Computes a broad catalog of features from OHLCV candles."""
+
+    def __init__(self, df: pd.DataFrame):
+        self.df = df.copy()
+        self.df["typical_price"] = (self.df["high"] + self.df["low"] + self.df["close"]) / 3.0
+        self.df["median_price"] = (self.df["high"] + self.df["low"]) / 2.0
+        self.df["price_range"] = self.df["high"] - self.df["low"]
+        self.df["intraday_range"] = self.df["close"] - self.df["open"]
+        self.df["returns"] = self.df["close"].pct_change(fill_method=None)
+        self.df["log_returns"] = np.log(self.df["close"] / self.df["close"].shift(1))
+        self.results: Dict[str, FeatureResult] = {}
+        self.series_cache: Dict[str, pd.Series] = {}
+
+    def compute_all(self) -> Dict[str, FeatureResult]:
+        self._moving_averages()
+        self._momentum_indicators()
+        self._volatility_indicators()
+        self._volume_indicators()
+        self._price_structure_indicators()
+        self._signals_and_flags()
+        self._placeholder_features()
+        return self.results
+
+    def _add_series(self, name: str, series: pd.Series, min_points: int = 1):
+        clean = series.dropna()
+        if len(clean) >= min_points:
+            self.series_cache[name] = series
+            self.results[name] = FeatureResult(value=float(clean.iloc[-1]), timestamp=clean.index[-1])
+        else:
+            self.results[name] = FeatureResult(
+                value=None,
+                timestamp=self.df.index[-1],
+                status="insufficient_data",
+                reason=f"Not enough data to compute {name}"
+            )
+
+    def _add_placeholder(self, name: str, reason: str, status: str = "data_not_available"):
+        self.results[name] = FeatureResult(
+            value=None,
+            timestamp=self.df.index[-1],
+            status=status,
+            reason=reason
+        )
+
+    # --- Feature groups -------------------------------------------------- #
+
+    def _moving_averages(self):
+        close = self.df["close"]
+        for length in [5, 10, 20, 50, 100, 200]:
+            self._add_series(f"SMA_{length}", close.rolling(length).mean())
+        for length in [9, 12, 26, 50, 100, 200]:
+            self._add_series(f"EMA_{length}", close.ewm(span=length, adjust=False).mean())
+        w = 14
+        weights = np.arange(1, w + 1)
+        wma = close.rolling(w).apply(lambda x: np.dot(x, weights) / weights.sum(), raw=True)
+        self._add_series("WMA_14", wma)
+
+        def hull_ma(series: pd.Series, length: int = 21):
+            half = int(length / 2)
+            sqrt_len = int(math.sqrt(length))
+            wma1 = series.rolling(length).apply(
+                lambda x: np.dot(x, np.arange(1, length + 1)) / np.arange(1, length + 1).sum(),
+                raw=True
+            )
+            wma2 = series.rolling(half).apply(
+                lambda x: np.dot(x, np.arange(1, half + 1)) / np.arange(1, half + 1).sum(),
+                raw=True
+            )
+            hull = (2 * wma2) - wma1
+            return hull.rolling(sqrt_len).mean()
+
+        self._add_series("Hull_MA", hull_ma(close))
+        volume = self.df["volume"]
+        vwma = (close * volume).rolling(20).sum() / volume.rolling(20).sum()
+        self._add_series("VWMA", vwma)
+        vwap_series = calc_vwap(self.df["high"], self.df["low"], close, volume)
+        self._add_series("VWAP", vwap_series)
+        self._add_series("Session_VWAP", vwap_series)
+
+    def _momentum_indicators(self):
+        close = self.df["close"]
+        high = self.df["high"]
+        low = self.df["low"]
+        volume = self.df["volume"]
+
+        macd_line, macd_signal, macd_hist = calc_macd(close)
+        self._add_series("MACD", macd_line)
+        self._add_series("MACD_signal", macd_signal)
+        self._add_series("MACD_histogram", macd_hist)
+
+        for length in [7, 14, 21]:
+            self._add_series(f"RSI_{length}", calc_rsi(close, length=length))
+
+        for length in [1, 7, 14]:
+            self._add_series(f"Momentum_roc_{length}", calc_roc(close, length=length))
+        self._add_series("Rate_of_Change", calc_roc(close, length=10))
+
+        self._add_series("TRIX", calc_trix(close))
+        self._add_series("TSI", calc_tsi(close))
+        k_percent, d_percent = calc_stochastic(high, low, close)
+        self._add_series("Stochastic_%K", k_percent)
+        self._add_series("Stochastic_%D", d_percent)
+        self._add_series("Williams_%R", calc_williams_r(high, low, close))
+        self._add_series("CCI_20", calc_cci(high, low, close, length=20))
+
+        atr14 = calc_atr(high, low, close, length=14)
+        atr7 = calc_atr(high, low, close, length=7)
+        self._add_series("ATR_14", atr14)
+        self._add_series("ATR_7", atr7)
+
+        upper, mid, lower = calc_bbands(close, length=20, std=2)
+        self._add_series("Bollinger_Bands_upper_20_2", upper)
+        self._add_series("Bollinger_Bands_lower_20_2", lower)
+        range_band = (upper - lower).replace(0, np.nan)
+        bandwidth = range_band / mid
+        self._add_series("Bollinger_Bandwidth", bandwidth)
+        percent_b = (close - lower) / range_band
+        self._add_series("Bollinger_%b", percent_b)
+
+        kc_upper, kc_lower = calc_keltner(high, low, close, length=20, mult=2)
+        self._add_series("Keltner_Channel_upper", kc_upper)
+        self._add_series("Keltner_Channel_lower", kc_lower)
+
+        donch_hi = high.rolling(20).max()
+        donch_lo = low.rolling(20).min()
+        self._add_series("Donchian_Channel_high", donch_hi)
+        self._add_series("Donchian_Channel_low", donch_lo)
+
+        adx_series, plus_di, minus_di = calc_adx(high, low, close, length=14)
+        self._add_series("ADX_14", adx_series)
+        self._add_series("DI_plus", plus_di)
+        self._add_series("DI_minus", minus_di)
+
+        rsi_vals = calc_rsi(close, length=14)
+        self._add_series("RSI_Band_Cross", ((rsi_vals > 70) | (rsi_vals < 30)).astype(int))
+
+        self._add_series("ROC_Signal", calc_roc(close, length=5))
+
+    def _volatility_indicators(self):
+        returns = self.df["returns"]
+        log_returns = self.df["log_returns"]
+        for window in [7, 14, 30]:
+            self._add_series(f"Rolling_Volatility_{window}", returns.rolling(window).std())
+        realized = log_returns.pow(2).rolling(30).sum().apply(np.sqrt)
+        self._add_series("Realized_Volatility", realized)
+        hist_vol = returns.rolling(30).std() * np.sqrt(30)
+        self._add_series("Historical_Volatility", hist_vol)
+        skew = returns.rolling(30).skew()
+        kurt = returns.rolling(30).kurt()
+        self._add_series("Rolling_Skew", skew)
+        self._add_series("Rolling_Kurtosis", kurt)
+        vol_skew = (returns.rolling(7).std() - returns.rolling(30).std())
+        self._add_series("Volatility_Skew", vol_skew)
+        vol_cluster = (returns.rolling(3).std() / returns.rolling(30).std())
+        self._add_series("Volatility_Clustering", vol_cluster)
+
+        z7 = (returns - returns.rolling(7).mean()) / returns.rolling(7).std()
+        z30 = (returns - returns.rolling(30).mean()) / returns.rolling(30).std()
+        self._add_series("ZScore_returns_7", z7)
+        self._add_series("ZScore_returns_30", z30)
+        self._add_series("Normalized_Returns", z30)
+        self._add_series("Log_Returns", log_returns)
+        self._add_series("Return_1", self.df["close"].pct_change(1, fill_method=None))
+        self._add_series("Return_3", self.df["close"].pct_change(3, fill_method=None))
+        self._add_series("Return_7", self.df["close"].pct_change(7, fill_method=None))
+        cumulative_30 = (1 + self.df["close"].pct_change(fill_method=None)).rolling(30).apply(np.prod) - 1
+        self._add_series("Cumulative_Return_30", cumulative_30)
+
+        rolling_sharpe_30 = returns.rolling(30).mean() / returns.rolling(30).std()
+        rolling_sharpe_90 = returns.rolling(90).mean() / returns.rolling(90).std()
+        self._add_series("Rolling_Sharpe_30", rolling_sharpe_30)
+        self._add_series("Rolling_Sharpe_90", rolling_sharpe_90)
+
+        running_max = self.df["close"].rolling(30, min_periods=1).max()
+        drawdown = self.df["close"] / running_max - 1
+        self._add_series("Max_Drawdown_30", drawdown.rolling(30).min())
+
+        duration = drawdown.groupby((drawdown == 0).cumsum()).cumcount()
+        self._add_series("Drawdown_Duration", duration)
+
+    def _volume_indicators(self):
+        high = self.df["high"]
+        low = self.df["low"]
+        close = self.df["close"]
+        volume = self.df["volume"]
+        self._add_series("OBV", calc_obv(close, volume))
+        self._add_series("CMF", calc_cmf(high, low, close, volume, length=20))
+        self._add_series("MFI", calc_mfi(high, low, close, volume, length=14))
+        emv = calc_emv(high, low, volume)
+        self._add_series("Ease_of_Movement", emv)
+        self._add_series("Force_Index", calc_force_index(close, volume))
+        adl = calc_adl(high, low, close, volume)
+        self._add_series("Accumulation_Distribution", adl)
+        self._add_series("Chaikin_Oscillator", calc_chaikin(high, low, close, volume))
+
+        vol_change_1 = volume.pct_change(1, fill_method=None)
+        vol_change_7 = volume.pct_change(7, fill_method=None)
+        self._add_series("Volume_Change_1", vol_change_1)
+        self._add_series("Volume_Change_7", vol_change_7)
+        vol_ratio = volume / volume.rolling(20).mean()
+        self._add_series("Volume_Ratio", vol_ratio)
+        surge_flag = (volume > volume.rolling(20).mean() * 1.5).astype(int)
+        self._add_series("Volume_Surge_Flag", surge_flag)
+
+    def _price_structure_indicators(self):
+        close = self.df["close"]
+        high = self.df["high"]
+        low = self.df["low"]
+        open_ = self.df["open"]
+
+        for lag in [1, 2, 3]:
+            self._add_series(f"Price_Lag_{lag}", close.shift(lag))
+        for lag in range(1, 11):
+            self._add_series(f"Close_Lag_{lag}", close.shift(lag))
+        self._add_series("Open_Lag_1", open_.shift(1))
+        self._add_series("High_Lag_1", high.shift(1))
+        self._add_series("Low_Lag_1", low.shift(1))
+        self._add_series("Typical_Price", self.df["typical_price"])
+        self._add_series("Median_Price", self.df["median_price"])
+        self._add_series("Price_Range", self.df["price_range"])
+        self._add_series("Intraday_Range", self.df["intraday_range"])
+        gap_open = open_ - close.shift(1)
+        self._add_series("Gap_Open", gap_open)
+        self._add_series("Gap_Percentage", gap_open / close.shift(1))
+
+        donch_hi = high.rolling(20).max()
+        donch_lo = low.rolling(20).min()
+        breakout = ((close >= donch_hi) | (close <= donch_lo)).astype(int)
+        self._add_series("Donchian_Breakout_Flag", breakout)
+
+        sma50 = close.rolling(50).mean()
+        sma200 = close.rolling(200).mean()
+        self._add_series("MA_Crossover_Signal", np.sign(sma50 - sma200).diff())
+        macd_series = self.series_cache.get("MACD")
+        macd_signal_series = self.series_cache.get("MACD_signal")
+        if macd_series is not None and macd_signal_series is not None:
+            self._add_series("MACD_Crossover_Signal", np.sign(macd_series - macd_signal_series).diff())
+
+        roc7 = calc_roc(close, length=7)
+        self._add_series("ROC_Signal", roc7)
+
+        atr14 = self.series_cache.get("ATR_14")
+        if atr14 is None:
+            atr14 = calc_atr(high, low, close, length=14)
+        vol_expansion = (atr14 > atr14.rolling(20).mean() * 1.25).astype(int)
+        self._add_series("Volatility_Expansion_Flag", vol_expansion)
+
+        tenkan, kijun, span_a, span_b, _ = calc_ichimoku(high, low, close)
+        self._add_series("Ichimoku_Tenkan", tenkan)
+        self._add_series("Ichimoku_Kijun", kijun)
+        self._add_series("Ichimoku_Senkou_Span_A", span_a)
+        self._add_series("Ichimoku_Senkou_Span_B", span_b)
+
+        psar_series = calc_psar(high, low)
+        self._add_series("Parabolic_SAR", psar_series)
+
+        if tenkan is not None and kijun is not None:
+            price_channel_slope = (tenkan - kijun).rolling(10).mean()
+            self._add_series("Price_Channel_Slope", price_channel_slope)
+
+        # Fractals (using 2-period lookback/forward)
+        fractal_high = high[(high.shift(2) < high.shift(1)) &
+                            (high.shift(1) < high) &
+                            (high.shift(-1) < high) &
+                            (high.shift(-2) < high)]
+        fractal_low = low[(low.shift(2) > low.shift(1)) &
+                          (low.shift(1) > low) &
+                          (low.shift(-1) > low) &
+                          (low.shift(-2) > low)]
+        shifted_fractal_high = fractal_high.shift(2)
+        shifted_fractal_low = fractal_low.shift(2)
+        self._add_series("Fractal_High", shifted_fractal_high)
+        self._add_series("Fractal_Low", shifted_fractal_low)
+
+        # Pivot points (previous period)
+        prev_high = high.shift(1)
+        prev_low = low.shift(1)
+        prev_close = close.shift(1)
+        pivot = (prev_high + prev_low + prev_close) / 3.0
+        self._add_series("Pivot_Point", pivot)
+        self._add_series("Pivot_R1", 2 * pivot - prev_low)
+        self._add_series("Pivot_S1", 2 * pivot - prev_high)
+        range_ = prev_high - prev_low
+        self._add_series("Pivot_R2", pivot + range_)
+        self._add_series("Pivot_S2", pivot - range_)
+
+        # Fibonacci retracement levels (rolling 20)
+        rolling_high = high.rolling(20).max()
+        rolling_low = low.rolling(20).min()
+        diff = rolling_high - rolling_low
+        for ratio in [0.236, 0.382, 0.5, 0.618, 0.786]:
+            fib = rolling_high - diff * ratio
+            self._add_series(f"Fibonacci_Level_{ratio}", fib)
+
+        # Seasonality features
+        index = self.df.index
+        self._add_series("Seasonality_Monthly", pd.Series(index.month, index=index))
+        self._add_series("Seasonality_DayOfMonth", pd.Series(index.day, index=index))
+        self._add_series("Day_of_Week", pd.Series(index.dayofweek, index=index))
+        self._add_series("Hour_of_Day", pd.Series(index.hour, index=index))
+        self._add_series("Is_Holiday_Flag", pd.Series(0, index=index))
+
+    def _signals_and_flags(self):
+        # Already populated caches handle interactions
+        vol14 = self.series_cache.get("Rolling_Volatility_14")
+        mom14 = self.series_cache.get("Momentum_roc_14")
+        if vol14 is not None and mom14 is not None:
+            self._add_series("Feature_Interaction_Terms", vol14 * mom14)
+
+        rsi14 = self.series_cache.get("RSI_14")
+        macd_hist = self.series_cache.get("MACD_histogram")
+        zscore30 = self.series_cache.get("ZScore_returns_30")
+        components = []
+        if rsi14 is not None:
+            components.append(rsi14 / 100.0)
+        if macd_hist is not None:
+            components.append(macd_hist)
+        if zscore30 is not None:
+            components.append(zscore30)
+        if components:
+            ensemble = pd.concat(components, axis=1).mean(axis=1)
+            self._add_series("Ensemble_Feature_Aggregates", ensemble)
+
+    def _placeholder_features(self):
+        pass
+
+
+def update_feature_store(
+    asset_type: str,
+    symbol: str,
+    timeframe: str,
+    data_directory: Path
+):
+    """Load candles and regenerate all feature logs including context features."""
+    from ml.context_features import build_context_features, ContextFeatureConfig
+    
+    data_file = Path(data_directory) / "data.json"
+    if not data_file.exists():
+        return
+    try:
+        candles = _load_candles(data_file)
+    except (FileNotFoundError, ValueError) as exc:
+        print(f"[FEATURE] Skipping {asset_type}/{symbol}/{timeframe}: {exc}")
+        return
+    
+    # Compute basic technical features
+    calculator = FeatureCalculator(candles)
+    results = calculator.compute_all()
+    
+    # Add context features (macro, volatility, spreads, etc.) to match training
+    context_config = ContextFeatureConfig(
+        include_macro=True,
+        include_spreads=True,
+        include_volatility_indices=True,
+        include_regime_features=True,
+        include_intraday_aggregates=True,
+        intraday_timeframes=("4h", "1h"),
+        intraday_lookback=45,
+    )
+    try:
+        context_frame, context_meta = build_context_features(
+            base_candles=candles,
+            asset_type=asset_type,
+            symbol=symbol,
+            timeframe=timeframe,
+            config=context_config,
+        )
+        # Add context features to results
+        if not context_frame.empty and len(context_frame) > 0:
+            last_row = context_frame.iloc[-1]
+            for col in context_frame.columns:
+                value = last_row[col]
+                if pd.notna(value) and isinstance(value, (int, float)):
+                    results[col] = FeatureResult(
+                        value=float(value),
+                        timestamp=candles.index[-1],
+                    )
+    except Exception as exc:
+        # If context features fail, continue with basic features
+        print(f"[FEATURE] Context features failed for {symbol}: {exc}")
+    
+    out_dir = _ensure_feature_dir(asset_type, symbol, timeframe)
+    output = {
+        "asset_type": asset_type,
+        "symbol": symbol,
+        "timeframe": timeframe,
+        "last_updated": candles.index[-1].isoformat(),
+        "feature_count": len(results),
+        "features": {}
+    }
+    for feature_name, result in results.items():
+        entry: Dict[str, Optional[float]] = {}
+        entry["value"] = result.value
+        if result.status:
+            entry["status"] = result.status
+        if result.reason:
+            entry["reason"] = result.reason
+        output["features"][feature_name] = entry
+
+    feature_path = out_dir / "features.json"
+    with open(feature_path, "w", encoding="utf-8") as fh:
+        json.dump(output, fh, indent=2)
 
 
 # ============================================================================
@@ -659,7 +1772,10 @@ def save_historical_data(
     for candle in all_candles:
         ts = candle.get("timestamp", "")
         # Keep the one with higher volume if duplicate
-        if ts not in seen_timestamps or candle.get("volume", 0) > seen_timestamps[ts].get("volume", 0):
+        new_vol = candle.get("volume", 0) or 0
+        prev_vol = seen_timestamps[ts].get("volume", 0) if ts in seen_timestamps else 0
+        prev_vol = prev_vol or 0
+        if ts not in seen_timestamps or new_vol > prev_vol:
             seen_timestamps[ts] = candle
     
     # Convert back to sorted list
@@ -672,6 +1788,11 @@ def save_historical_data(
 
     generate_manifest("crypto", symbol, timeframe, source_folder)
     print(f"  Generated manifest for {symbol}/{timeframe} ({source_folder})")
+
+    try:
+        update_feature_store("crypto", symbol, timeframe, base_path)
+    except Exception as exc:
+        print(f"[FEATURE] Unable to update features for {symbol}/{timeframe}: {exc}")
 
 
 # ============================================================================
@@ -1077,7 +2198,12 @@ def fetch_yahoo_historical(
         
     except Exception as e:
         print(f"Error fetching Yahoo Finance data: {e}")
-        return []
+        try:
+            print("Falling back to Stooq data feed...")
+            return fetch_stooq_historical(symbol, timeframe=timeframe, years=years)
+        except Exception as stooq_err:
+            print(f"Stooq fallback also failed: {stooq_err}")
+            return []
 
 
 def save_yahoo_historical(
@@ -1106,7 +2232,10 @@ def save_yahoo_historical(
     for candle in all_candles:
         ts = candle.get("timestamp", "")
         # Keep the one with higher volume if duplicate
-        if ts not in seen_timestamps or candle.get("volume", 0) > seen_timestamps[ts].get("volume", 0):
+        new_vol = candle.get("volume", 0) or 0
+        prev_vol = seen_timestamps[ts].get("volume", 0) if ts in seen_timestamps else 0
+        prev_vol = prev_vol or 0
+        if ts not in seen_timestamps or new_vol > prev_vol:
             seen_timestamps[ts] = candle
     
     # Convert back to sorted list
@@ -1119,6 +2248,11 @@ def save_yahoo_historical(
 
     generate_manifest("commodities", symbol, timeframe, source_folder)
     print(f"  Generated manifest for {symbol}/{timeframe} ({source_folder})")
+
+    try:
+        update_feature_store("commodities", symbol, timeframe, base_path)
+    except Exception as exc:
+        print(f"[FEATURE] Unable to update features for {symbol}/{timeframe}: {exc}")
 
 
 def poll_yahoo_live(
@@ -1470,4 +2604,716 @@ def load_from_local_cache(
                     return candles
     
     return []
+
+
+# ============================================================================
+# INGESTION ORCHESTRATION
+# ============================================================================
+
+def fetch_crypto_historical_with_fallback(
+    symbol: str,
+    timeframe: str = "1d",
+    years: float = 5,
+    fallback_engine: Optional[FallbackEngine] = None
+) -> List[Dict[str, Any]]:
+    """
+    Fetch crypto historical data with automatic fallback between free sources.
+    """
+    if fallback_engine is None:
+        sources = ["binance_rest", "coinbase", "kucoin", "okx", "local_cache"]
+        fallback_engine = FallbackEngine(sources, "binance_rest")
+    
+    all_candles = []
+    max_attempts = len(fallback_engine.sources) * 2
+    
+    for attempt in range(max_attempts):
+        source = fallback_engine.get_current_source()
+        
+        try:
+            print(f"[{symbol}] Fetching historical from {source} (attempt {attempt + 1})...")
+            
+            if source == "binance_rest":
+                candles = fetch_binance_rest_historical(symbol, timeframe, years)
+            elif source == "coinbase":
+                candles = fetch_coinbase_historical(symbol, timeframe, years)
+            elif source == "kucoin":
+                candles = fetch_kucoin_historical(symbol, timeframe, years)
+            elif source == "okx":
+                candles = fetch_okx_historical(symbol, timeframe, years)
+            elif source == "local_cache":
+                candles = load_from_local_cache(symbol, timeframe, "crypto")
+            else:
+                candles = []
+            
+            if candles and len(candles) > 0:
+                fallback_engine.mark_success(source)
+                all_candles = candles
+                print(f"  [OK] Successfully fetched {len(candles)} candles from {source}")
+                break
+            else:
+                fallback_engine.mark_failure(source, "No data returned")
+                
+        except Exception as exc:
+            error_msg = str(exc)
+            status_code = None
+            if "429" in error_msg or "rate limit" in error_msg.lower():
+                status_code = 429
+            elif any(code in error_msg for code in ["503", "502", "500"]):
+                status_code = 500
+            
+            print(f"  [ERROR] {source}: {error_msg}")
+            fallback_engine.mark_failure(source, error_msg, status_code)
+        
+        if attempt < max_attempts - 1:
+            wait_time = min(2 ** (attempt % 3), 10)
+            print(f"  Waiting {wait_time}s before trying next source...")
+            time.sleep(wait_time)
+    
+    return all_candles
+
+
+def fetch_commodities_historical_with_fallback(
+    symbol: str,
+    timeframe: str = "1d",
+    years: float = 5,
+    fallback_engine: Optional[FallbackEngine] = None
+) -> List[Dict[str, Any]]:
+    """
+    Fetch commodities historical data with automatic fallback.
+    """
+    timeframe = "1d"
+    if fallback_engine is None:
+        sources = ["yahoo", "stooq", "local_cache"]
+        fallback_engine = FallbackEngine(sources, "yahoo")
+    
+    all_candles = []
+    max_attempts = len(fallback_engine.sources) * 2
+    
+    for attempt in range(max_attempts):
+        source = fallback_engine.get_current_source()
+        
+        try:
+            print(f"[{symbol}] Fetching historical from {source} (attempt {attempt + 1})...")
+            
+            if source == "yahoo":
+                candles = fetch_yahoo_historical(symbol, timeframe, years)
+            elif source == "stooq":
+                candles = fetch_stooq_historical(symbol, timeframe, years)
+            elif source == "local_cache":
+                candles = load_from_local_cache(symbol, timeframe, "commodities")
+            else:
+                candles = []
+            
+            if candles and len(candles) > 0:
+                fallback_engine.mark_success(source)
+                all_candles = candles
+                print(f"  [OK] Successfully fetched {len(candles)} candles from {source}")
+                break
+            else:
+                fallback_engine.mark_failure(source, "No data returned")
+                
+        except Exception as exc:
+            error_msg = str(exc)
+            status_code = None
+            if "429" in error_msg or "rate limit" in error_msg.lower():
+                status_code = 429
+            
+            print(f"  [ERROR] {source}: {error_msg}")
+            fallback_engine.mark_failure(source, error_msg, status_code)
+        
+        if attempt < max_attempts - 1:
+            wait_time = min(2 ** (attempt % 3), 10)
+            print(f"  Waiting {wait_time}s before trying next source...")
+            time.sleep(wait_time)
+    
+    return all_candles
+
+
+def ingest_all_historical(
+    crypto_symbols: Optional[List[str]] = None,
+    commodities_symbols: Optional[List[str]] = None,
+    timeframe: str = "1d",
+    years: float = 5
+):
+    """
+    Ingest historical data for all configured symbols with automatic fallback.
+    """
+    crypto_symbols = crypto_symbols or config.CRYPTO_SYMBOLS
+    commodities_symbols = commodities_symbols or config.COMMODITIES_SYMBOLS
+    
+    print("=" * 80)
+    print("PHASE 1: HISTORICAL DATA INGESTION")
+    print("=" * 80)
+    print(f"Fetching {years} years of DAILY (1d) price data for all symbols")
+    print("All sources are FREE. Automatic fallback ensures uninterrupted data flow.")
+    print("=" * 80)
+    
+    crypto_fallback = FallbackEngine(
+        ["binance_rest", "coinbase", "kucoin", "okx", "local_cache"],
+        "binance_rest"
+    )
+    commodities_fallback = FallbackEngine(
+        ["yahoo", "local_cache"],
+        "yahoo"
+    )
+    
+    print(f"\n[CRYPTO] Ingesting {len(crypto_symbols)} symbols...")
+    for idx, symbol in enumerate(crypto_symbols, 1):
+        try:
+            print(f"\n[{idx}/{len(crypto_symbols)}] {symbol} ({timeframe})")
+            candles = fetch_crypto_historical_with_fallback(
+                symbol, timeframe, years, crypto_fallback
+            )
+            if candles:
+                save_historical_data(symbol, timeframe, candles)
+                print(f"  [SUCCESS] {symbol} complete: {len(candles)} candles saved")
+            else:
+                print(f"  [WARNING] No data fetched for {symbol}")
+        except Exception as exc:
+            print(f"  [ERROR] Failed to ingest {symbol}: {exc}")
+            import traceback
+            traceback.print_exc()
+    
+    print(f"\n[COMMODITIES] Ingesting {len(commodities_symbols)} symbols...")
+    for idx, symbol in enumerate(commodities_symbols, 1):
+        try:
+            print(f"\n[{idx}/{len(commodities_symbols)}] {symbol} ({timeframe})")
+            candles = fetch_commodities_historical_with_fallback(
+                symbol, timeframe, years, commodities_fallback
+            )
+            if candles:
+                save_yahoo_historical(symbol, timeframe, candles)
+                print(f"  [SUCCESS] {symbol} complete: {len(candles)} candles saved")
+            else:
+                print(f"  [WARNING] No data fetched for {symbol}")
+        except Exception as exc:
+            print(f"  [ERROR] Failed to ingest {symbol}: {exc}")
+            import traceback
+            traceback.print_exc()
+    
+    print("\n" + "=" * 80)
+    print("HISTORICAL DATA INGESTION COMPLETE")
+    print("=" * 80)
+
+
+def start_live_feeds_with_fallback(
+    crypto_symbols: Optional[List[str]] = None,
+    commodities_symbols: Optional[List[str]] = None,
+    crypto_timeframe: str = "1d",
+    commodities_timeframe: str = "1d"
+):
+    """
+    Start live data feeds with automatic fallback.
+    """
+    crypto_symbols = crypto_symbols or config.CRYPTO_SYMBOLS
+    commodities_symbols = commodities_symbols or config.COMMODITIES_SYMBOLS
+    
+    print("\n" + "=" * 80)
+    print("PHASE 2: LIVE DATA FEEDS")
+    print("=" * 80)
+    print("All sources are FREE. Automatic fallback ensures uninterrupted data flow.")
+    print("=" * 80)
+    
+    crypto_clients = []
+    crypto_fallbacks: Dict[str, FallbackEngine] = {}
+    
+    for symbol in crypto_symbols:
+        try:
+            print(f"\nStarting live feed for {symbol} ({crypto_timeframe})...")
+            sources = ["binance_ws", "coinbase", "kucoin", "okx"]
+            fallback = FallbackEngine(sources, "binance_ws")
+            crypto_fallbacks[symbol] = fallback
+            
+            client = start_binance_live_feed(symbol, crypto_timeframe, fallback)
+            crypto_clients.append((symbol, client))
+            print(f"  [OK] {symbol} live feed started")
+        except Exception as exc:
+            print(f"  [ERROR] Failed to start live feed for {symbol}: {exc}")
+    
+    commodity_threads = []
+    
+    for symbol in commodities_symbols:
+        try:
+            print(f"\nStarting live polling for {symbol} ({commodities_timeframe})...")
+            sources = ["yahoo"]
+            fallback = FallbackEngine(sources, "yahoo")
+            
+            thread = threading.Thread(
+                target=poll_yahoo_live,
+                args=(symbol, commodities_timeframe, 60, fallback),
+                daemon=True
+            )
+            thread.start()
+            commodity_threads.append((symbol, thread))
+            print(f"  [OK] {symbol} live polling started")
+        except Exception as exc:
+            print(f"  [ERROR] Failed to start polling for {symbol}: {exc}")
+    
+    print("\n" + "=" * 80)
+    print("LIVE DATA FEEDS RUNNING")
+    print("=" * 80)
+    print("All feeds are active with automatic fallback protection.")
+    print("Data is being saved continuously to ensure uninterrupted model training.")
+    
+    # Show monitoring info for single symbol
+    if len(crypto_symbols) == 1 and not commodities_symbols:
+        symbol = list(crypto_symbols)[0]
+        # Check for any available horizon profiles
+        horizon_dirs = list_horizon_dirs("crypto", symbol, crypto_timeframe)
+        found_summaries = []
+        for horizon_dir_path in horizon_dirs:
+            summary_file = horizon_dir_path / "summary.json"
+            if summary_file.exists():
+                horizon_name = horizon_dir_path.name
+                found_summaries.append((horizon_name, summary_file))
+        
+        if found_summaries:
+            print(f"\n📊 Monitoring {symbol}:")
+            print(f"   - Live candles: data/json/raw/crypto/binance/{symbol}/{crypto_timeframe}/")
+            for horizon_name, summary_path in found_summaries:
+                print(f"   - ✓ Model trained ({horizon_name}): {summary_path}")
+            print(f"   - Summary.json will update automatically with new predictions")
+        else:
+            print(f"\n📊 Monitoring {symbol}:")
+            print(f"   - Live candles: data/json/raw/crypto/binance/{symbol}/{crypto_timeframe}/")
+            print(f"   - ⚠️  Model not trained yet. Train model to see summary.json updates.")
+    
+    print("\nPress Ctrl+C to stop")
+    print("=" * 80)
+    
+    # Monitor summary.json updates for single symbol
+    last_summary_state = {}
+    if len(crypto_symbols) == 1 and not commodities_symbols:
+        symbol = list(crypto_symbols)[0]
+        # Check for any available horizon profiles (prefer default, but use any if available)
+        horizon_dirs = list_horizon_dirs("crypto", symbol, crypto_timeframe)
+        summary_path = None
+        # Try default first
+        default_path = build_summary_path("crypto", symbol, crypto_timeframe, DEFAULT_HORIZON_PROFILE)
+        if default_path.exists():
+            summary_path = default_path
+        else:
+            # Use first available horizon
+            for horizon_dir_path in horizon_dirs:
+                candidate = horizon_dir_path / "summary.json"
+                if candidate.exists():
+                    summary_path = candidate
+                    break
+        
+        if summary_path and summary_path.exists():
+            try:
+                with open(summary_path, "r", encoding="utf-8") as f:
+                    summary = json.load(f)
+                    # Use new format if available
+                    if "prediction" in summary:
+                        pred = summary["prediction"]
+                        last_summary_state[symbol] = (
+                            pred.get("current_price"),
+                            pred.get("last_updated")
+                        )
+                    # Backward compatibility
+                    elif "latest_market_price" in summary:
+                        last_summary_state[symbol] = (
+                            summary.get("latest_market_price"),
+                            summary.get("latest_market_timestamp")
+                        )
+            except:
+                pass
+    
+    try:
+        update_count = 0
+        while True:
+            time.sleep(5)
+            
+            # Check for summary.json updates
+            if len(crypto_symbols) == 1 and not commodities_symbols:
+                symbol = list(crypto_symbols)[0]
+                summary_path = build_summary_path("crypto", symbol, crypto_timeframe, DEFAULT_HORIZON_PROFILE)
+                if summary_path.exists():
+                    try:
+                        with open(summary_path, "r", encoding="utf-8") as f:
+                            summary = json.load(f)
+                        
+                        # Check new format first
+                        if "prediction" in summary:
+                            pred = summary["prediction"]
+                            current_state = (
+                                pred.get("current_price"),
+                                pred.get("last_updated")
+                            )
+                            if current_state != last_summary_state.get(symbol):
+                                update_count += 1
+                                print(f"\n🔄 [{update_count}] Summary.json updated for {symbol}:")
+                                print(f"   Current Price: ${pred.get('current_price', 0):,.2f}")
+                                print(f"   Predicted Price: ${pred.get('predicted_price', 0):,.2f}")
+                                print(f"   Predicted Return: {pred.get('predicted_return_pct', 0):+.2f}%")
+                                print(f"   Action: {pred.get('action', 'N/A').upper()}")
+                                print(f"   Explanation: {pred.get('explanation', 'N/A')}")
+                                last_summary_state[symbol] = current_state
+                        # Backward compatibility with old format
+                        elif "latest_market_price" in summary:
+                            current_state = (
+                                summary.get("latest_market_price"),
+                                summary.get("latest_market_timestamp")
+                            )
+                            if current_state != last_summary_state.get(symbol):
+                                update_count += 1
+                                print(f"\n🔄 [{update_count}] Summary.json updated for {symbol}:")
+                                print(f"   Latest Price: ${summary.get('latest_market_price', 0):,.2f}")
+                                if "consensus" in summary:
+                                    consensus = summary["consensus"]
+                                    if "predicted_price_live" in consensus:
+                                        print(f"   Predicted Price: ${consensus.get('predicted_price_live', 0):,.2f}")
+                                    if "predicted_return" in consensus:
+                                        print(f"   Predicted Return: {consensus.get('predicted_return', 0)*100:+.2f}%")
+                                last_summary_state[symbol] = current_state
+                    except Exception:
+                        pass
+            
+            # Check fallback status
+            for symbol, fallback in crypto_fallbacks.items():
+                if fallback.is_fallback_active():
+                    print(f"  [INFO] {symbol} using fallback: {fallback.get_fallback_reason()}")
+    except KeyboardInterrupt:
+        print("\n\nStopping live feeds...")
+        for symbol, client in crypto_clients:
+            if client:
+                try:
+                    client.stop()
+                    print(f"  [OK] Stopped {symbol}")
+                except Exception:
+                    pass
+        print("Live feeds stopped.")
+
+
+def run_complete_ingestion(
+    crypto_symbols: Optional[List[str]] = None,
+    commodities_symbols: Optional[List[str]] = None,
+    timeframe: str = "1d",
+    years: float = 5
+):
+    """
+    Run complete ingestion: Historical first, then live feeds.
+    """
+    print("\n" + "=" * 80)
+    print("CRYPTO + COMMODITIES DATA INGESTION SYSTEM")
+    print("=" * 80)
+    print("All sources: FREE")
+    print("Fallback: Automatic and seamless")
+    print("Goal: Uninterrupted data flow for model training")
+    print("=" * 80)
+    
+    ingest_all_historical(crypto_symbols, commodities_symbols, timeframe, years)
+    
+    print("\n" + "=" * 80)
+    print("Transitioning to live feeds in 5 seconds...")
+    print("=" * 80)
+    time.sleep(5)
+    
+    start_live_feeds_with_fallback(
+        crypto_symbols,
+        commodities_symbols,
+        timeframe,
+        "1d"
+    )
+
+
+def _ordered_horizon_profiles() -> List[str]:
+    preferred = ["intraday", "short", "hold"]
+    available = available_horizon_profiles()
+    ordered = [p for p in preferred if p in available]
+    ordered.extend([p for p in available if p not in ordered])
+    return ordered
+
+
+def _prompt_horizon_choice(asset_label: str) -> str:
+    ordered_profiles = _ordered_horizon_profiles()
+    print("\n" + "-" * 80)
+    print(f"{asset_label.upper()} HORIZON PREFERENCE")
+    print("-" * 80)
+    print("Choose how far ahead predictions should look for this asset class:")
+    for idx, profile in enumerate(ordered_profiles, 1):
+        description = describe_profile(profile)
+        label = profile.title()
+        default_marker = " (default)" if profile == DEFAULT_HORIZON_PROFILE else ""
+        print(f"  {idx}. {label}{default_marker}")
+        if description:
+            print(f"     - {description}")
+    while True:
+        choice = input(f"Select horizon for {asset_label} (1-{len(ordered_profiles)}): ").strip()
+        if choice.isdigit():
+            index = int(choice)
+            if 1 <= index <= len(ordered_profiles):
+                return ordered_profiles[index - 1]
+        print("Invalid choice. Please enter a valid number from the list.")
+
+
+def run_training_pipeline(
+    crypto_symbols: Optional[List[str]],
+    commodities_symbols: Optional[List[str]],
+    timeframe: str,
+    horizon_profiles: Optional[Dict[str, str]] = None,
+):
+    crypto_symbols = crypto_symbols or []
+    commodities_symbols = commodities_symbols or []
+    if not crypto_symbols and not commodities_symbols:
+        print("[TRAIN] No symbols provided; skipping training.")
+        return
+    print("\n" + "=" * 80)
+    print("TRAINING MODELS")
+    print("=" * 80)
+    train_symbols(
+        crypto_symbols,
+        commodities_symbols,
+        timeframe,
+        horizon_profiles=horizon_profiles,
+    )
+    print("=" * 80)
+    print("TRAINING COMPLETE")
+    print("=" * 80)
+
+
+def get_user_input():
+    """Interactive function to get user input for symbols and options."""
+    print("=" * 80)
+    print("CRYPTO + COMMODITIES DATA INGESTION SYSTEM")
+    print("=" * 80)
+    print("Enter the currencies and commodities you want to fetch data for.")
+    print("=" * 80)
+    
+    print("\nWhat type of data would you like to fetch?")
+    print("  1. Crypto only")
+    print("  2. Commodities only")
+    print("  3. Both crypto and commodities (historical + live + training)")
+    
+    while True:
+        choice = input("\nEnter your choice (1/2/3): ").strip()
+        if choice in ["1", "2", "3"]:
+            break
+        print("Invalid choice. Please enter 1, 2, or 3.")
+    
+    crypto_symbols = None
+    commodities_symbols = None
+    
+    if choice in ["1", "3"]:
+        print("\n" + "-" * 80)
+        print("CRYPTO SYMBOLS")
+        print("-" * 80)
+        print("Enter crypto symbols (e.g., BTC-USDT, ETH-USDT, SOL-USDT)")
+        print("Format: SYMBOL-USDT (e.g., BTC-USDT)")
+        print("Enter multiple symbols separated by commas or spaces")
+        print("Example: BTC-USDT ETH-USDT SOL-USDT")
+        
+        crypto_input = input("\nEnter crypto symbols: ").strip()
+        if crypto_input:
+            crypto_symbols = [s.strip().upper() for s in crypto_input.replace(",", " ").split() if s.strip()]
+            crypto_symbols = [s if "-USDT" in s else f"{s}-USDT" for s in crypto_symbols]
+            print(f"  Selected crypto symbols: {', '.join(crypto_symbols)}")
+        else:
+            print("  No crypto symbols entered.")
+    
+    if choice in ["2", "3"]:
+        print("\n" + "-" * 80)
+        print("COMMODITIES SYMBOLS")
+        print("-" * 80)
+        print("Enter commodity symbols (e.g., GC=F for Gold, CL=F for Crude Oil)")
+        print("Enter multiple symbols separated by commas or spaces")
+        print("Example: GC=F SI=F CL=F")
+        
+        commodities_input = input("\nEnter commodity symbols: ").strip()
+        if commodities_input:
+            commodities_symbols = [s.strip().upper() for s in commodities_input.replace(",", " ").split() if s.strip()]
+            print(f"  Selected commodity symbols: {', '.join(commodities_symbols)}")
+        else:
+            print("  No commodity symbols entered.")
+    
+    if not crypto_symbols and not commodities_symbols:
+        print("\n[ERROR] No symbols entered. Please enter at least one crypto or commodity symbol.")
+        return None, None, None, None, None, False
+
+    horizon_preferences: Dict[str, str] = {}
+    if crypto_symbols:
+        horizon_preferences["crypto"] = _prompt_horizon_choice("crypto")
+    if commodities_symbols:
+        horizon_preferences["commodities"] = _prompt_horizon_choice("commodities")
+    
+    print("\n" + "-" * 80)
+    print("INGESTION MODE")
+    print("-" * 80)
+    print("  1. Historical data only (fetch past data)")
+    print("  2. Live data only (real-time updates)")
+    print("  3. Historical + Live + Train models")
+    
+    auto_train = False
+    while True:
+        mode_choice = input("\nEnter mode (1/2/3): ").strip()
+        if mode_choice == "1":
+            mode = "historical"
+            break
+        if mode_choice == "2":
+            mode = "live"
+            break
+        if mode_choice == "3":
+            mode = "both"
+            auto_train = True
+            break
+        print("Invalid choice. Please enter 1, 2, or 3.")
+    
+    years = 5.0
+    if mode in ["historical", "both"]:
+        print("\n" + "-" * 80)
+        print("HISTORICAL DATA PERIOD")
+        print("-" * 80)
+        while True:
+            years_input = input("Enter number of years of historical data (default 5): ").strip()
+            if not years_input:
+                years = 5.0
+                break
+            try:
+                years = float(years_input)
+                if years <= 0:
+                    print("  Please enter a positive number of years.")
+                else:
+                    break
+            except ValueError:
+                print("  Invalid input. Please enter a number.")
+    
+    return crypto_symbols, commodities_symbols, years, mode, horizon_preferences, auto_train
+
+
+def main():
+    """Entry point for running ingestion directly from this module."""
+    import argparse
+    
+    parser = argparse.ArgumentParser(
+        description="Crypto + Commodities Data Ingestion System (Free Sources Only)",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog="""
+Examples:
+  python fetchers.py --mode both --crypto-symbols BTC-USDT ETH-USDT --commodities-symbols GC=F SI=F
+  python fetchers.py --mode historical --crypto-symbols BTC-USDT
+  python fetchers.py --mode live --crypto-symbols BTC-USDT
+        """
+    )
+    parser.add_argument(
+        "--mode",
+        choices=["historical", "live", "both"],
+        help="Ingestion mode (if not provided, interactive mode will ask)"
+    )
+    parser.add_argument(
+        "--crypto-symbols",
+        nargs="+",
+        help="Crypto symbols to ingest"
+    )
+    parser.add_argument(
+        "--commodities-symbols",
+        nargs="+",
+        help="Commodity symbols to ingest"
+    )
+    parser.add_argument(
+        "--timeframe",
+        default="1d",
+        help="Timeframe for historical data (default: 1d for daily prices)"
+    )
+    parser.add_argument(
+        "--years",
+        type=float,
+        help="Years of historical data to fetch (default: 5)"
+    )
+    horizon_choices = available_horizon_profiles()
+    parser.add_argument(
+        "--crypto-horizon",
+        choices=horizon_choices,
+        help="Horizon profile for crypto models when training.",
+    )
+    parser.add_argument(
+        "--commodities-horizon",
+        choices=horizon_choices,
+        help="Horizon profile for commodity models when training.",
+    )
+    
+    args = parser.parse_args()
+    
+    horizon_preferences: Dict[str, str] = {}
+    auto_train = False
+    if not args.crypto_symbols and not args.commodities_symbols and not args.mode and args.years is None:
+        crypto_symbols, commodities_symbols, years, mode, horizon_preferences, auto_train = get_user_input()
+        if crypto_symbols is None and commodities_symbols is None:
+            print("\nExiting. No symbols provided.")
+            return
+    else:
+        crypto_symbols = args.crypto_symbols
+        commodities_symbols = args.commodities_symbols
+        years = args.years if args.years is not None else 5.0
+        mode = args.mode if args.mode else "both"
+        horizon_preferences = {
+            asset: profile
+            for asset, profile in (
+                ("crypto", args.crypto_horizon),
+                ("commodities", args.commodities_horizon),
+            )
+            if profile
+        }
+    
+    if years <= 0:
+        print("\n[ERROR] Years of historical data must be a positive number.")
+        return
+    
+    historical_timeframe = args.timeframe if args.timeframe == "1d" else "1d"
+    if args.timeframe != "1d":
+        print(f"INFO: Using daily (1d) timeframe for historical data instead of {args.timeframe}")
+    
+    if not crypto_symbols and not commodities_symbols:
+        print("\n[ERROR] No symbols provided. Please specify at least one crypto or commodity symbol.")
+        return
+    
+    print("\n" + "=" * 80)
+    print("SUMMARY")
+    print("=" * 80)
+    if crypto_symbols:
+        print(f"Crypto symbols: {', '.join(crypto_symbols)}")
+        if horizon_preferences.get("crypto"):
+            print(f"  Horizon: {horizon_preferences['crypto'].title()}")
+    if commodities_symbols:
+        print(f"Commodity symbols: {', '.join(commodities_symbols)}")
+        if horizon_preferences.get("commodities"):
+            print(f"  Horizon: {horizon_preferences['commodities'].title()}")
+    print(f"Years: {years}")
+    print(f"Mode: {mode}")
+    print(f"Timeframe: {historical_timeframe}")
+    print("=" * 80)
+    
+    if mode == "both" and not args.train:
+        auto_train = True
+
+    run_historical = mode in {"historical", "both"}
+    run_live = mode in {"live", "both"}
+
+    if run_historical:
+        ingest_all_historical(
+            crypto_symbols,
+            commodities_symbols,
+            historical_timeframe,
+            years
+        )
+    
+    if auto_train or args.train or mode == "both":
+        run_training_pipeline(
+            crypto_symbols,
+            commodities_symbols,
+            historical_timeframe,
+            horizon_preferences or None,
+        )
+    
+    if run_live:
+        start_live_feeds_with_fallback(
+            crypto_symbols,
+            commodities_symbols,
+            historical_timeframe,
+            "1d"
+        )
+
+
+if __name__ == "__main__":
+    main()
 

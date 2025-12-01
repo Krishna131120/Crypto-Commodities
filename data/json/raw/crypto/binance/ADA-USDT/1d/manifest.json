@@ -1,0 +1,15 @@
+{
+  "symbol": "ADA-USDT",
+  "timeframe": "1d",
+  "asset_type": "crypto",
+  "generated_at": "2025-12-01T07:38:18.271915Z",
+  "data_file": "data.json",
+  "latest_file": "latest.json",
+  "data_file_info": {
+    "filename": "data.json",
+    "size_bytes": 656774,
+    "candle_count": 1825,
+    "first_timestamp": "2020-12-03T00:00:00Z",
+    "last_timestamp": "2025-12-01T00:00:00Z"
+  }
+}

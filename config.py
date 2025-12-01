@@ -50,7 +50,7 @@ WS_HEARTBEAT_INTERVAL = 30
 WS_TIMEOUT = 30
 
 # Data validation
-MIN_HISTORICAL_YEARS = 5
+MIN_HISTORICAL_YEARS = 7
 MAX_CANDLE_AGE_SECONDS = 300  # Reject candles older than 5 minutes for live data
 
 # File rotation

@@ -1,0 +1,41 @@
+{
+  "stages": {
+    "init": {
+      "status": "completed",
+      "timestamp": "2025-11-28T11:30:34Z",
+      "data": {
+        "mode": "both",
+        "timeframe": "1d",
+        "years": 5.0,
+        "train_requested": true,
+        "crypto_symbols": [
+          "XRP-USDT"
+        ],
+        "commodities_symbols": [],
+        "horizon_profiles": {
+          "crypto": "long"
+        }
+      }
+    },
+    "prune": {
+      "status": "completed",
+      "timestamp": "2025-11-28T11:30:34Z"
+    },
+    "ingestion": {
+      "status": "completed",
+      "timestamp": "2025-11-28T11:30:41Z"
+    },
+    "features": {
+      "status": "completed",
+      "timestamp": "2025-11-28T11:30:42Z"
+    },
+    "training": {
+      "status": "completed",
+      "timestamp": "2025-11-28T11:33:07Z"
+    },
+    "pipeline": {
+      "status": "completed",
+      "timestamp": "2025-11-28T11:33:07Z"
+    }
+  }
+}

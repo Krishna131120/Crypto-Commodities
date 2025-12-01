@@ -1,0 +1,124 @@
+{
+  "symbol": "ADA-USDT",
+  "asset_type": "crypto",
+  "timeframe": "1d",
+  "last_updated": "2025-12-01T00:00:00+00:00",
+  "prediction": {
+    "current_price": 0.3836,
+    "predicted_price": 0.3836,
+    "predicted_return_pct": 0.0,
+    "action": "short",
+    "confidence": 100.0,
+    "horizon_days": 1,
+    "explanation": "Price expected to fall from $0.38 to $0.38 (+0.00%) over 1 days"
+  },
+  "model_predictions": {
+    "dqn": {
+      "predicted_price": 0.3836,
+      "predicted_return_pct": 0.0,
+      "action": "short",
+      "confidence": 50.0,
+      "r2_score": null,
+      "accuracy": null
+    }
+  },
+  "technical": {
+    "training_data": {
+      "total_rows": 1624,
+      "train_rows": 1218,
+      "val_rows": 202,
+      "test_rows": 202,
+      "split_boundaries": {
+        "train": {
+          "start": "2021-06-21T00:00:00+00:00",
+          "end": "2024-10-20T00:00:00+00:00"
+        },
+        "val": {
+          "start": "2024-10-22T00:00:00+00:00",
+          "end": "2025-05-11T00:00:00+00:00"
+        },
+        "test": {
+          "start": "2025-05-13T00:00:00+00:00",
+          "end": "2025-11-30T00:00:00+00:00"
+        }
+      }
+    },
+    "model_config": {
+      "target_profile": {
+        "name": "intraday",
+        "label": "Intraday",
+        "description": "Same-day horizon (1-2 bars) suited for quick scalp decisions.",
+        "horizon_bars": 1,
+        "smoothing_window": 2,
+        "directional_threshold": 0.0005,
+        "neutral_band": 0.0002,
+        "quantile_bins": 5,
+        "quantile_window": 90
+      },
+      "target_config": {
+        "horizon": 1,
+        "smoothing_window": 2,
+        "directional_threshold": 0.0005,
+        "neutral_band": 0.0002,
+        "quantile_bins": 5,
+        "quantile_window": 90,
+        "include_directional": true,
+        "include_quantiles": true,
+        "include_smoothed_return": true
+      },
+      "model_reference_price": 0.3836
+    },
+    "analysis": {
+      "dynamic_threshold": 0.022129256253044797,
+      "threshold_details": {
+        "rolling_mad": 0.027513165503194027,
+        "global_mad": 0.032065867974807614,
+        "iqr_based": 0.022129256253044797,
+        "atr_proxy": 0.018824569530497288,
+        "median_candidate": 0.022129256253044797,
+        "clamped": 0.022129256253044797
+      },
+      "context_signals": {
+        "RSI_14": 30.937681410223064,
+        "MACD_histogram": 0.003974100987433164,
+        "SMA_50": 0.558324,
+        "SMA_200": 0.7111345,
+        "ATR_14": 0.027528571428571423,
+        "Volume_Ratio": 0.42086979681693537
+      },
+      "overfitting_warnings": [
+        "random_forest: Train R\u00b2 (0.781) >> Val R\u00b2 (0.460), gap=0.320",
+        "lightgbm: Train R\u00b2 (0.934) >> Val R\u00b2 (0.542), gap=0.393",
+        "xgboost: Train R\u00b2 (0.851) >> Val R\u00b2 (0.479), gap=0.373",
+        "stacked_blend: Train R\u00b2 (0.879) >> Val R\u00b2 (0.545), gap=0.334"
+      ]
+    },
+    "feature_scaler": {
+      "path": "models\\crypto\\ADA-USDT\\1d\\intraday\\feature_scaler.joblib"
+    }
+  },
+  "consensus": {
+    "action": "short",
+    "confidence_pct": 100.0,
+    "predicted_return_pct": 0.0,
+    "predicted_return": 0.0,
+    "reasoning": "Consensus: SHORT (confidence: 100.0%). \u26a0\ufe0f WARNING: Consensus based on only 1 model - lower confidence recommended. Expected return: +0.00%. Consensus price: $0.38. Neutral guard engaged: |return| 0.00% < 2.32%. Model votes: SHORT: 1 model(s), 100.0% weighted vote. Individual models: dqn (short, +0.00%, R\u00b2=N/A)",
+    "action_scores": {
+      "long": 0.0,
+      "hold": 0.0,
+      "short": 1.0
+    },
+    "horizon_profile": "Intraday",
+    "target_horizon_bars": 1,
+    "action_label": "Intraday SHORT",
+    "neutral_return_threshold_pct": 2.3235719065697036,
+    "neutral_guard_triggered": true
+  },
+  "dqn_recommendation": {
+    "action": "short",
+    "predicted_return_pct": 0.0,
+    "predicted_price": 0.3836,
+    "confidence": 50.0,
+    "reason": "Direct DQN policy decision based on latest features"
+  }
+}
