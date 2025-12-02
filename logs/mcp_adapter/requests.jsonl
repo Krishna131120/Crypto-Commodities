@@ -1,7 +1,0 @@
-{"timestamp": "2025-12-02T09:15:11.792654Z", "tool": "predict", "request": {"symbols": ["BTC-USDT", "ETH-USDT", "SOL-USDT"], "horizon": "short", "risk_profile": "moderate", "asset_type": "crypto", "timeframe": "1d"}}
-{"timestamp": "2025-12-02T09:21:58.708271Z", "tool": "predict", "request": {"symbols": ["BTC-USDT", "ETH-USDT", "SOL-USDT"], "horizon": "intraday", "risk_profile": "aggressive", "asset_type": "crypto", "timeframe": "1d"}}
-{"timestamp": "2025-12-02T09:24:28.273811Z", "tool": "predict", "request": {"symbols": ["GC=F", "SI=F", "CL=F"], "horizon": "short", "risk_profile": "moderate", "asset_type": "commodities", "timeframe": "1d"}}
-{"timestamp": "2025-12-02T09:35:27.405923Z", "tool": "predict", "request": {"symbols": ["ZCH26"], "horizon": "short", "risk_profile": "moderate", "asset_type": "commodities", "timeframe": "1d"}}
-{"timestamp": "2025-12-02T09:37:38.447832Z", "tool": "predict", "request": {"symbols": ["PL=F"], "horizon": "short", "risk_profile": "moderate", "asset_type": "commodities", "timeframe": "1d"}}
-{"timestamp": "2025-12-02T09:38:47.553240Z", "tool": "predict", "request": {"symbols": ["PL=F"], "horizon": "long", "risk_profile": "moderate", "asset_type": "commodities", "timeframe": "1d"}}
-{"timestamp": "2025-12-02T09:39:57.759599Z", "tool": "predict", "request": {"symbols": ["SI=F"], "horizon": "long", "risk_profile": "moderate", "asset_type": "commodities", "timeframe": "1d"}}
