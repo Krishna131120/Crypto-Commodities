@@ -1,0 +1,58 @@
+{
+  "random_forest": {
+    "model_name": "RandomForest",
+    "mae": 0.026248663850643467,
+    "rmse": 0.037908366749429,
+    "r2": 0.8453195138712941,
+    "directional_accuracy": 0.9207920792079208,
+    "mean_predicted_return": 0.00911596659751013,
+    "mean_actual_return": 0.005556766508376991,
+    "notes": null,
+    "precision": null,
+    "recall": null,
+    "f1": null,
+    "roc_auc": null
+  },
+  "lightgbm": {
+    "model_name": "LightGBM",
+    "mae": 0.023964301446112456,
+    "rmse": 0.03701123604105488,
+    "r2": 0.8525541479514315,
+    "directional_accuracy": 0.9356435643564357,
+    "mean_predicted_return": 0.0015406352908619388,
+    "mean_actual_return": 0.005556766508376991,
+    "notes": null,
+    "precision": null,
+    "recall": null,
+    "f1": null,
+    "roc_auc": null
+  },
+  "xgboost": {
+    "model_name": "XGBoost",
+    "mae": 0.023633809613261992,
+    "rmse": 0.03546878320917379,
+    "r2": 0.8645877480059161,
+    "directional_accuracy": 0.9158415841584159,
+    "mean_predicted_return": 0.005557460244745016,
+    "mean_actual_return": 0.005556766508376991,
+    "notes": null,
+    "precision": null,
+    "recall": null,
+    "f1": null,
+    "roc_auc": null
+  },
+  "stacked_blend": {
+    "model_name": "StackedBlend",
+    "mae": 0.023205201358596727,
+    "rmse": 0.03594278153113145,
+    "r2": 0.8609443154510167,
+    "directional_accuracy": 0.9306930693069307,
+    "mean_predicted_return": 0.005556766508376991,
+    "mean_actual_return": 0.005556766508376991,
+    "notes": null,
+    "precision": null,
+    "recall": null,
+    "f1": null,
+    "roc_auc": null
+  }
+}

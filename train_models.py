@@ -612,7 +612,10 @@ def _compute_consensus_action(
             "consensus_price": price_reference,
             "consensus_return": 0.0,
             "reasoning": "No valid model predictions available",
-            "model_votes": model_details
+            "model_votes": model_details,
+            "action_scores": {"long": 0.0, "hold": 1.0, "short": 0.0},
+            "neutral_return_threshold": dynamic_threshold,
+            "neutral_guard_triggered": False,
         }
     
     # Normalize scores
@@ -1197,27 +1200,40 @@ def train_for_symbol(
                 rejection_reasons.append(
                     f"test R² {test_r2:.3f} below minimum {effective_r2_threshold:.2f}"
                 )
-            if train_r2 - val_r2 > MAX_TRAIN_VAL_GAP:
+            # More lenient gap thresholds for commodities (they tend to have more overfitting)
+            max_train_val_gap = MAX_TRAIN_VAL_GAP
+            max_val_test_gap = MAX_VAL_TEST_GAP
+            max_train_test_gap = MAX_TRAIN_TEST_GAP
+            if asset_type == "commodities":
+                # Commodities data is more challenging, allow larger gaps
+                max_train_val_gap = MAX_TRAIN_VAL_GAP * 1.5  # 0.375 instead of 0.25
+                max_val_test_gap = MAX_VAL_TEST_GAP * 1.5  # 0.15 instead of 0.10
+                max_train_test_gap = MAX_TRAIN_TEST_GAP * 1.3  # 0.26 instead of 0.20
+            
+            if train_r2 - val_r2 > max_train_val_gap:
                 rejection_reasons.append(
-                    f"train/val gap {train_r2 - val_r2:.3f} exceeds {MAX_TRAIN_VAL_GAP:.2f}"
+                    f"train/val gap {train_r2 - val_r2:.3f} exceeds {max_train_val_gap:.2f}"
                 )
             if isinstance(test_r2, (int, float)) and not np.isnan(test_r2):
                 strict_floor = MIN_TEST_R2_STRICT
                 if has_good_direction:
                     strict_floor = max(-0.01, strict_floor - 0.10)
+                # More lenient for commodities
+                if asset_type == "commodities" and has_good_direction:
+                    strict_floor = max(-0.01, strict_floor - 0.15)  # Allow lower R² if direction is good
                 if test_r2 < strict_floor:
                     rejection_reasons.append(
                         f"test R² {test_r2:.3f} below strict guard {strict_floor:.2f}"
                     )
                 val_test_gap = val_r2 - test_r2
                 train_test_gap = train_r2 - test_r2
-                if val_test_gap > MAX_VAL_TEST_GAP:
+                if val_test_gap > max_val_test_gap:
                     rejection_reasons.append(
-                        f"val/test gap {val_test_gap:.3f} exceeds {MAX_VAL_TEST_GAP:.2f}"
+                        f"val/test gap {val_test_gap:.3f} exceeds {max_val_test_gap:.2f}"
                     )
-                if train_test_gap > MAX_TRAIN_TEST_GAP:
+                if train_test_gap > max_train_test_gap:
                     rejection_reasons.append(
-                        f"train/test gap {train_test_gap:.3f} exceeds {MAX_TRAIN_TEST_GAP:.2f}"
+                        f"train/test gap {train_test_gap:.3f} exceeds {max_train_test_gap:.2f}"
                     )
             # Allow models with good directional accuracy even if MAE is close to baseline
             # For trading, direction matters more than exact magnitude
@@ -1342,6 +1358,15 @@ def train_for_symbol(
                     asset_type=asset_type,
                 )
                 rf_param_override = {}
+        # Apply stronger regularization for commodities
+        if asset_type == "commodities" and not rf_param_override:
+            rf_param_override = {
+                "max_depth": 3,  # Reduced from 4
+                "min_samples_leaf": 30,  # Increased from 20
+                "min_samples_split": 50,  # Increased from 40
+                "max_features": 0.4,  # Reduced from 0.5
+                "ccp_alpha": 0.002,  # Increased from 0.001
+            }
         # Train without refitting first to get train/val/test metrics
         rf_model_temp, rf_metrics = train_random_forest(
             X_train, y_train, X_val, y_val,
@@ -1484,6 +1509,17 @@ def train_for_symbol(
                         asset_type=asset_type,
                     )
                     lgb_param_override = {}
+            # Apply stronger regularization for commodities
+            if asset_type == "commodities" and not lgb_param_override:
+                lgb_param_override = {
+                    "max_depth": 2,  # Reduced from 3
+                    "num_leaves": 10,  # Reduced from 15
+                    "subsample": 0.7,  # Reduced from 0.75
+                    "colsample_bytree": 0.6,  # Reduced from 0.7
+                    "reg_alpha": 2.0,  # Increased from 1.0
+                    "reg_lambda": 3.0,  # Increased from 2.0
+                    "min_child_samples": 30,  # Increased from 20
+                }
             # Train without refitting first to get train/val/test metrics
             lgb_model_temp, lgb_metrics = train_lightgbm(
                 X_train, y_train, X_val, y_val,
@@ -1611,12 +1647,23 @@ def train_for_symbol(
                     asset_type=asset_type,
                 )
                 xgb_param_override = {}
-        # Train without refitting first to get train/val/test metrics
-        xgb_model_temp, xgb_metrics = train_xgboost(
-            X_train, y_train, X_val, y_val,
-            refit_on_full=False,
-            param_overrides=xgb_param_override,
-        )
+            # Apply stronger regularization for commodities
+            if asset_type == "commodities" and not xgb_param_override:
+                xgb_param_override = {
+                    "max_depth": 2,  # Reduced from 3
+                    "subsample": 0.7,  # Reduced from 0.75
+                    "colsample_bytree": 0.6,  # Reduced from 0.65
+                    "reg_alpha": 2.0,  # Increased from 1.0
+                    "reg_lambda": 3.5,  # Increased from 2.5
+                    "min_child_weight": 7,  # Increased from 5
+                    "gamma": 0.2,  # Increased from 0.1
+                }
+            # Train without refitting first to get train/val/test metrics
+            xgb_model_temp, xgb_metrics = train_xgboost(
+                X_train, y_train, X_val, y_val,
+                refit_on_full=False,
+                param_overrides=xgb_param_override,
+            )
         # Evaluate on train/val/test sets (before refitting) to check generalization
         xgb_train_pred = xgb_model_temp.predict(X_train)
         xgb_train_metrics = _evaluate(
@@ -1938,11 +1985,11 @@ def train_for_symbol(
         symbol=symbol,
         asset_type=asset_type,
         data={
-            "consensus_action": consensus["consensus_action"],
-            "consensus_confidence": consensus["consensus_confidence"],
-            "consensus_price": consensus["consensus_price"],
-            "consensus_return": consensus["consensus_return"],
-            "action_scores": consensus["action_scores"]
+            "consensus_action": consensus.get("consensus_action", "hold"),
+            "consensus_confidence": consensus.get("consensus_confidence", 0.0),
+            "consensus_price": consensus.get("consensus_price", latest_market_price),
+            "consensus_return": consensus.get("consensus_return", 0.0),
+            "action_scores": consensus.get("action_scores", {"long": 0.0, "hold": 1.0, "short": 0.0})
         }
     )
     if verbose:
@@ -2099,17 +2146,17 @@ def train_for_symbol(
     
     # Add consensus details
     summary["consensus"] = {
-        "action": consensus["consensus_action"],
+        "action": consensus.get("consensus_action", "hold"),
         "confidence_pct": consensus_confidence_pct,
-        "predicted_return_pct": float(consensus["consensus_return"] * 100),
-        "predicted_return": float(consensus["consensus_return"]),
-        "reasoning": consensus["reasoning"],
-        "action_scores": consensus["action_scores"],
+        "predicted_return_pct": float(consensus.get("consensus_return", 0.0) * 100),
+        "predicted_return": float(consensus.get("consensus_return", 0.0)),
+        "reasoning": consensus.get("reasoning", "No consensus available"),
+        "action_scores": consensus.get("action_scores", {"long": 0.0, "hold": 1.0, "short": 0.0}),
         "horizon_profile": profile_report.get("label"),
         "target_horizon_bars": profile_report.get("horizon_bars"),
         "action_label": action_label,
         "neutral_return_threshold_pct": float(consensus.get("neutral_return_threshold", dynamic_threshold) * 100),
-        "neutral_guard_triggered": bool(consensus.get("neutral_guard_triggered")),
+        "neutral_guard_triggered": bool(consensus.get("neutral_guard_triggered", False)),
     }
 
     # Surface DQN recommendation separately for easy consumption

@@ -1,0 +1,113 @@
+{
+  "symbol": "SI=F",
+  "asset_type": "commodities",
+  "timeframe": "1d",
+  "last_updated": "2025-12-02T09:15:15+00:00",
+  "prediction": {
+    "current_price": 57.810001373291016,
+    "predicted_price": 57.810001373291016,
+    "predicted_return_pct": 0.0,
+    "action": "hold",
+    "confidence": 0.0,
+    "horizon_days": 30,
+    "explanation": "Price expected to stay flat from $57.81 to $57.81 (+0.00%) over 30 days"
+  },
+  "model_predictions": {},
+  "technical": {
+    "training_data": {
+      "total_rows": 1023,
+      "train_rows": 767,
+      "val_rows": 127,
+      "test_rows": 127,
+      "split_boundaries": {
+        "train": {
+          "start": "2021-09-21T04:00:00+00:00",
+          "end": "2024-10-08T04:00:00+00:00"
+        },
+        "val": {
+          "start": "2024-10-10T04:00:00+00:00",
+          "end": "2025-04-11T04:00:00+00:00"
+        },
+        "test": {
+          "start": "2025-04-15T04:00:00+00:00",
+          "end": "2025-10-14T04:00:00+00:00"
+        }
+      }
+    },
+    "model_config": {
+      "target_profile": {
+        "name": "long",
+        "label": "Long",
+        "description": "30-day position horizon targeting bigger directional shifts.",
+        "horizon_bars": 30,
+        "smoothing_window": 10,
+        "directional_threshold": 0.003,
+        "neutral_band": 0.0015,
+        "quantile_bins": 5,
+        "quantile_window": 300
+      },
+      "target_config": {
+        "horizon": 30,
+        "smoothing_window": 10,
+        "directional_threshold": 0.003,
+        "neutral_band": 0.0015,
+        "quantile_bins": 5,
+        "quantile_window": 300,
+        "include_directional": true,
+        "include_quantiles": true,
+        "include_smoothed_return": true
+      },
+      "model_reference_price": 57.810001373291016
+    },
+    "analysis": {
+      "dynamic_threshold": 0.03,
+      "threshold_details": {
+        "rolling_mad": 0.09798747890584426,
+        "global_mad": 0.09995978268737299,
+        "iqr_based": 0.05887350339937183,
+        "atr_proxy": 0.030367080173981043,
+        "median_candidate": 0.05887350339937183,
+        "clamped": 0.03
+      },
+      "context_signals": {
+        "RSI_14": 71.00050194100373,
+        "MACD_histogram": 0.1821296725855821,
+        "SMA_50": 42.09815979003906,
+        "SMA_200": 35.77948997497558,
+        "ATR_14": 1.6787147521972656,
+        "Volume_Ratio": 0.6314187904146062
+      },
+      "overfitting_warnings": [
+        "random_forest: Val R\u00b2 (0.773) >> Test R\u00b2 (0.215), gap=0.559 (generalization failure)",
+        "random_forest: Significant performance drop on test set (Train: 0.870, Val: 0.773, Test: 0.215)",
+        "lightgbm: Val R\u00b2 (0.851) >> Test R\u00b2 (0.571), gap=0.280 (generalization failure)",
+        "lightgbm: Significant performance drop on test set (Train: 0.886, Val: 0.851, Test: 0.571)",
+        "xgboost: Train R\u00b2 (0.957) >> Val R\u00b2 (0.846), gap=0.111",
+        "xgboost: Val R\u00b2 (0.846) >> Test R\u00b2 (0.417), gap=0.429 (generalization failure)",
+        "xgboost: Significant performance drop on test set (Train: 0.957, Val: 0.846, Test: 0.417)",
+        "stacked_blend: Val R\u00b2 (0.878) >> Test R\u00b2 (0.648), gap=0.230 (generalization failure)",
+        "stacked_blend: Significant performance drop on test set (Train: 0.921, Val: 0.878, Test: 0.648)"
+      ]
+    },
+    "feature_scaler": {
+      "path": "models\\commodities\\SI=F\\1d\\long\\feature_scaler.joblib"
+    }
+  },
+  "consensus": {
+    "action": "hold",
+    "confidence_pct": 0.0,
+    "predicted_return_pct": 0.0,
+    "predicted_return": 0.0,
+    "reasoning": "No valid model predictions available",
+    "action_scores": {
+      "long": 0.0,
+      "hold": 1.0,
+      "short": 0.0
+    },
+    "horizon_profile": "Long",
+    "target_horizon_bars": 30,
+    "action_label": "Long HOLD",
+    "neutral_return_threshold_pct": 3.0,
+    "neutral_guard_triggered": false
+  }
+}

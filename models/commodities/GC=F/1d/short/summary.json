@@ -1,0 +1,132 @@
+{
+  "symbol": "GC=F",
+  "asset_type": "commodities",
+  "timeframe": "1d",
+  "last_updated": "2025-11-24T05:00:00+00:00",
+  "prediction": {
+    "current_price": 4091.89990234375,
+    "predicted_price": 4100.27498531492,
+    "predicted_return_pct": 0.20467467853680618,
+    "action": "hold",
+    "confidence": 98.46153846153847,
+    "horizon_days": 4,
+    "explanation": "Price expected to stay flat from $4,091.90 to $4,100.27 (+0.20%) over 4 days"
+  },
+  "model_predictions": {
+    "lightgbm": {
+      "predicted_price": 4096.460749261528,
+      "predicted_return_pct": 0.11146037358257932,
+      "action": "hold",
+      "confidence": 98.46153846153847,
+      "r2_score": 0.710508510552377,
+      "accuracy": 98.46153846153847
+    },
+    "xgboost": {
+      "predicted_price": 4096.174802743565,
+      "predicted_return_pct": 0.10447226231917739,
+      "action": "hold",
+      "confidence": 99.23076923076923,
+      "r2_score": 0.40622396902166436,
+      "accuracy": 99.23076923076923
+    },
+    "stacked_blend": {
+      "predicted_price": 4108.240240160352,
+      "predicted_return_pct": 0.3993337619828564,
+      "action": "hold",
+      "confidence": 97.6923076923077,
+      "r2_score": 0.542838022617602,
+      "accuracy": 97.6923076923077
+    }
+  },
+  "technical": {
+    "training_data": {
+      "total_rows": 1048,
+      "train_rows": 786,
+      "val_rows": 130,
+      "test_rows": 130,
+      "split_boundaries": {
+        "train": {
+          "start": "2021-09-21T04:00:00+00:00",
+          "end": "2024-11-04T05:00:00+00:00"
+        },
+        "val": {
+          "start": "2024-11-06T05:00:00+00:00",
+          "end": "2025-05-14T04:00:00+00:00"
+        },
+        "test": {
+          "start": "2025-05-16T04:00:00+00:00",
+          "end": "2025-11-18T05:00:00+00:00"
+        }
+      }
+    },
+    "model_config": {
+      "target_profile": {
+        "name": "short",
+        "label": "Short-Term",
+        "description": "Swing horizon of roughly 3-5 days to capture short moves.",
+        "horizon_bars": 4,
+        "smoothing_window": 4,
+        "directional_threshold": 0.0012,
+        "neutral_band": 0.0006,
+        "quantile_bins": 5,
+        "quantile_window": 140
+      },
+      "target_config": {
+        "horizon": 4,
+        "smoothing_window": 4,
+        "directional_threshold": 0.0012,
+        "neutral_band": 0.0006,
+        "quantile_bins": 5,
+        "quantile_window": 140,
+        "include_directional": true,
+        "include_quantiles": true,
+        "include_smoothed_return": true
+      },
+      "model_reference_price": 4091.89990234375
+    },
+    "analysis": {
+      "dynamic_threshold": 0.01278519264099832,
+      "threshold_details": {
+        "rolling_mad": 0.014750504917747615,
+        "global_mad": 0.016527319847140027,
+        "iqr_based": 0.01075948313283388,
+        "atr_proxy": 0.01278519264099832,
+        "median_candidate": 0.01278519264099832,
+        "clamped": 0.01278519264099832
+      },
+      "context_signals": {
+        "RSI_14": 52.20227691705315,
+        "MACD_histogram": -4.944808318375436,
+        "SMA_50": 3949.611982421875,
+        "SMA_200": 3410.969493408203,
+        "ATR_14": 70.1357421875,
+        "Volume_Ratio": 0.3018929063267896
+      },
+      "overfitting_warnings": [
+        "lightgbm: Train R\u00b2 (0.873) >> Val R\u00b2 (0.711), gap=0.163",
+        "xgboost: Train R\u00b2 (0.589) >> Val R\u00b2 (0.406), gap=0.183",
+        "stacked_blend: Train R\u00b2 (0.686) >> Val R\u00b2 (0.543), gap=0.143"
+      ]
+    },
+    "feature_scaler": {
+      "path": "models\\commodities\\GC=F\\1d\\short\\feature_scaler.joblib"
+    }
+  },
+  "consensus": {
+    "action": "hold",
+    "confidence_pct": 98.46153846153847,
+    "predicted_return_pct": 0.20467467853680618,
+    "predicted_return": 0.0020467467853680617,
+    "reasoning": "Consensus: HOLD (confidence: 100.0%). Expected return: +0.20%. Consensus price: $4,100.27. Model votes: HOLD: 3 model(s), 100.0% weighted vote. Individual models: lightgbm (hold, +0.11%, R\u00b2=0.711); xgboost (hold, +0.10%, R\u00b2=0.406); stacked_blend (hold, +0.40%, R\u00b2=0.543)",
+    "action_scores": {
+      "long": 0.0,
+      "hold": 1.0,
+      "short": 0.0
+    },
+    "horizon_profile": "Short-Term",
+    "target_horizon_bars": 4,
+    "action_label": "Short-Term HOLD",
+    "neutral_return_threshold_pct": 1.3424452273048237,
+    "neutral_guard_triggered": false
+  }
+}

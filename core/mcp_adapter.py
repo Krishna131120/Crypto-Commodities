@@ -267,7 +267,8 @@ class MCPAdapter:
             "predicted_price": float(current_price * (1.0 + consensus_return)),
         }
         
-        if len(main_model_predictions) >= 3:
+        # Always show calculation_details if we have any models (matching crypto format)
+        if len(main_model_predictions) > 0:
             # Calculate weighted average
             total_weight = sum(p["weight"] for p in main_model_predictions)
             weighted_sum = sum(p["predicted_return"] * p["weight"] for p in main_model_predictions)
@@ -289,11 +290,16 @@ class MCPAdapter:
                 "consensus_return": calculated_consensus,
             }
             
-            # Check for disagreement
+            # Check for disagreement (even with 1 model, we still show agreement metrics)
             prices = [p["predicted_price"] for p in main_model_predictions]
-            price_range = max(prices) - min(prices)
-            price_variance = sum((p - sum(prices) / len(prices)) ** 2 for p in prices) / len(prices)
-            price_std = (price_variance ** 0.5) / current_price if current_price > 0 else 0.0  # Relative std
+            if len(prices) > 1:
+                price_range = max(prices) - min(prices)
+                price_variance = sum((p - sum(prices) / len(prices)) ** 2 for p in prices) / len(prices)
+                price_std = (price_variance ** 0.5) / current_price if current_price > 0 else 0.0  # Relative std
+            else:
+                # Single model: no disagreement
+                price_range = 0.0
+                price_std = 0.0
             
             explanation["model_agreement"] = {
                 "price_range": price_range,
@@ -302,10 +308,10 @@ class MCPAdapter:
                 "models_agree": price_std < 0.02,  # Less than 2% std deviation
             }
             
-            if price_std >= 0.02:  # Models disagree significantly
+            if len(prices) > 1 and price_std >= 0.02:  # Models disagree significantly
                 explanation["disagreement_warning"] = True
                 explanation["recommendation"] = (
-                    "The three price models show significant disagreement (std deviation: {:.2f}%). "
+                    "The price models show significant disagreement (std deviation: {:.2f}%). "
                     "Consider using DQN recommendation as an alternative approach."
                 ).format(price_std * 100)
             else:
@@ -523,267 +529,262 @@ class MCPAdapter:
                     errors.append(f"Preparation failed for {symbol}: {reason}")
                     continue
 
-                # Load features
-                feature_path = Path("data/features") / asset_type / symbol / timeframe / "features.json"
-                if not feature_path.exists():
-                    errors.append(f"No features found for {symbol}")
-                    continue
+                # Load summary.json directly - this is the canonical source of truth
+                summary_path = build_summary_path(asset_type, symbol, timeframe, horizon_profile)
+                if not summary_path.exists():
+                    # Try legacy path
+                    legacy_path = timeframe_dir(asset_type, symbol, timeframe) / "summary.json"
+                    if legacy_path.exists():
+                        summary_path = legacy_path
+                    else:
+                        errors.append(f"No summary.json found for {symbol}")
+                        continue
                 
-                with open(feature_path, "r", encoding="utf-8") as f:
-                    feature_data = json.load(f)
+                # Load summary.json
+                with open(summary_path, "r", encoding="utf-8") as f:
+                    summary = json.load(f)
                 
-                feature_series = self._build_feature_series(asset_type, symbol, timeframe, horizon_profile, feature_data)
-                if feature_series.empty:
-                    errors.append(f"No valid features for {symbol}")
-                    continue
+                # Extract data from summary.json
+                prediction_data = summary.get("prediction", {})
+                consensus_data = summary.get("consensus", {})
+                model_predictions = summary.get("model_predictions", {})
                 
-                # Get pipeline
-                pipeline = self._get_pipeline(asset_type, symbol, timeframe, horizon_profile)
-                if not pipeline:
-                    errors.append(f"No trained model for {symbol}")
-                    continue
-                
-                # Get current price from latest candle
-                # Try latest.json first, then data.json (get last entry)
-                data_path = Path("data/json/raw") / asset_type / "binance" / symbol / timeframe / "latest.json"
-                if not data_path.exists():
-                    data_path = Path("data/json/raw") / asset_type / "yahoo_chart" / symbol / timeframe / "latest.json"
-                
-                current_price = 0.0
-                if data_path.exists():
-                    with open(data_path, "r", encoding="utf-8") as f:
-                        latest_data = json.load(f)
-                        if isinstance(latest_data, list) and len(latest_data) > 0:
-                            current_price = float(latest_data[0].get("close", 0))
-                        elif isinstance(latest_data, dict):
-                            current_price = float(latest_data.get("close", 0))
-                
-                # Fallback to data.json (get last entry)
+                # Get current price from summary (most accurate)
+                current_price = float(prediction_data.get("current_price", 0))
                 if current_price == 0:
-                    data_file = Path("data/json/raw") / asset_type / "binance" / symbol / timeframe / "data.json"
-                    if not data_file.exists():
-                        data_file = Path("data/json/raw") / asset_type / "yahoo_chart" / symbol / timeframe / "data.json"
-                    
-                    if data_file.exists():
-                        with open(data_file, "r", encoding="utf-8") as f:
-                            all_data = json.load(f)
-                            if isinstance(all_data, list) and len(all_data) > 0:
-                                # Get last entry (most recent)
-                                latest_entry = all_data[-1]
-                                current_price = float(latest_entry.get("close", 0))
+                    # Fallback to model_reference_price
+                    current_price = float(summary.get("technical", {}).get("model_config", {}).get("model_reference_price", 0))
                 
                 if current_price == 0:
                     errors.append(f"Could not get current price for {symbol}")
                     continue
                 
-                # Calculate volatility
-                volatility = abs(feature_data.get("features", {}).get("ATR_14", {}).get("value", 0) / current_price) if current_price > 0 else 0.01
-                if volatility == 0:
-                    volatility = 0.01
+                # Get predicted return from consensus (decimal form) - needed for model predictions
+                predicted_return = float(consensus_data.get("predicted_return", 0))
+                # If not available, convert from predicted_return_pct
+                if predicted_return == 0:
+                    predicted_return_pct = float(consensus_data.get("predicted_return_pct", 0))
+                    predicted_return = predicted_return_pct / 100.0
                 
-                # Run inference
-                inference_result = pipeline.predict(feature_series, current_price=current_price, volatility=volatility)
+                # Load metrics.json to get all trained models (even if not in summary.json)
+                # This is used to build logical per-model outputs for ALL symbols.
+                metrics_path = horizon_dir(asset_type, symbol, timeframe, horizon_profile) / "metrics.json"
+                if not metrics_path.exists():
+                    legacy_metrics_path = timeframe_dir(asset_type, symbol, timeframe) / "metrics.json"
+                    if legacy_metrics_path.exists():
+                        metrics_path = legacy_metrics_path
                 
-                # Get individual model predictions for unified action logic
-                model_outputs = inference_result.get("models", {})
-                consensus = inference_result.get("consensus", {})
-                # Use horizon-specific directional_threshold instead of generic dynamic_threshold
-                action_threshold = horizon_config.directional_threshold
-                # Fallback to pipeline's dynamic_threshold if horizon config not available
-                if action_threshold is None or action_threshold == 0:
-                    action_threshold = getattr(pipeline, "dynamic_threshold", 0.01) or 0.01
-
-                # Load DQN prediction from JSON file if available
+                all_metrics = {}
+                if metrics_path.exists():
+                    try:
+                        with open(metrics_path, "r", encoding="utf-8") as f:
+                            all_metrics = json.load(f)
+                    except Exception:
+                        pass
+                
+                # Add models from metrics.json that aren't in model_predictions
+                # Ensures we surface all trained models for logical outputs
+                for model_name, model_metrics in all_metrics.items():
+                    if "_quantile" in model_name or "_directional" in model_name:
+                        continue  # Skip quantile and directional models
+                    if model_name in model_predictions:
+                        continue  # Already present from summary.json
+                    
+                    model_r2 = float(model_metrics.get("r2", 0))
+                    model_dir_acc = float(model_metrics.get("directional_accuracy", 0.5))
+                    mean_pred_return = model_metrics.get("mean_predicted_return")
+                    if mean_pred_return is not None:
+                        model_pred_return = float(mean_pred_return)
+                    else:
+                        model_pred_return = predicted_return  # Fallback to consensus
+                    model_pred_price = float(current_price * (1.0 + model_pred_return))
+                    
+                    # Determine action from predicted return
+                    action_threshold = horizon_config.directional_threshold or 0.01
+                    if model_pred_return >= action_threshold:
+                        model_action = "long"
+                    elif model_pred_return <= -action_threshold:
+                        model_action = "short"
+                    else:
+                        model_action = "hold"
+                    
+                    # Calculate confidence from directional accuracy
+                    confidence_pct = max(50.0, float(model_dir_acc * 100))
+                    
+                    model_predictions[model_name] = {
+                        "predicted_price": model_pred_price,
+                        "predicted_return_pct": float(model_pred_return * 100),
+                        "action": model_action,
+                        "confidence": confidence_pct,
+                        "r2_score": model_r2,
+                        "accuracy": float(model_dir_acc * 100) if model_dir_acc else None,
+                    }
+                
+                # Get predicted price (initial, may be updated later from model-weighted average)
+                predicted_price = float(prediction_data.get("predicted_price", current_price * (1.0 + predicted_return)))
+                
+                # Recalculate consensus action from predicted_return (initial, before model-weighted adjustment)
+                action_threshold = horizon_config.directional_threshold or 0.01
+                if predicted_return >= action_threshold:
+                    consensus_action = "LONG"
+                elif predicted_return <= -action_threshold:
+                    consensus_action = "SHORT"
+                else:
+                    consensus_action = "HOLD"
+                
+                confidence_pct = float(consensus_data.get("confidence_pct", 0))
+                confidence = confidence_pct / 100.0 if confidence_pct > 1.0 else confidence_pct
+                
+                # Build individual_models from model_predictions
+                individual_models = []
+                main_models = {}
+                main_model_predictions = []
+                
+                for model_name, model_pred in model_predictions.items():
+                    if "_quantile" in model_name:
+                        continue
+                    
+                    # Extract model data
+                    model_pred_return_pct = float(model_pred.get("predicted_return_pct", 0))
+                    model_pred_return = model_pred_return_pct / 100.0
+                    model_pred_price = float(model_pred.get("predicted_price", current_price * (1.0 + model_pred_return)))
+                    model_confidence_pct = float(model_pred.get("confidence", 0))
+                    model_confidence = model_confidence_pct / 100.0 if model_confidence_pct > 1.0 else model_confidence_pct
+                    model_r2 = float(model_pred.get("r2_score", 0))
+                    
+                    # Recalculate action from predicted_return using the same logic as crypto
+                    # This ensures action matches the predicted return, not what was saved during training
+                    action_threshold = horizon_config.directional_threshold or 0.01
+                    if model_pred_return >= action_threshold:
+                        model_action = "LONG"
+                    elif model_pred_return <= -action_threshold:
+                        model_action = "SHORT"
+                    else:
+                        model_action = "HOLD"
+                    
+                    # Calculate probabilities from model's own predicted return
+                    # Each model should have its own probabilities based on its prediction
+                    probabilities = self._return_to_probabilities(model_pred_return, action_threshold)
+                    
+                    individual_entry = {
+                        "name": model_name,
+                        "action": model_action,
+                        "predicted_return": model_pred_return,
+                        "predicted_price": model_pred_price,
+                        "confidence": model_confidence,
+                        "probabilities": probabilities,
+                    }
+                    individual_models.append(individual_entry)
+                    
+                    # Track main models (random_forest, lightgbm, xgboost, stacked_blend)
+                    if any(x in model_name.lower() for x in ["random_forest", "lightgbm", "xgboost", "stacked_blend"]):
+                        main_models[model_name] = {
+                            "predicted_return": model_pred_return,
+                            "action": model_action,
+                            "confidence": model_confidence,
+                            "probabilities": probabilities,
+                        }
+                        # Calculate weight from R² score
+                        weight = max(0.05, float(model_r2) + 0.5 * float(model_confidence - 0.5))
+                        main_model_predictions.append({
+                            "name": model_name,
+                            "predicted_return": model_pred_return,
+                            "predicted_price": model_pred_price,
+                            "weight": weight,
+                        })
+                
+                # Load DQN if available
                 dqn_path = Path("models/dqn") / f"{asset_type}_{symbol}_{timeframe}.json"
                 dqn_data = None
-                dqn_calculated_return = None
-                dqn_calculated_price = None
+                dqn_action = None
                 if dqn_path.exists():
                     try:
                         with open(dqn_path, "r", encoding="utf-8") as f:
                             dqn_data = json.load(f)
-                            # Extract DQN metrics
                             dqn_metrics = dqn_data.get("metrics", {})
                             dqn_action_str = dqn_metrics.get("action", "hold").lower()
-                            
-                            # Calculate predicted_return based on DQN action and policy metrics
-                            # Use test policy avg_return as baseline, adjusted by action direction
-                            test_metrics = dqn_metrics.get("test_policy_metrics", {})
-                            if test_metrics and dqn_action_str != "hold":
-                                base_return = float(test_metrics.get("avg_return", 0.0))
-                                # Adjust sign based on action (long = positive, short = negative)
-                                if dqn_action_str == "long":
-                                    dqn_predicted_return = abs(base_return)  # Always positive for long
-                                else:  # short
-                                    dqn_predicted_return = -abs(base_return)  # Always negative for short
-                                # Clamp to reasonable bounds (horizon-aware)
-                                if horizon_bars == 1:  # Intraday
-                                    dqn_predicted_return = max(-0.03, min(0.03, dqn_predicted_return))
-                                elif horizon_bars <= 4:  # Short-term
-                                    dqn_predicted_return = max(-0.08, min(0.08, dqn_predicted_return))
-                                else:  # Long-term
-                                    dqn_predicted_return = max(-0.20, min(0.20, dqn_predicted_return))
-                            elif dqn_action_str == "hold":
-                                dqn_predicted_return = 0.0
-                            else:
-                                # Fallback: use dynamic threshold with action direction
-                                if dqn_action_str == "long":
-                                    dqn_predicted_return = action_threshold
-                                elif dqn_action_str == "short":
-                                    dqn_predicted_return = -action_threshold
-                                else:
-                                    dqn_predicted_return = 0.0
-                            
-                            # Calculate predicted_price from current_price and predicted_return
-                            dqn_predicted_price = float(current_price * (1.0 + dqn_predicted_return))
-                            
-                            # Store calculated DQN return for later use in recommendation
-                            # We'll pass this to _build_dqn_recommendation
-                            dqn_calculated_return = dqn_predicted_return
-                            dqn_calculated_price = dqn_predicted_price
-                            
-                            # Add DQN to model_outputs so it gets processed like other models (for consensus)
-                            model_outputs["dqn"] = {
-                                "predicted_return": dqn_predicted_return,
-                                "predicted_price": dqn_predicted_price,
-                                "action": dqn_action_str,
-                            }
+                            dqn_action = self._canonical_action(dqn_action_str)
                     except Exception as exc:
                         print(f"[MCP_ADAPTER] Failed to load DQN from {dqn_path}: {exc}")
-                        dqn_calculated_return = None
-                        dqn_calculated_price = None
-                else:
-                    dqn_calculated_return = None
-                    dqn_calculated_price = None
-
-                # Extract predictions from 3 main models (Random Forest, LightGBM, XGBoost)
-                main_models = {}
-                dqn_action = None
-                individual_models = []
                 
-                # Track main model predictions for price calculation explanation
-                main_model_predictions = []
-                
-                for model_name, model_data in model_outputs.items():
-                    if "_quantile" in model_name:
-                        continue
-                    
-                    # Skip DQN in individual_models - it will be shown separately in dqn_recommendation
-                    if "dqn" in model_name.lower():
-                        # Still extract dqn_action for unified action calculation
-                        dqn_action_str = model_data.get("action", "hold").lower()
-                        dqn_action = self._canonical_action(dqn_action_str)
-                        continue
-                    
-                    pred_return = float(model_data.get("predicted_return", 0))
-                    predicted_price = float(current_price * (1.0 + pred_return))
-                    base_confidence = float(model_data.get("confidence") or model_data.get("probability") or 0.0)
-                    
-                    # Store main model predictions for price calculation explanation
-                    if any(x in model_name.lower() for x in ["random_forest", "lightgbm", "xgboost"]):
-                        # Get model metrics for weight calculation
-                        model_metrics = pipeline.metrics.get(model_name, {})
-                        r2 = model_metrics.get("r2", 0.0)
-                        directional = model_metrics.get("directional_accuracy", 0.5)
-                        weight = max(0.05, float(r2) + 0.5 * float(directional - 0.5))
-                        main_model_predictions.append({
-                            "name": model_name,
-                            "predicted_return": pred_return,
-                            "predicted_price": predicted_price,
-                            "weight": weight,
-                        })
-                    
-                    # For main models, use return-based probabilities
-                    probabilities = self._return_to_probabilities(pred_return, action_threshold)
-                    model_action = self._canonical_action(
-                        "long"
-                        if pred_return > action_threshold
-                        else "short"
-                        if pred_return < -action_threshold
-                        else "hold"
-                    )
-                    # Use probability-based confidence with calibration
-                    prob_confidence = max(probabilities.values())
-                    # Combine with model confidence but apply dampening
-                    base_confidence = max(base_confidence * self._confidence_dampening, prob_confidence * self._confidence_dampening)
-                    # Cap confidence to prevent overconfidence
-                    base_confidence = min(base_confidence, 0.95)
-                    individual_entry = {
-                        "name": model_name,
-                        "action": model_action,
-                        "predicted_return": pred_return,
-                        "predicted_price": predicted_price,
-                        "confidence": base_confidence,
-                        "probabilities": probabilities,
+                # Compute meta probabilities from action_scores
+                action_scores = consensus_data.get("action_scores", {})
+                if action_scores:
+                    meta_probs = {
+                        "LONG": float(action_scores.get("long", 0)),
+                        "HOLD": float(action_scores.get("hold", 0)),
+                        "SHORT": float(action_scores.get("short", 0))
                     }
-                    if "probability" in model_data:
-                        individual_entry["probability"] = float(model_data["probability"])
-                    individual_models.append(individual_entry)
-                    
-                    # Main models: random_forest, lightgbm, xgboost
-                    if any(x in model_name.lower() for x in ["random_forest", "lightgbm", "xgboost"]):
-                        main_models[model_name] = {
-                            "predicted_return": pred_return,
-                            "action": model_action,
-                            "confidence": base_confidence or 0.5,
-                            "probabilities": probabilities,
-                        }
+                    meta_action = max(meta_probs, key=meta_probs.get)
+                    meta_confidence = float(meta_probs[meta_action])
+                else:
+                    # Fallback: compute from individual models
+                    meta_probs, meta_confidence, meta_action = self._compute_meta_probabilities(individual_models, consensus_data)
                 
-                # Compute unified action from 3 main models
-                meta_probs, meta_confidence, meta_action = self._compute_meta_probabilities(individual_models, consensus)
-                unified_action, disagreement_explanation = self._compute_unified_action(main_models, dqn_action, consensus, meta_action, meta_confidence)
+                # Compute unified action
+                unified_action, disagreement_explanation = self._compute_unified_action(main_models, dqn_action, consensus_data, meta_action, meta_confidence)
                 
-                # Final sanity check: cap extreme predictions based on horizon
-                consensus_return = float(consensus.get("consensus_return", 0))
-                # Get horizon_bars from pipeline or consensus metadata
-                horizon_bars = consensus.get("target_horizon_bars") or getattr(pipeline, "target_horizon_bars", None) or horizon_config.horizon
-                
-                # Horizon-aware sanity limits (conservative)
-                if horizon_bars == 1:  # Intraday
-                    max_reasonable_return = 0.03  # 3% max for 1 day
-                elif horizon_bars <= 4:  # Short-term
-                    max_reasonable_return = 0.08  # 8% max for 4 days
-                else:  # Long-term
-                    max_reasonable_return = 0.20  # 20% max for 30 days
-                
-                # If prediction exceeds reasonable limit, scale it down
-                if abs(consensus_return) > max_reasonable_return:
-                    scale_factor = max_reasonable_return / abs(consensus_return)
-                    consensus_return = consensus_return * scale_factor
-                    # Also update individual models if they're too extreme
-                    for model in individual_models:
-                        if abs(model["predicted_return"]) > max_reasonable_return:
-                            model["predicted_return"] = model["predicted_return"] * scale_factor
-                            model["predicted_price"] = current_price * (1.0 + model["predicted_return"])
-                    # Update main_model_predictions for explanation
-                    for pred in main_model_predictions:
-                        if abs(pred["predicted_return"]) > max_reasonable_return:
-                            pred["predicted_return"] = pred["predicted_return"] * scale_factor
-                            pred["predicted_price"] = current_price * (1.0 + pred["predicted_return"])
-                
-                # Calculate price prediction explanation
+                # Build price calculation explanation using per-model predictions
                 price_explanation = self._build_price_explanation(
                     main_model_predictions,
-                    consensus_return,
+                    predicted_return,
                     current_price,
                     dqn_data,
                     dqn_action
                 )
                 
-                # Format prediction with unified action
+                # If we have main model predictions, make the top-level predicted_return
+                # follow the weighted-average consensus from those models. This fixes
+                # cases where summary.json had a neutral 0.0 return but all models
+                # clearly point LONG/SHORT (e.g., commodities like silver/oil).
+                if price_explanation.get("models_used", 0) > 0:
+                    weighted_info = price_explanation.get("weighted_average")
+                    if isinstance(weighted_info, dict):
+                        wa_consensus = weighted_info.get("consensus_return")
+                        fallback_return = None
+                        # Fallback: if consensus_return is missing or numerically ~0
+                        # but individual models are directional, use stacked_blend
+                        # (or simple average) so predicted_price is not identical
+                        # to current_price when models clearly have a view.
+                        if not isinstance(wa_consensus, (int, float)) or abs(wa_consensus) < 1e-6:
+                            # Prefer stacked_blend if available
+                            blend = next((m for m in main_model_predictions if m.get("name") == "stacked_blend"), None)
+                            if blend:
+                                fallback_return = float(blend.get("predicted_return", 0.0))
+                            else:
+                                # Otherwise simple average of model returns
+                                if main_model_predictions:
+                                    fallback_return = float(
+                                        sum(m.get("predicted_return", 0.0) for m in main_model_predictions)
+                                        / len(main_model_predictions)
+                                    )
+                            wa_consensus = fallback_return if fallback_return is not None else 0.0
+                        if isinstance(wa_consensus, (int, float)):
+                            predicted_return = float(wa_consensus)
+                            predicted_price = float(current_price * (1.0 + predicted_return))
+                            # Recompute consensus_action from model-based consensus
+                            action_threshold = horizon_config.directional_threshold or 0.01
+                            if predicted_return >= action_threshold:
+                                consensus_action = "LONG"
+                            elif predicted_return <= -action_threshold:
+                                consensus_action = "SHORT"
+                            else:
+                                consensus_action = "HOLD"
+                
+                # Format prediction response
                 prediction = {
                     "symbol": symbol,
                     "asset_type": asset_type,
                     "timeframe": timeframe,
                     "current_price": current_price,
-                    "predicted_return": consensus_return,
-                    "predicted_price": float(current_price * (1.0 + consensus_return)),
+                    "predicted_return": predicted_return,
+                    "predicted_price": predicted_price,
                     "action": unified_action,
-                    "consensus_action": self._canonical_action(consensus.get("consensus_action", "hold")),
-                    "confidence": float(meta_confidence),
-                    "horizon": horizon_profile,  # Return as string (long/short/intraday)
-                    "horizon_bars": horizon_bars,  # Also include number of bars
-                    "risk_profile": risk_profile or "default",
+                    "consensus_action": consensus_action,
+                    "confidence": float(confidence),
+                    "horizon": horizon_profile,
+                    "horizon_bars": int(consensus_data.get("target_horizon_bars", horizon_bars)),
+                    "risk_profile": risk_profile or "conservative",
                     "unified_action": unified_action,
                     "disagreement_explanation": disagreement_explanation,
                     "model_actions": self._build_model_actions(individual_models),
@@ -798,17 +799,10 @@ class MCPAdapter:
                 }
                 prediction = self._validate_prediction(prediction, current_price)
                 predictions.append(prediction)
-                
-                # Prepare feedback data for RL learning (store features for later feedback submission)
-                try:
-                    # Store prediction data that can be used for feedback when actual outcomes are known
-                    # This will be submitted via /tools/feedback endpoint
-                    pass  # Feedback is submitted separately via API
-                except Exception:
-                    pass
             
             except Exception as exc:
-                errors.append(f"Error predicting {symbol}: {str(exc)}")
+                import traceback
+                errors.append(f"Error predicting {symbol}: {str(exc)}\n{traceback.format_exc()}")
         
         response_data = {
             "predictions": predictions,
@@ -993,8 +987,6 @@ class MCPAdapter:
             Tuple of (unified_action, disagreement_explanation)
         """
         canonical_consensus = self._canonical_action(consensus.get("consensus_action", "hold"))
-        if len(main_models) < 2:
-            return canonical_consensus, f"Using consensus action ({canonical_consensus}) - not enough main models available"
         
         action_counts = {"LONG": 0, "SHORT": 0, "HOLD": 0}
         model_actions = {}
@@ -1009,10 +1001,15 @@ class MCPAdapter:
         total_models = len(main_models)
         meta_action = self._canonical_action(meta_action)
         
+        # Always format explanation in the same way as crypto (matching format)
         explanation = (
             f"Meta action: {meta_action} (confidence {meta_confidence:.2f}). "
             f"Main models -> LONG:{action_counts['LONG']}, HOLD:{action_counts['HOLD']}, SHORT:{action_counts['SHORT']}"
         )
+        
+        if len(main_models) < 2:
+            # Still return the formatted explanation even with fewer models
+            return meta_action if meta_confidence >= self._meta_min_confidence else canonical_consensus, explanation
         
         if meta_confidence >= self._meta_min_confidence:
             return meta_action, explanation

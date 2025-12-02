@@ -1,0 +1,136 @@
+{
+  "symbol": "ETH-USDT",
+  "asset_type": "crypto",
+  "timeframe": "1d",
+  "last_updated": "2025-12-02T00:00:00+00:00",
+  "prediction": {
+    "current_price": 2800.42,
+    "predicted_price": 2800.281336082666,
+    "predicted_return_pct": -0.004951540030924152,
+    "action": "hold",
+    "confidence": 94.18316831683168,
+    "horizon_days": 1,
+    "explanation": "Price expected to stay flat from $2,800.42 to $2,800.28 (-0.00%) over 1 days"
+  },
+  "model_predictions": {
+    "random_forest": {
+      "predicted_price": 2765.3117311242227,
+      "predicted_return_pct": -1.253678693759424,
+      "action": "hold",
+      "confidence": 93.06930693069307,
+      "r2_score": 0.6810015877282463,
+      "accuracy": 93.06930693069307
+    },
+    "lightgbm": {
+      "predicted_price": 2820.1835230101005,
+      "predicted_return_pct": 0.7057342473664807,
+      "action": "hold",
+      "confidence": 94.55445544554455,
+      "r2_score": 0.8538544202304108,
+      "accuracy": 94.55445544554455
+    },
+    "xgboost": {
+      "predicted_price": 2804.615958613495,
+      "predicted_return_pct": 0.1498331897892058,
+      "action": "hold",
+      "confidence": 94.05940594059405,
+      "r2_score": 0.888822190852137,
+      "accuracy": 94.05940594059405
+    },
+    "stacked_blend": {
+      "predicted_price": 2808.852974031586,
+      "predicted_return_pct": 0.3011324741141064,
+      "action": "hold",
+      "confidence": 95.04950495049505,
+      "r2_score": 0.8751931225273609,
+      "accuracy": 95.04950495049505
+    }
+  },
+  "technical": {
+    "training_data": {
+      "total_rows": 1624,
+      "train_rows": 1218,
+      "val_rows": 202,
+      "test_rows": 202,
+      "split_boundaries": {
+        "train": {
+          "start": "2021-06-22T00:00:00+00:00",
+          "end": "2024-10-21T00:00:00+00:00"
+        },
+        "val": {
+          "start": "2024-10-23T00:00:00+00:00",
+          "end": "2025-05-12T00:00:00+00:00"
+        },
+        "test": {
+          "start": "2025-05-14T00:00:00+00:00",
+          "end": "2025-12-01T00:00:00+00:00"
+        }
+      }
+    },
+    "model_config": {
+      "target_profile": {
+        "name": "intraday",
+        "label": "Intraday",
+        "description": "Same-day horizon (1-2 bars) suited for quick scalp decisions.",
+        "horizon_bars": 1,
+        "smoothing_window": 2,
+        "directional_threshold": 0.0005,
+        "neutral_band": 0.0002,
+        "quantile_bins": 5,
+        "quantile_window": 90
+      },
+      "target_config": {
+        "horizon": 1,
+        "smoothing_window": 2,
+        "directional_threshold": 0.0005,
+        "neutral_band": 0.0002,
+        "quantile_bins": 5,
+        "quantile_window": 90,
+        "include_directional": true,
+        "include_quantiles": true,
+        "include_smoothed_return": true
+      },
+      "model_reference_price": 2800.42
+    },
+    "analysis": {
+      "dynamic_threshold": 0.020928610766269444,
+      "threshold_details": {
+        "rolling_mad": 0.02696073292082789,
+        "global_mad": 0.02643213853227146,
+        "iqr_based": 0.020928610766269444,
+        "atr_proxy": 0.01801867908413032,
+        "median_candidate": 0.020928610766269444,
+        "clamped": 0.020928610766269444
+      },
+      "context_signals": {
+        "RSI_14": 33.17105616876208,
+        "MACD_histogram": 27.15659613607491,
+        "SMA_50": 3482.4790000000003,
+        "SMA_200": 3523.3201999999997,
+        "ATR_14": 167.3228571428571,
+        "Volume_Ratio": 1.4490666618619494
+      },
+      "overfitting_warnings": null
+    },
+    "feature_scaler": {
+      "path": "models\\crypto\\ETH-USDT\\1d\\intraday\\feature_scaler.joblib"
+    }
+  },
+  "consensus": {
+    "action": "hold",
+    "confidence_pct": 94.18316831683168,
+    "predicted_return_pct": -0.004951540030924152,
+    "predicted_return": -4.951540030924152e-05,
+    "reasoning": "Consensus: HOLD (confidence: 100.0%). Expected return: -0.00%. Consensus price: $2,800.28. Model votes: HOLD: 4 model(s), 100.0% weighted vote. Individual models: random_forest (hold, -1.25%, R\u00b2=0.681); lightgbm (hold, +0.71%, R\u00b2=0.854); xgboost (hold, +0.15%, R\u00b2=0.889); stacked_blend (hold, +0.30%, R\u00b2=0.875)",
+    "action_scores": {
+      "long": 0.0,
+      "hold": 1.0,
+      "short": 0.0
+    },
+    "horizon_profile": "Intraday",
+    "target_horizon_bars": 1,
+    "action_label": "Intraday HOLD",
+    "neutral_return_threshold_pct": 2.197504130458292,
+    "neutral_guard_triggered": false
+  }
+}

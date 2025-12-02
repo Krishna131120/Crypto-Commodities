@@ -1,0 +1,43 @@
+{
+  "asset_type": "commodities",
+  "symbol": "CL=F",
+  "timeframe": "1d",
+  "rows": 1049,
+  "feature_version": 2,
+  "split_boundaries": {
+    "train": {
+      "start": "2021-09-21T04:00:00+00:00",
+      "end": "2024-11-04T05:00:00+00:00"
+    },
+    "val": {
+      "start": "2024-11-06T05:00:00+00:00",
+      "end": "2025-05-15T04:00:00+00:00"
+    },
+    "test": {
+      "start": "2025-05-19T04:00:00+00:00",
+      "end": "2025-11-19T05:00:00+00:00"
+    }
+  },
+  "target_profile": {
+    "name": "short",
+    "label": "Short-Term",
+    "description": "Swing horizon of roughly 3-5 days to capture short moves.",
+    "horizon_bars": 4,
+    "smoothing_window": 4,
+    "directional_threshold": 0.0012,
+    "neutral_band": 0.0006,
+    "quantile_bins": 5,
+    "quantile_window": 140
+  },
+  "target_config": {
+    "horizon": 4,
+    "smoothing_window": 4,
+    "directional_threshold": 0.0012,
+    "neutral_band": 0.0006,
+    "quantile_bins": 5,
+    "quantile_window": 140,
+    "include_directional": true,
+    "include_quantiles": true,
+    "include_smoothed_return": true
+  }
+}

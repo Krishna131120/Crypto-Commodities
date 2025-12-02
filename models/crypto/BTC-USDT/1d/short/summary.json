@@ -1,0 +1,130 @@
+{
+  "symbol": "BTC-USDT",
+  "asset_type": "crypto",
+  "timeframe": "1d",
+  "last_updated": "2025-12-02T00:00:00+00:00",
+  "prediction": {
+    "current_price": 86649.49,
+    "predicted_price": 86649.49,
+    "predicted_return_pct": 0.0,
+    "action": "short",
+    "confidence": 90.26402640264027,
+    "horizon_days": 4,
+    "explanation": "Price expected to fall from $86,649.49 to $86,649.49 (+0.00%) over 4 days"
+  },
+  "model_predictions": {
+    "random_forest": {
+      "predicted_price": 85125.13325986388,
+      "predicted_return_pct": -1.7592218259289485,
+      "action": "short",
+      "confidence": 85.64356435643565,
+      "r2_score": 0.8227209638885824,
+      "accuracy": 85.64356435643565
+    },
+    "lightgbm": {
+      "predicted_price": 85142.76504892159,
+      "predicted_return_pct": -1.7388734210419694,
+      "action": "short",
+      "confidence": 92.57425742574257,
+      "r2_score": 0.8549419799608955,
+      "accuracy": 92.57425742574257
+    },
+    "stacked_blend": {
+      "predicted_price": 84973.28888496313,
+      "predicted_return_pct": -1.9344616050675894,
+      "action": "short",
+      "confidence": 92.57425742574257,
+      "r2_score": 0.8865338008741783,
+      "accuracy": 92.57425742574257
+    }
+  },
+  "technical": {
+    "training_data": {
+      "total_rows": 1621,
+      "train_rows": 1215,
+      "val_rows": 202,
+      "test_rows": 202,
+      "split_boundaries": {
+        "train": {
+          "start": "2021-06-22T00:00:00+00:00",
+          "end": "2024-10-18T00:00:00+00:00"
+        },
+        "val": {
+          "start": "2024-10-20T00:00:00+00:00",
+          "end": "2025-05-09T00:00:00+00:00"
+        },
+        "test": {
+          "start": "2025-05-11T00:00:00+00:00",
+          "end": "2025-11-28T00:00:00+00:00"
+        }
+      }
+    },
+    "model_config": {
+      "target_profile": {
+        "name": "short",
+        "label": "Short-Term",
+        "description": "Swing horizon of roughly 3-5 days to capture short moves.",
+        "horizon_bars": 4,
+        "smoothing_window": 4,
+        "directional_threshold": 0.0012,
+        "neutral_band": 0.0006,
+        "quantile_bins": 5,
+        "quantile_window": 140
+      },
+      "target_config": {
+        "horizon": 4,
+        "smoothing_window": 4,
+        "directional_threshold": 0.0012,
+        "neutral_band": 0.0006,
+        "quantile_bins": 5,
+        "quantile_window": 140,
+        "include_directional": true,
+        "include_quantiles": true,
+        "include_smoothed_return": true
+      },
+      "model_reference_price": 86649.49
+    },
+    "analysis": {
+      "dynamic_threshold": 0.03,
+      "threshold_details": {
+        "rolling_mad": 0.05282506549101606,
+        "global_mad": 0.04585095334229636,
+        "iqr_based": 0.035273250907444216,
+        "atr_proxy": 0.03732951125006879,
+        "median_candidate": 0.03732951125006879,
+        "clamped": 0.03
+      },
+      "context_signals": {
+        "RSI_14": 40.328783216043014,
+        "MACD_histogram": 565.274272151677,
+        "SMA_50": 102881.44940000001,
+        "SMA_200": 109836.83799999999,
+        "ATR_14": 3908.212142857141,
+        "Volume_Ratio": 0.6665899923540491
+      },
+      "overfitting_warnings": [
+        "xgboost: Val R\u00b2 (0.878) >> Test R\u00b2 (0.760), gap=0.118 (generalization failure)"
+      ]
+    },
+    "feature_scaler": {
+      "path": "models\\crypto\\BTC-USDT\\1d\\short\\feature_scaler.joblib"
+    }
+  },
+  "consensus": {
+    "action": "short",
+    "confidence_pct": 90.26402640264027,
+    "predicted_return_pct": 0.0,
+    "predicted_return": 0.0,
+    "reasoning": "Consensus: SHORT (confidence: 100.0%). Expected return: +0.00%. Consensus price: $86,649.49. Neutral guard engaged: |return| 1.81% < 3.15%. Model votes: SHORT: 3 model(s), 100.0% weighted vote. Individual models: random_forest (short, -1.76%, R\u00b2=0.823); lightgbm (short, -1.74%, R\u00b2=0.855); stacked_blend (short, -1.93%, R\u00b2=0.887)",
+    "action_scores": {
+      "long": 0.0,
+      "hold": 0.0,
+      "short": 1.0
+    },
+    "horizon_profile": "Short-Term",
+    "target_horizon_bars": 4,
+    "action_label": "Short-Term SHORT",
+    "neutral_return_threshold_pct": 3.15,
+    "neutral_guard_triggered": true
+  }
+}

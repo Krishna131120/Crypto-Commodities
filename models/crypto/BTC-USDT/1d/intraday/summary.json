@@ -1,0 +1,128 @@
+{
+  "symbol": "BTC-USDT",
+  "asset_type": "crypto",
+  "timeframe": "1d",
+  "last_updated": "2025-12-02T00:00:00+00:00",
+  "prediction": {
+    "current_price": 86649.49,
+    "predicted_price": 86450.19000857532,
+    "predicted_return_pct": -0.23000711420770523,
+    "action": "hold",
+    "confidence": 93.72937293729372,
+    "horizon_days": 1,
+    "explanation": "Price expected to stay flat from $86,649.49 to $86,450.19 (-0.23%) over 1 days"
+  },
+  "model_predictions": {
+    "lightgbm": {
+      "predicted_price": 86699.78614805668,
+      "predicted_return_pct": 0.058045521164258956,
+      "action": "hold",
+      "confidence": 94.05940594059405,
+      "r2_score": 0.8942913289722695,
+      "accuracy": 94.05940594059405
+    },
+    "xgboost": {
+      "predicted_price": 86170.32253976648,
+      "predicted_return_pct": -0.5529951304197311,
+      "action": "hold",
+      "confidence": 92.57425742574257,
+      "r2_score": 0.7525548229981334,
+      "accuracy": 92.57425742574257
+    },
+    "stacked_blend": {
+      "predicted_price": 86465.81768599895,
+      "predicted_return_pct": -0.21197160421955732,
+      "action": "hold",
+      "confidence": 94.55445544554455,
+      "r2_score": 0.8349468401227547,
+      "accuracy": 94.55445544554455
+    }
+  },
+  "technical": {
+    "training_data": {
+      "total_rows": 1624,
+      "train_rows": 1218,
+      "val_rows": 202,
+      "test_rows": 202,
+      "split_boundaries": {
+        "train": {
+          "start": "2021-06-22T00:00:00+00:00",
+          "end": "2024-10-21T00:00:00+00:00"
+        },
+        "val": {
+          "start": "2024-10-23T00:00:00+00:00",
+          "end": "2025-05-12T00:00:00+00:00"
+        },
+        "test": {
+          "start": "2025-05-14T00:00:00+00:00",
+          "end": "2025-12-01T00:00:00+00:00"
+        }
+      }
+    },
+    "model_config": {
+      "target_profile": {
+        "name": "intraday",
+        "label": "Intraday",
+        "description": "Same-day horizon (1-2 bars) suited for quick scalp decisions.",
+        "horizon_bars": 1,
+        "smoothing_window": 2,
+        "directional_threshold": 0.0005,
+        "neutral_band": 0.0002,
+        "quantile_bins": 5,
+        "quantile_window": 90
+      },
+      "target_config": {
+        "horizon": 1,
+        "smoothing_window": 2,
+        "directional_threshold": 0.0005,
+        "neutral_band": 0.0002,
+        "quantile_bins": 5,
+        "quantile_window": 90,
+        "include_directional": true,
+        "include_quantiles": true,
+        "include_smoothed_return": true
+      },
+      "model_reference_price": 86649.49
+    },
+    "analysis": {
+      "dynamic_threshold": 0.015616156544897225,
+      "threshold_details": {
+        "rolling_mad": 0.015616156544897225,
+        "global_mad": 0.02057513752914252,
+        "iqr_based": 0.01714891093850347,
+        "atr_proxy": 0.014955487767256415,
+        "median_candidate": 0.015616156544897225,
+        "clamped": 0.015616156544897225
+      },
+      "context_signals": {
+        "RSI_14": 32.82526166500769,
+        "MACD_histogram": 578.7851214287366,
+        "SMA_50": 101462.86439999999,
+        "SMA_200": 109617.204,
+        "ATR_14": 3802.9821428571418,
+        "Volume_Ratio": 1.247164143313639
+      },
+      "overfitting_warnings": null
+    },
+    "feature_scaler": {
+      "path": "models\\crypto\\BTC-USDT\\1d\\intraday\\feature_scaler.joblib"
+    }
+  },
+  "consensus": {
+    "action": "hold",
+    "confidence_pct": 93.72937293729372,
+    "predicted_return_pct": -0.23000711420770523,
+    "predicted_return": -0.0023000711420770523,
+    "reasoning": "Consensus: HOLD (confidence: 100.0%). Expected return: -0.23%. Consensus price: $86,450.19. Model votes: HOLD: 3 model(s), 100.0% weighted vote. Individual models: lightgbm (hold, +0.06%, R\u00b2=0.894); xgboost (hold, -0.55%, R\u00b2=0.753); stacked_blend (hold, -0.21%, R\u00b2=0.835)",
+    "action_scores": {
+      "long": 0.0,
+      "hold": 1.0,
+      "short": 0.0
+    },
+    "horizon_profile": "Intraday",
+    "target_horizon_bars": 1,
+    "action_label": "Intraday HOLD",
+    "neutral_return_threshold_pct": 1.6396964372142089,
+    "neutral_guard_triggered": false
+  }
+}
