@@ -111,18 +111,19 @@ def _evaluate_classification(
 def _build_random_forest(custom_params: Optional[Dict] = None) -> RandomForestRegressor:
     """
     Conservative RandomForest tuned for noisy financial targets with stronger regularization.
+    Enhanced anti-overfitting: deeper regularization, more conservative parameters.
     """
     params = {
-        "n_estimators": 300,
-        "max_depth": 4,
-        "min_samples_leaf": 20,
-        "min_samples_split": 40,
-        "max_features": 0.5,
-        "max_samples": 0.8,
+        "n_estimators": 250,  # Reduced from 300 to prevent overfitting
+        "max_depth": 3,  # Reduced from 4 for stronger regularization
+        "min_samples_leaf": 30,  # Increased from 20 for more conservative splits
+        "min_samples_split": 60,  # Increased from 40
+        "max_features": 0.4,  # Reduced from 0.5 for more randomness
+        "max_samples": 0.7,  # Reduced from 0.8 for more bagging
         "random_state": 42,
         "n_jobs": -1,
         "bootstrap": True,
-        "ccp_alpha": 0.001,
+        "ccp_alpha": 0.002,  # Increased from 0.001 for stronger pruning
     }
     if custom_params:
         params.update(custom_params)
@@ -146,23 +147,24 @@ def _build_random_forest_classifier() -> RandomForestClassifier:
 def _build_lightgbm(custom_params: Optional[Dict] = None) -> lgb.LGBMRegressor:
     """
     LightGBM configuration with stronger regularization for financial data.
+    Enhanced anti-overfitting: more conservative parameters, stronger regularization.
     """
     params = {
         "boosting_type": "gbdt",
-        "n_estimators": 500,
-        "learning_rate": 0.03,
-        "max_depth": 3,
-        "num_leaves": 15,
-        "subsample": 0.75,
+        "n_estimators": 400,  # Reduced from 500 (early stopping will handle actual count)
+        "learning_rate": 0.025,  # Reduced from 0.03 for more conservative learning
+        "max_depth": 2,  # Reduced from 3 for stronger regularization
+        "num_leaves": 10,  # Reduced from 15 (2^max_depth constraint)
+        "subsample": 0.7,  # Reduced from 0.75 for more bagging
         "subsample_freq": 1,
-        "colsample_bytree": 0.7,
-        "reg_alpha": 1.0,
-        "reg_lambda": 2.0,
-        "min_child_samples": 20,
-        "min_split_gain": 0.02,
+        "colsample_bytree": 0.6,  # Reduced from 0.7 for more feature randomness
+        "reg_alpha": 1.5,  # Increased from 1.0 for stronger L1 regularization
+        "reg_lambda": 3.0,  # Increased from 2.0 for stronger L2 regularization
+        "min_child_samples": 30,  # Increased from 20 for more conservative splits
+        "min_split_gain": 0.03,  # Increased from 0.02 to require stronger splits
         "max_bin": 255,
         "extra_trees": False,
-        "min_data_in_bin": 3,
+        "min_data_in_bin": 5,  # Increased from 3
         "feature_pre_filter": False,
         "random_state": 42,
         "force_row_wise": True,
@@ -198,17 +200,18 @@ def _build_lightgbm_classifier() -> lgb.LGBMClassifier:
 def _build_xgboost(custom_params: Optional[Dict] = None) -> xgb.XGBRegressor:
     """
     XGBoost configuration with stronger regularization for financial data.
+    Enhanced anti-overfitting: more conservative parameters, stronger regularization.
     """
     params = {
-        "n_estimators": 500,
-        "learning_rate": 0.025,
-        "max_depth": 3,
-        "subsample": 0.75,
-        "colsample_bytree": 0.65,
-        "reg_alpha": 1.0,
-        "reg_lambda": 2.5,
-        "min_child_weight": 5,
-        "gamma": 0.1,
+        "n_estimators": 400,  # Reduced from 500 (early stopping will handle actual count)
+        "learning_rate": 0.02,  # Reduced from 0.025 for more conservative learning
+        "max_depth": 2,  # Reduced from 3 for stronger regularization
+        "subsample": 0.7,  # Reduced from 0.75 for more bagging
+        "colsample_bytree": 0.6,  # Reduced from 0.65 for more feature randomness
+        "reg_alpha": 1.5,  # Increased from 1.0 for stronger L1 regularization
+        "reg_lambda": 3.5,  # Increased from 2.5 for stronger L2 regularization
+        "min_child_weight": 7,  # Increased from 5 for more conservative splits
+        "gamma": 0.15,  # Increased from 0.1 to require stronger splits
         "objective": "reg:squarederror",
         "random_state": 42,
         "tree_method": "hist",

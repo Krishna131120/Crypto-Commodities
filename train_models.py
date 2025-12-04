@@ -338,6 +338,72 @@ def _pinball_loss(y_true: np.ndarray, y_pred: np.ndarray, alpha: float) -> float
     return float(np.mean(loss))
 
 
+def _check_model_tradability(
+    results: Dict[str, Dict],
+    metric_store: Dict[str, TrainingResult],
+    overfitting_warnings: List[str],
+    asset_type: str,
+) -> Tuple[bool, List[str]]:
+    """
+    Check if models pass robustness requirements for live trading.
+    
+    Returns:
+        (is_tradable, list_of_reasons)
+    """
+    reasons = []
+    
+    # Need at least 2 successful models for consensus
+    successful_models = [
+        name for name, data in results.items()
+        if isinstance(data, dict) and data.get("status") != "failed"
+        and name not in ["dqn"]  # DQN is optional
+    ]
+    
+    if len(successful_models) < 2:
+        reasons.append(f"Insufficient models: {len(successful_models)} successful (need at least 2)")
+        return False, reasons
+    
+    # Check for severe overfitting warnings
+    severe_overfitting = any(
+        "generalization failure" in w.lower() or 
+        "significant performance drop" in w.lower() or
+        ">>" in w  # Large gap indicators
+        for w in overfitting_warnings
+    )
+    if severe_overfitting:
+        reasons.append("Severe overfitting detected (large train/val/test gaps)")
+        return False, reasons
+    
+    # Check validation/test performance for at least one model
+    has_good_performance = False
+    for name in successful_models:
+        data = results.get(name, {})
+        val_r2 = data.get("r2", 0.0)
+        val_dir = data.get("directional_accuracy")
+        test_metrics = data.get("test_metrics", {})
+        test_r2 = test_metrics.get("r2", 0.0) if isinstance(test_metrics, dict) else 0.0
+        test_dir = test_metrics.get("directional_accuracy") if isinstance(test_metrics, dict) else None
+        
+        # Accept if validation R² is reasonable OR directional accuracy is good
+        if val_r2 >= MIN_ACCEPTABLE_R2 or (val_dir is not None and val_dir >= MIN_DIRECTIONAL_ACCURACY):
+            # Also check test performance if available
+            if isinstance(test_metrics, dict) and test_metrics:
+                if test_r2 >= MIN_ACCEPTABLE_R2 or (test_dir is not None and test_dir >= MIN_TEST_DIRECTIONAL_ACCURACY):
+                    has_good_performance = True
+                    break
+            else:
+                # If no test metrics, accept based on validation alone
+                has_good_performance = True
+                break
+    
+    if not has_good_performance:
+        reasons.append("No model meets minimum performance thresholds (R² or directional accuracy)")
+        return False, reasons
+    
+    # All checks passed
+    return True, ["All robustness checks passed"]
+
+
 def discover_symbols(asset_type: str) -> List[str]:
     asset_root = config.BASE_DATA_DIR / asset_type
     if not asset_root.exists():
@@ -2199,6 +2265,14 @@ def train_for_symbol(
             "confidence": dqn_model.get("confidence"),
             "reason": "Direct DQN policy decision based on latest features",
         }
+    
+    # Check if model passes robustness requirements for trading
+    tradable, tradability_reasons = _check_model_tradability(
+        results, metric_store, overfitting_warnings, asset_type
+    )
+    summary["tradable"] = tradable
+    summary["tradability_reasons"] = tradability_reasons
+    
     with open(symbol_dir / "summary.json", "w", encoding="utf-8") as handle:
         json.dump(summary, handle, indent=2)
     

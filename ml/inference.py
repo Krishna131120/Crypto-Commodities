@@ -322,6 +322,11 @@ class InferencePipeline:
             confidence = max(action_scores.get("hold", 0.0), min(0.55, confidence))
             consensus_return = 0.0
         
+        # Cap confidence to prevent overconfident predictions (anti-overfitting measure)
+        # Even well-calibrated models should rarely exceed 0.9 confidence in noisy markets
+        MAX_CONFIDENCE_CAP = 0.90
+        confidence = min(confidence, MAX_CONFIDENCE_CAP)
+        
         # Note: horizon_profile is passed via self.horizon_profile in predict() method
         # We'll clamp in predict() method after consensus is computed
         return {

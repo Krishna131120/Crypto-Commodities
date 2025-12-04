@@ -148,6 +148,19 @@ def discover_tradable_symbols(asset_type: str = "crypto", timeframe: str = "1d")
                     used_horizon = horizon_name
         
         if model_dir and (model_dir / "summary.json").exists():
+            # Check if model is marked as tradable (robustness check passed)
+            try:
+                import json
+                with open(model_dir / "summary.json", "r") as f:
+                    summary = json.load(f)
+                is_tradable = summary.get("tradable", True)  # Default to True for backward compatibility
+                if not is_tradable:
+                    # Skip non-tradable models (failed robustness checks)
+                    continue
+            except Exception:
+                # If we can't read the summary, skip it (might be corrupted)
+                continue
+            
             tradable.append({
                 "asset": asset,
                 "model_dir": model_dir,
