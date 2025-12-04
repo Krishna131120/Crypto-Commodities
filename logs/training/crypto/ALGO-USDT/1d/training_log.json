@@ -1,0 +1,901 @@
+{
+  "log_file": "logs\\training\\crypto\\ALGO-USDT\\1d\\training_log.json",
+  "total_events": 36,
+  "events": [
+    {
+      "timestamp": "2025-12-04T11:34:08.075424Z",
+      "level": "INFO",
+      "message": "Starting training for crypto/ALGO-USDT/1d (long horizon)",
+      "category": "TRAIN",
+      "symbol": "ALGO-USDT",
+      "asset_type": "crypto",
+      "data": {
+        "timeframe": "1d",
+        "min_rows": 200,
+        "horizon_profile": {
+          "name": "long",
+          "label": "Long-Term",
+          "description": "30-day position horizon targeting bigger directional shifts. Larger positions, fewer trades, ride big trends.",
+          "horizon_bars": 30,
+          "smoothing_window": 10,
+          "directional_threshold": 0.003,
+          "neutral_band": 0.0015,
+          "quantile_bins": 5,
+          "quantile_window": 300,
+          "trading_style": "Trend following - hold for weeks/months",
+          "typical_hold_time": "Weeks to months",
+          "position_size_pct": 0.18,
+          "stop_loss_pct": 0.025,
+          "min_confidence": 0.08
+        }
+      }
+    },
+    {
+      "timestamp": "2025-12-04T11:34:08.094661Z",
+      "level": "INFO",
+      "message": "Loaded 2358 raw candles",
+      "category": "DATA",
+      "symbol": "ALGO-USDT",
+      "asset_type": "crypto",
+      "data": {
+        "rows": 2358,
+        "timeframe": "1d"
+      }
+    },
+    {
+      "timestamp": "2025-12-04T11:34:08.427519Z",
+      "level": "INFO",
+      "message": "Computed 131 features",
+      "category": "DATA",
+      "symbol": "ALGO-USDT",
+      "asset_type": "crypto",
+      "data": {
+        "feature_count": 131
+      }
+    },
+    {
+      "timestamp": "2025-12-04T11:34:09.311204Z",
+      "level": "INFO",
+      "message": "Dataset assembled: 2128 rows, 132 features",
+      "category": "DATA",
+      "symbol": "ALGO-USDT",
+      "asset_type": "crypto",
+      "data": {
+        "rows_before": 2158,
+        "rows_after": 2128,
+        "rows_dropped": 30,
+        "feature_count": 132,
+        "initial_nans": 6153,
+        "residual_rows_dropped": 200,
+        "constant_features_removed": [
+          "Hour_of_Day",
+          "Is_Holiday_Flag"
+        ],
+        "feature_version": 2,
+        "split_boundaries": {
+          "train": {
+            "start": "2020-01-08T00:00:00+00:00",
+            "end": "2024-05-21T00:00:00+00:00"
+          },
+          "val": {
+            "start": "2024-05-23T00:00:00+00:00",
+            "end": "2025-02-11T00:00:00+00:00"
+          },
+          "test": {
+            "start": "2025-02-13T00:00:00+00:00",
+            "end": "2025-11-04T00:00:00+00:00"
+          }
+        }
+      }
+    },
+    {
+      "timestamp": "2025-12-04T11:34:09.313212Z",
+      "level": "INFO",
+      "message": "Dataset assembled: 2128 rows",
+      "category": "DATA",
+      "symbol": "ALGO-USDT",
+      "asset_type": "crypto",
+      "data": {
+        "rows": 2128,
+        "features": 163
+      }
+    },
+    {
+      "timestamp": "2025-12-04T11:34:09.314215Z",
+      "level": "INFO",
+      "message": "Data split: train=1596, val=265, test=265",
+      "category": "DATA",
+      "symbol": "ALGO-USDT",
+      "asset_type": "crypto",
+      "data": {
+        "train_rows": 1596,
+        "val_rows": 265,
+        "test_rows": 265,
+        "gap_days": 1,
+        "split_boundaries": {
+          "train": {
+            "start": "2020-01-08T00:00:00+00:00",
+            "end": "2024-05-21T00:00:00+00:00"
+          },
+          "val": {
+            "start": "2024-05-23T00:00:00+00:00",
+            "end": "2025-02-11T00:00:00+00:00"
+          },
+          "test": {
+            "start": "2025-02-13T00:00:00+00:00",
+            "end": "2025-11-04T00:00:00+00:00"
+          }
+        }
+      }
+    },
+    {
+      "timestamp": "2025-12-04T11:34:09.315218Z",
+      "level": "INFO",
+      "message": "Dataset utilization confirmed",
+      "category": "DATA",
+      "symbol": "ALGO-USDT",
+      "asset_type": "crypto",
+      "data": {
+        "rows_total": 2128,
+        "rows_used": 2126,
+        "unused_rows": 2
+      }
+    },
+    {
+      "timestamp": "2025-12-04T11:34:09.315218Z",
+      "level": "INFO",
+      "message": "Split boundaries confirmed",
+      "category": "DATA",
+      "symbol": "ALGO-USDT",
+      "asset_type": "crypto",
+      "data": {
+        "train": {
+          "start": "2020-01-08T00:00:00+00:00",
+          "end": "2024-05-21T00:00:00+00:00"
+        },
+        "val": {
+          "start": "2024-05-23T00:00:00+00:00",
+          "end": "2025-02-11T00:00:00+00:00"
+        },
+        "test": {
+          "start": "2025-02-13T00:00:00+00:00",
+          "end": "2025-11-04T00:00:00+00:00"
+        }
+      }
+    },
+    {
+      "timestamp": "2025-12-04T11:34:10.029073Z",
+      "level": "INFO",
+      "message": "Applied robust feature scaling",
+      "category": "DATA",
+      "symbol": "ALGO-USDT",
+      "asset_type": "crypto",
+      "data": {
+        "scaler": "RobustScaler",
+        "feature_count": 104,
+        "center_sample": [
+          -0.025355885463048143,
+          2.0,
+          -1.0,
+          0.7173890684976993,
+          1577135137.8590002
+        ],
+        "scale_sample": [
+          0.35955315348995587,
+          3.0,
+          2.0,
+          0.40621527556540316,
+          1397433008.9795
+        ]
+      }
+    },
+    {
+      "timestamp": "2025-12-04T11:34:10.031073Z",
+      "level": "INFO",
+      "message": "Features extracted: 104 features will be used for training",
+      "category": "DATA",
+      "symbol": "ALGO-USDT",
+      "asset_type": "crypto",
+      "data": {
+        "feature_count": 104,
+        "train_samples": 1596,
+        "val_samples": 265,
+        "test_samples": 265,
+        "sample_features": [
+          "target_return_smoothed",
+          "target_quantile_bin",
+          "target_direction",
+          "Session_VWAP",
+          "OBV",
+          "EMA_200",
+          "Ichimoku_Senkou_Span_B",
+          "SMA_100",
+          "Ichimoku_Senkou_Span_A",
+          "EMA_100"
+        ],
+        "selected_features": [
+          "target_return_smoothed",
+          "target_quantile_bin",
+          "target_direction",
+          "Session_VWAP",
+          "OBV",
+          "EMA_200",
+          "Ichimoku_Senkou_Span_B",
+          "SMA_100",
+          "Ichimoku_Senkou_Span_A",
+          "EMA_100",
+          "Fractal_Low",
+          "SMA_50",
+          "SMA_200",
+          "Ichimoku_Kijun",
+          "Bollinger_Bands_upper_20_2",
+          "EMA_26",
+          "Donchian_Channel_high",
+          "Fractal_High",
+          "Keltner_Channel_lower",
+          "Keltner_Channel_upper",
+          "Close_Lag_10",
+          "Fibonacci_Level_0.786",
+          "Close_Lag_9",
+          "drawdown_lookback_90",
+          "Close_Lag_8",
+          "Close_Lag_7",
+          "Close_Lag_6",
+          "Ichimoku_Tenkan",
+          "Close_Lag_5",
+          "Close_Lag_4",
+          "Donchian_Channel_low",
+          "Close_Lag_3",
+          "High_Lag_1",
+          "Median_Price",
+          "Low_Lag_1",
+          "Max_Drawdown_30",
+          "Parabolic_SAR",
+          "Bollinger_Bands_lower_20_2",
+          "ATR_14",
+          "CCI_20",
+          "Bollinger_%b",
+          "ATR_7",
+          "Price_Channel_Slope",
+          "MFI",
+          "Stochastic_%D",
+          "RSI_21",
+          "Williams_%R",
+          "Rolling_Sharpe_90",
+          "TSI",
+          "RSI_14",
+          "Rolling_Sharpe_30",
+          "ADX_14",
+          "Price_Range",
+          "Drawdown_Duration",
+          "volatility_cluster_20",
+          "MACD_signal",
+          "CMF",
+          "RSI_7",
+          "DI_minus",
+          "MACD",
+          "Gap_Open",
+          "Rolling_Volatility_14",
+          "TRIX",
+          "Historical_Volatility",
+          "trend_strength_60",
+          "Chaikin_Oscillator",
+          "Cumulative_Return_30",
+          "Realized_Volatility",
+          "Bollinger_Bandwidth",
+          "Gap_Percentage",
+          "volatility_regime_state",
+          "Momentum_roc_14",
+          "Accumulation_Distribution",
+          "Rolling_Volatility_7",
+          "Rolling_Kurtosis",
+          "Rate_of_Change",
+          "Momentum_roc_7",
+          "DI_plus",
+          "MA_Crossover_Signal",
+          "Volume_Ratio",
+          "Return_3",
+          "Seasonality_DayOfMonth",
+          "RSI_Band_Cross",
+          "Volatility_Expansion_Flag",
+          "Volatility_Clustering",
+          "Ensemble_Feature_Aggregates",
+          "Log_Returns",
+          "Return_1",
+          "Force_Index",
+          "MACD_Crossover_Signal",
+          "Day_of_Week",
+          "Volume_Change_7",
+          "Volume_Surge_Flag",
+          "Seasonality_Monthly",
+          "Normalized_Returns",
+          "Feature_Interaction_Terms",
+          "ZScore_returns_7",
+          "Volume_Change_1",
+          "Rolling_Skew",
+          "MACD_histogram",
+          "Donchian_Breakout_Flag",
+          "mean_reversion_flag",
+          "Intraday_Range",
+          "Volatility_Skew"
+        ],
+        "removed_low_variance": [
+          "Ease_of_Movement",
+          "dxy_index",
+          "dxy_index_return_5",
+          "dxy_index_zscore_60",
+          "vix_index",
+          "vix_index_return_5",
+          "vix_index_zscore_60",
+          "us10y_yield",
+          "us10y_yield_return_5",
+          "us10y_yield_zscore_60",
+          "us2y_yield",
+          "us2y_yield_return_5",
+          "us2y_yield_zscore_60",
+          "tips_etf",
+          "tips_etf_return_5",
+          "tips_etf_zscore_60",
+          "real_yield_spread",
+          "yield_curve_2s10s",
+          "gvz_gold_vol",
+          "gvz_gold_vol_pct_change",
+          "gvz_gold_vol_zscore",
+          "ovx_crude_vol",
+          "ovx_crude_vol_pct_change",
+          "ovx_crude_vol_zscore"
+        ],
+        "max_abs_corr": 0.8998854490780744,
+        "importance_filter": {
+          "method": "lightgbm_importance",
+          "selected_features": [
+            "SMA_5",
+            "SMA_10",
+            "SMA_20",
+            "SMA_50",
+            "SMA_100",
+            "SMA_200",
+            "EMA_9",
+            "EMA_12",
+            "EMA_26",
+            "EMA_50",
+            "EMA_100",
+            "EMA_200",
+            "WMA_14",
+            "Hull_MA",
+            "VWMA",
+            "VWAP",
+            "Session_VWAP",
+            "MACD",
+            "MACD_signal",
+            "MACD_histogram",
+            "RSI_7",
+            "RSI_14",
+            "RSI_21",
+            "Momentum_roc_1",
+            "Momentum_roc_7",
+            "Momentum_roc_14",
+            "Rate_of_Change",
+            "TRIX",
+            "TSI",
+            "Stochastic_%K",
+            "Stochastic_%D",
+            "Williams_%R",
+            "CCI_20",
+            "ATR_14",
+            "ATR_7",
+            "Bollinger_Bands_upper_20_2",
+            "Bollinger_Bands_lower_20_2",
+            "Bollinger_Bandwidth",
+            "Bollinger_%b",
+            "Keltner_Channel_upper",
+            "Keltner_Channel_lower",
+            "Donchian_Channel_high",
+            "Donchian_Channel_low",
+            "ADX_14",
+            "DI_plus",
+            "DI_minus",
+            "RSI_Band_Cross",
+            "ROC_Signal",
+            "Rolling_Volatility_7",
+            "Rolling_Volatility_14",
+            "Rolling_Volatility_30",
+            "Realized_Volatility",
+            "Historical_Volatility",
+            "Rolling_Skew",
+            "Rolling_Kurtosis",
+            "Volatility_Skew",
+            "Volatility_Clustering",
+            "ZScore_returns_7",
+            "ZScore_returns_30",
+            "Normalized_Returns",
+            "Log_Returns",
+            "Return_1",
+            "Return_3",
+            "Return_7",
+            "Cumulative_Return_30",
+            "Rolling_Sharpe_30",
+            "Rolling_Sharpe_90",
+            "Max_Drawdown_30",
+            "Drawdown_Duration",
+            "OBV",
+            "CMF",
+            "MFI",
+            "Ease_of_Movement",
+            "Force_Index",
+            "Accumulation_Distribution",
+            "Chaikin_Oscillator",
+            "Volume_Change_1",
+            "Volume_Change_7",
+            "Volume_Ratio",
+            "Volume_Surge_Flag",
+            "Price_Lag_1",
+            "Price_Lag_2",
+            "Price_Lag_3",
+            "Close_Lag_1",
+            "Close_Lag_2",
+            "Close_Lag_3",
+            "Close_Lag_4",
+            "Close_Lag_5",
+            "Close_Lag_6",
+            "Close_Lag_7",
+            "Close_Lag_8",
+            "Close_Lag_9",
+            "Close_Lag_10",
+            "Open_Lag_1",
+            "High_Lag_1",
+            "Low_Lag_1",
+            "Typical_Price",
+            "Median_Price",
+            "Price_Range",
+            "Intraday_Range",
+            "Gap_Open",
+            "Gap_Percentage",
+            "Donchian_Breakout_Flag",
+            "MA_Crossover_Signal",
+            "MACD_Crossover_Signal",
+            "Volatility_Expansion_Flag",
+            "Ichimoku_Tenkan",
+            "Ichimoku_Kijun",
+            "Ichimoku_Senkou_Span_A",
+            "Ichimoku_Senkou_Span_B",
+            "Parabolic_SAR",
+            "Price_Channel_Slope",
+            "Fractal_High",
+            "Fractal_Low",
+            "Pivot_Point",
+            "Pivot_R1",
+            "Pivot_S1",
+            "Pivot_R2",
+            "Pivot_S2",
+            "Fibonacci_Level_0.236",
+            "Fibonacci_Level_0.382",
+            "Fibonacci_Level_0.5",
+            "Fibonacci_Level_0.618",
+            "Fibonacci_Level_0.786",
+            "Seasonality_Monthly",
+            "Seasonality_DayOfMonth",
+            "Day_of_Week",
+            "Feature_Interaction_Terms",
+            "Ensemble_Feature_Aggregates",
+            "target_return_smoothed",
+            "target_direction",
+            "target_quantile_bin",
+            "dxy_index",
+            "dxy_index_return_5",
+            "dxy_index_zscore_60",
+            "vix_index",
+            "vix_index_return_5",
+            "vix_index_zscore_60",
+            "us10y_yield",
+            "us10y_yield_return_5",
+            "us10y_yield_zscore_60",
+            "us2y_yield",
+            "us2y_yield_return_5",
+            "us2y_yield_zscore_60",
+            "tips_etf",
+            "tips_etf_return_5",
+            "tips_etf_zscore_60",
+            "real_yield_spread",
+            "yield_curve_2s10s",
+            "gvz_gold_vol",
+            "gvz_gold_vol_pct_change",
+            "gvz_gold_vol_zscore",
+            "ovx_crude_vol",
+            "ovx_crude_vol_pct_change",
+            "ovx_crude_vol_zscore",
+            "trend_strength_60",
+            "volatility_cluster_20",
+            "mean_reversion_flag",
+            "volatility_regime_state",
+            "drawdown_lookback_90"
+          ],
+          "dropped_features": [],
+          "skipped": true
+        }
+      }
+    },
+    {
+      "timestamp": "2025-12-04T11:34:10.034327Z",
+      "level": "INFO",
+      "message": "Reference price recalibrated",
+      "category": "DATA",
+      "symbol": "ALGO-USDT",
+      "asset_type": "crypto",
+      "data": {
+        "dataset_close": 0.154,
+        "latest_market_price": 0.1402
+      }
+    },
+    {
+      "timestamp": "2025-12-04T11:34:10.035327Z",
+      "level": "INFO",
+      "message": "Training Random Forest model",
+      "category": "MODEL",
+      "symbol": "ALGO-USDT",
+      "asset_type": "crypto",
+      "data": {
+        "model": "RandomForest",
+        "training_samples": 1596,
+        "features_count": 104,
+        "feature_names_sample": [
+          "target_return_smoothed",
+          "target_quantile_bin",
+          "target_direction",
+          "Session_VWAP",
+          "OBV"
+        ]
+      }
+    },
+    {
+      "timestamp": "2025-12-04T11:35:03.473545Z",
+      "level": "INFO",
+      "message": "RandomForest hyperparameter search complete",
+      "category": "MODEL",
+      "symbol": "ALGO-USDT",
+      "asset_type": "crypto",
+      "data": {
+        "best_params": {
+          "n_estimators": 626,
+          "max_depth": 9,
+          "min_samples_leaf": 40,
+          "min_samples_split": 62,
+          "max_features": 0.8842886638960479,
+          "max_samples": 0.5373456226178361,
+          "ccp_alpha": 3.747599645492663e-05
+        }
+      }
+    },
+    {
+      "timestamp": "2025-12-04T11:35:17.232121Z",
+      "level": "INFO",
+      "message": "Random Forest prediction made using 104 features",
+      "category": "PREDICTION",
+      "symbol": "ALGO-USDT",
+      "asset_type": "crypto",
+      "data": {
+        "model": "RandomForest",
+        "features_used": 104,
+        "test_sample_index": 264,
+        "raw_return": -0.06204407328402023,
+        "clamped_return": -0.06204407328402023
+      }
+    },
+    {
+      "timestamp": "2025-12-04T11:35:17.234580Z",
+      "level": "WARNING",
+      "message": "random_forest rejected: train/val gap 0.300 exceeds 0.25",
+      "category": "MODEL",
+      "symbol": "ALGO-USDT",
+      "asset_type": "crypto"
+    },
+    {
+      "timestamp": "2025-12-04T11:35:17.235583Z",
+      "level": "SUCCESS",
+      "message": "Random Forest training completed",
+      "category": "MODEL",
+      "symbol": "ALGO-USDT",
+      "asset_type": "crypto",
+      "data": {
+        "model": "RandomForest",
+        "metrics": {
+          "model_name": "RandomForest",
+          "mae": 0.1828564944798495,
+          "rmse": 0.49726305541570626,
+          "r2": 0.5463022270666593,
+          "directional_accuracy": 0.939622641509434,
+          "mean_predicted_return": 0.037768030849597976,
+          "mean_actual_return": 0.16834753769141914,
+          "notes": null,
+          "precision": null,
+          "recall": null,
+          "f1": null,
+          "roc_auc": null
+        },
+        "current_price": 0.1402,
+        "predicted_return": -0.06204407328402023,
+        "predicted_price": 0.13150142092558037,
+        "features_used": 104
+      }
+    },
+    {
+      "timestamp": "2025-12-04T11:35:17.236588Z",
+      "level": "INFO",
+      "message": "Training LightGBM model",
+      "category": "MODEL",
+      "symbol": "ALGO-USDT",
+      "asset_type": "crypto",
+      "data": {
+        "model": "LightGBM",
+        "training_samples": 1596,
+        "features_count": 104
+      }
+    },
+    {
+      "timestamp": "2025-12-04T11:35:26.711292Z",
+      "level": "INFO",
+      "message": "LightGBM hyperparameter search complete",
+      "category": "MODEL",
+      "symbol": "ALGO-USDT",
+      "asset_type": "crypto",
+      "data": {
+        "best_params": {
+          "n_estimators": 1198,
+          "learning_rate": 0.016709667831544945,
+          "num_leaves": 17,
+          "max_depth": 8,
+          "subsample": 0.6600667789996115,
+          "colsample_bytree": 0.9457866793904111,
+          "min_child_samples": 12,
+          "reg_alpha": 0.08971466172968245,
+          "reg_lambda": 0.14281112232690651,
+          "min_split_gain": 0.0007834392852996365
+        }
+      }
+    },
+    {
+      "timestamp": "2025-12-04T11:35:32.005048Z",
+      "level": "INFO",
+      "message": "LightGBM prediction made using 104 features",
+      "category": "PREDICTION",
+      "symbol": "ALGO-USDT",
+      "asset_type": "crypto",
+      "data": {
+        "model": "LightGBM",
+        "features_used": 104,
+        "test_sample_index": 264,
+        "raw_return": -0.044625601531047734,
+        "clamped_return": -0.044625601531047734
+      }
+    },
+    {
+      "timestamp": "2025-12-04T11:35:32.008050Z",
+      "level": "WARNING",
+      "message": "lightgbm rejected: train/val gap 0.267 exceeds 0.25",
+      "category": "MODEL",
+      "symbol": "ALGO-USDT",
+      "asset_type": "crypto"
+    },
+    {
+      "timestamp": "2025-12-04T11:35:32.010049Z",
+      "level": "SUCCESS",
+      "message": "LightGBM training completed",
+      "category": "MODEL",
+      "symbol": "ALGO-USDT",
+      "asset_type": "crypto",
+      "data": {
+        "model": "LightGBM",
+        "metrics": {
+          "model_name": "LightGBM",
+          "mae": 0.14616593471634312,
+          "rmse": 0.38478618519551533,
+          "r2": 0.7283353051004652,
+          "directional_accuracy": 0.9509433962264151,
+          "mean_predicted_return": 0.09077837424107939,
+          "mean_actual_return": 0.16834753769141914,
+          "notes": null,
+          "precision": null,
+          "recall": null,
+          "f1": null,
+          "roc_auc": null
+        },
+        "current_price": 0.1402,
+        "predicted_return": -0.044625601531047734,
+        "predicted_price": 0.13394349066534708,
+        "features_used": 104
+      }
+    },
+    {
+      "timestamp": "2025-12-04T11:35:32.011050Z",
+      "level": "INFO",
+      "message": "Training XGBoost model",
+      "category": "MODEL",
+      "symbol": "ALGO-USDT",
+      "asset_type": "crypto",
+      "data": {
+        "model": "XGBoost",
+        "training_samples": 1596,
+        "features_count": 104
+      }
+    },
+    {
+      "timestamp": "2025-12-04T11:35:45.510758Z",
+      "level": "INFO",
+      "message": "XGBoost hyperparameter search complete",
+      "category": "MODEL",
+      "symbol": "ALGO-USDT",
+      "asset_type": "crypto",
+      "data": {
+        "best_params": {
+          "n_estimators": 389,
+          "learning_rate": 0.03461452672347732,
+          "max_depth": 8,
+          "subsample": 0.7287362823332121,
+          "colsample_bytree": 0.8151098134351502,
+          "min_child_weight": 4.899075294942197,
+          "gamma": 0.2837738626449784,
+          "reg_alpha": 1.0654950569176806,
+          "reg_lambda": 4.333695344818419
+        }
+      }
+    },
+    {
+      "timestamp": "2025-12-04T11:35:48.558370Z",
+      "level": "INFO",
+      "message": "XGBoost prediction made using 104 features",
+      "category": "PREDICTION",
+      "symbol": "ALGO-USDT",
+      "asset_type": "crypto",
+      "data": {
+        "model": "XGBoost",
+        "features_used": 104,
+        "test_sample_index": 264,
+        "raw_return": -0.0819740891456604,
+        "clamped_return": -0.0819740891456604
+      }
+    },
+    {
+      "timestamp": "2025-12-04T11:35:48.560872Z",
+      "level": "WARNING",
+      "message": "xgboost rejected: train/val gap 0.328 exceeds 0.25",
+      "category": "MODEL",
+      "symbol": "ALGO-USDT",
+      "asset_type": "crypto"
+    },
+    {
+      "timestamp": "2025-12-04T11:35:48.562375Z",
+      "level": "SUCCESS",
+      "message": "XGBoost training completed",
+      "category": "MODEL",
+      "symbol": "ALGO-USDT",
+      "asset_type": "crypto",
+      "data": {
+        "model": "XGBoost",
+        "metrics": {
+          "model_name": "XGBoost",
+          "mae": 0.16712276544443183,
+          "rmse": 0.45929603219502824,
+          "r2": 0.612938793171939,
+          "directional_accuracy": 0.9471698113207547,
+          "mean_predicted_return": 0.05540068447589874,
+          "mean_actual_return": 0.16834753769141914,
+          "notes": null,
+          "precision": null,
+          "recall": null,
+          "f1": null,
+          "roc_auc": null
+        },
+        "current_price": 0.1402,
+        "predicted_return": -0.0819740891456604,
+        "predicted_price": 0.1287072327017784,
+        "features_used": 104
+      }
+    },
+    {
+      "timestamp": "2025-12-04T11:35:48.599372Z",
+      "level": "WARNING",
+      "message": "stacked_blend rejected: val/test gap 0.170 exceeds 0.10",
+      "category": "MODEL",
+      "symbol": "ALGO-USDT",
+      "asset_type": "crypto"
+    },
+    {
+      "timestamp": "2025-12-04T11:35:48.601373Z",
+      "level": "INFO",
+      "message": "Training DQN model",
+      "category": "MODEL",
+      "symbol": "ALGO-USDT",
+      "asset_type": "crypto",
+      "data": {
+        "model": "DQN",
+        "training_samples": 1596,
+        "features_count": 104
+      }
+    },
+    {
+      "timestamp": "2025-12-04T11:35:48.920612Z",
+      "level": "ERROR",
+      "message": "DQN training failed: Trying to log data to tensorboard but tensorboard is not installed.",
+      "category": "MODEL",
+      "symbol": "ALGO-USDT",
+      "asset_type": "crypto",
+      "data": {
+        "model": "DQN",
+        "error": "Trying to log data to tensorboard but tensorboard is not installed."
+      }
+    },
+    {
+      "timestamp": "2025-12-04T11:35:48.922615Z",
+      "level": "WARNING",
+      "message": "random_forest: Train R² (0.847) >> Val R² (0.546), gap=0.300",
+      "category": "OVERFITTING",
+      "symbol": "ALGO-USDT",
+      "asset_type": "crypto"
+    },
+    {
+      "timestamp": "2025-12-04T11:35:48.924012Z",
+      "level": "WARNING",
+      "message": "lightgbm: Train R² (0.995) >> Val R² (0.728), gap=0.267",
+      "category": "OVERFITTING",
+      "symbol": "ALGO-USDT",
+      "asset_type": "crypto"
+    },
+    {
+      "timestamp": "2025-12-04T11:35:48.926018Z",
+      "level": "WARNING",
+      "message": "xgboost: Train R² (0.941) >> Val R² (0.613), gap=0.328",
+      "category": "OVERFITTING",
+      "symbol": "ALGO-USDT",
+      "asset_type": "crypto"
+    },
+    {
+      "timestamp": "2025-12-04T11:35:48.927022Z",
+      "level": "WARNING",
+      "message": "stacked_blend: Val R² (0.871) >> Test R² (0.701), gap=0.170 (generalization failure)",
+      "category": "OVERFITTING",
+      "symbol": "ALGO-USDT",
+      "asset_type": "crypto"
+    },
+    {
+      "timestamp": "2025-12-04T11:35:48.929074Z",
+      "level": "WARNING",
+      "message": "stacked_blend: Significant performance drop on test set (Train: 0.638, Val: 0.871, Test: 0.701)",
+      "category": "OVERFITTING",
+      "symbol": "ALGO-USDT",
+      "asset_type": "crypto"
+    },
+    {
+      "timestamp": "2025-12-04T11:35:48.933642Z",
+      "level": "INFO",
+      "message": "Consensus action computed: HOLD",
+      "category": "CONSENSUS",
+      "symbol": "ALGO-USDT",
+      "asset_type": "crypto",
+      "data": {
+        "consensus_action": "hold",
+        "consensus_confidence": 0.0,
+        "consensus_price": 0.1402,
+        "consensus_return": 0.0,
+        "action_scores": {
+          "long": 0.0,
+          "hold": 1.0,
+          "short": 0.0
+        }
+      }
+    },
+    {
+      "timestamp": "2025-12-04T11:35:48.941471Z",
+      "level": "SUCCESS",
+      "message": "Training completed for ALGO-USDT",
+      "category": "TRAIN",
+      "symbol": "ALGO-USDT",
+      "asset_type": "crypto",
+      "data": {
+        "summary_file": "models\\crypto\\ALGO-USDT\\1d\\long\\summary.json",
+        "log_file": "logs\\training\\crypto\\ALGO-USDT\\1d\\training_log.json",
+        "models_trained": 0,
+        "models_failed": 5
+      }
+    }
+  ]
+}

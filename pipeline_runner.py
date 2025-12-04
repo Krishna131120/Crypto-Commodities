@@ -204,7 +204,8 @@ def main():
     commodities_symbols = _normalize_symbols(args.commodities_symbols)
 
     timeframe = args.timeframe or "1d"
-    years = args.years if args.years is not None else 7.0
+    # Default to a longer history window if not specified.
+    years = args.years if args.years is not None else 10.0
     mode = args.mode or "both"
     train_requested = args.train
     live_pending = False

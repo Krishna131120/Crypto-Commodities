@@ -101,12 +101,40 @@ class InferencePipeline:
                 continue
         self.loaded = True
 
-    def _prepare_features(self, feature_row: pd.Series) -> pd.DataFrame:
-        if self.scaler is None:
-            return pd.DataFrame([feature_row])
+    def _prepare_features(self, feature_row: pd.Series) -> np.ndarray:
+        """
+        Prepare a single feature row for inference.
+
+        Returns a numpy array (not DataFrame) to match how models were trained.
+        This avoids sklearn warnings about feature name mismatches.
+
+        To avoid scikit-learn \"feature names should match\" errors when live
+        feature sets drift from the training set, we align the incoming
+        features to the exact feature order used by the fitted scaler, if
+        available. Any missing features are filled with 0.0 and any extra
+        live-only features are dropped.
+        """
         frame = pd.DataFrame([feature_row])
-        scaled = self.scaler.transform(frame)
-        return pd.DataFrame(scaled, columns=frame.columns)
+
+        if self.scaler is not None:
+            # If the scaler knows which feature names it was fitted on,
+            # reindex the live frame to that exact set and order.
+            feature_names = getattr(self.scaler, "feature_names_in_", None)
+            if feature_names is not None:
+                cols = list(feature_names)
+                frame = frame.reindex(columns=cols, fill_value=0.0)
+            scaled = self.scaler.transform(frame)
+            # Return as numpy array (models were trained on arrays, not DataFrames)
+            # Ensure it's 2D: [1, n_features] for sklearn models
+            if len(scaled.shape) == 1:
+                scaled = scaled.reshape(1, -1)
+            return scaled
+
+        # No scaler: convert to numpy array, ensure 2D shape
+        values = frame.values
+        if len(values.shape) == 1:
+            values = values.reshape(1, -1)
+        return values
 
     def _prob_to_return(self, prob: float) -> float:
         margin = max(self.dynamic_threshold, 0.0025)
@@ -143,6 +171,7 @@ class InferencePipeline:
                 "neutral_guard_triggered": False,
                 "neutral_return_threshold": float(neutral_threshold),
                 "raw_consensus_return": 0.0,
+                "position_size": 0.0,  # No position when no models
             }
             if self.horizon_profile:
                 consensus["horizon_profile"] = self.horizon_profile
@@ -154,11 +183,18 @@ class InferencePipeline:
             return payload
         features = self._prepare_features(feature_row)
         model_outputs: Dict[str, Dict[str, float]] = {}
+        
+        # First pass: get predictions from base models (skip stacked_blend - it's a meta-model)
+        base_model_outputs = {}
         for name, model in self.models.items():
+            # Skip stacked_blend - it's a meta-model that needs predictions from other models
+            if name == "stacked_blend":
+                continue
             try:
                 if hasattr(model, "predict_proba") and "directional" in name:
                     prob = float(model.predict_proba(features)[0, 1])
                     pred_return = self._prob_to_return(prob)
+                    base_model_outputs[name] = pred_return
                     model_outputs[name] = {
                         "predicted_return": pred_return,
                         "probability": prob,
@@ -172,9 +208,32 @@ class InferencePipeline:
                         # For intraday, if prediction exceeds typical daily volatility, scale it
                         scale_factor = TYPICAL_DAILY_VOLATILITY / abs(clamped_pred)
                         clamped_pred = clamped_pred * min(scale_factor, 1.0)
+                    base_model_outputs[name] = clamped_pred
                     model_outputs[name] = {"predicted_return": clamped_pred}
-            except Exception:
+            except Exception as exc:
+                # Log the error for debugging but continue with other models
+                import warnings
+                error_msg = f"Model {name} prediction failed: {exc}"
+                warnings.warn(error_msg, UserWarning)
+                # Also print to stderr for immediate visibility
+                print(f"[WARNING] {error_msg}", flush=True)
                 continue
+        
+        # Second pass: if we have stacked_blend and at least 2 base model predictions, use it
+        if "stacked_blend" in self.models and len(base_model_outputs) >= 2:
+            try:
+                stacked_model = self.models["stacked_blend"]
+                # Stacked blend expects predictions from base models as input
+                base_predictions = np.array([[base_model_outputs[k] for k in sorted(base_model_outputs.keys())]])
+                stack_pred = float(stacked_model.predict(base_predictions)[0])
+                clamped_pred = _clamp(stack_pred, horizon_profile=self.horizon_profile)
+                model_outputs["stacked_blend"] = {"predicted_return": clamped_pred}
+            except Exception as exc:
+                import warnings
+                error_msg = f"Stacked blend prediction failed: {exc}"
+                warnings.warn(error_msg, UserWarning)
+                # Also print to stderr for immediate visibility
+                print(f"[WARNING] {error_msg}", flush=True)
 
         if not model_outputs:
             # All individual model predictions failed — fall back to the same
@@ -189,6 +248,7 @@ class InferencePipeline:
                 "neutral_guard_triggered": False,
                 "neutral_return_threshold": float(neutral_threshold),
                 "raw_consensus_return": 0.0,
+                "position_size": 0.0,  # No position when all models fail
             }
             if self.horizon_profile:
                 consensus["horizon_profile"] = self.horizon_profile

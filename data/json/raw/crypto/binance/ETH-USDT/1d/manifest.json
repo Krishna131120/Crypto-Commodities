@@ -1,0 +1,15 @@
+{
+  "symbol": "ETH-USDT",
+  "timeframe": "1d",
+  "asset_type": "crypto",
+  "generated_at": "2025-12-04T11:31:11.863196Z",
+  "data_file": "data.json",
+  "latest_file": "latest.json",
+  "data_file_info": {
+    "filename": "data.json",
+    "size_bytes": 1100097,
+    "candle_count": 3032,
+    "first_timestamp": "2017-08-17T00:00:00Z",
+    "last_timestamp": "2025-12-04T00:00:00Z"
+  }
+}

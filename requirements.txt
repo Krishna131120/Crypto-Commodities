@@ -17,4 +17,5 @@ stable-baselines3==2.2.1
 joblib==1.3.2
 optuna==3.4.0
 psutil==5.9.6
+alpaca-py==0.24.0
 

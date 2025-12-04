@@ -1,0 +1,143 @@
+{
+  "symbol": "ETH-USDT",
+  "asset_type": "crypto",
+  "timeframe": "1d",
+  "last_updated": "2025-12-04T00:00:00+00:00",
+  "prediction": {
+    "current_price": 3193.19,
+    "predicted_price": 3009.3023741583697,
+    "predicted_return_pct": -5.758743633846725,
+    "action": "short",
+    "confidence": 94.57142857142857,
+    "horizon_days": 30,
+    "explanation": "Price expected to fall from $3,193.19 to $3,009.30 (-5.76%) over 30 days"
+  },
+  "model_predictions": {
+    "random_forest": {
+      "predicted_price": 3001.5986,
+      "predicted_return_pct": -6.0,
+      "action": "short",
+      "confidence": 94.57142857142857,
+      "r2_score": 0.8999811427589671,
+      "accuracy": 94.57142857142857
+    },
+    "lightgbm": {
+      "predicted_price": 3001.5986,
+      "predicted_return_pct": -6.0,
+      "action": "short",
+      "confidence": 94.28571428571428,
+      "r2_score": 0.934042737875187,
+      "accuracy": 94.28571428571428
+    },
+    "xgboost": {
+      "predicted_price": 3001.5986,
+      "predicted_return_pct": -6.0,
+      "action": "short",
+      "confidence": 94.57142857142857,
+      "r2_score": 0.9304303362303119,
+      "accuracy": 94.57142857142857
+    },
+    "stacked_blend": {
+      "predicted_price": 3033.096736474774,
+      "predicted_return_pct": -5.013584018653009,
+      "action": "short",
+      "confidence": 94.85714285714286,
+      "r2_score": 0.9397792762599355,
+      "accuracy": 94.85714285714286
+    }
+  },
+  "technical": {
+    "training_data": {
+      "total_rows": 2802,
+      "train_rows": 2101,
+      "val_rows": 350,
+      "test_rows": 349,
+      "split_boundaries": {
+        "train": {
+          "start": "2018-03-05T00:00:00+00:00",
+          "end": "2023-12-04T00:00:00+00:00"
+        },
+        "val": {
+          "start": "2023-12-06T00:00:00+00:00",
+          "end": "2024-11-19T00:00:00+00:00"
+        },
+        "test": {
+          "start": "2024-11-21T00:00:00+00:00",
+          "end": "2025-11-04T00:00:00+00:00"
+        }
+      }
+    },
+    "model_config": {
+      "target_profile": {
+        "name": "long",
+        "label": "Long-Term",
+        "description": "30-day position horizon targeting bigger directional shifts. Larger positions, fewer trades, ride big trends.",
+        "horizon_bars": 30,
+        "smoothing_window": 10,
+        "directional_threshold": 0.003,
+        "neutral_band": 0.0015,
+        "quantile_bins": 5,
+        "quantile_window": 300,
+        "trading_style": "Trend following - hold for weeks/months",
+        "typical_hold_time": "Weeks to months",
+        "position_size_pct": 0.18,
+        "stop_loss_pct": 0.025,
+        "min_confidence": 0.08
+      },
+      "target_config": {
+        "horizon": 30,
+        "smoothing_window": 10,
+        "directional_threshold": 0.003,
+        "neutral_band": 0.0015,
+        "quantile_bins": 5,
+        "quantile_window": 300,
+        "include_directional": true,
+        "include_quantiles": true,
+        "include_smoothed_return": true
+      },
+      "model_reference_price": 3193.19
+    },
+    "analysis": {
+      "dynamic_threshold": 0.03,
+      "threshold_details": {
+        "rolling_mad": 0.22957977152057552,
+        "global_mad": 0.25073502030958394,
+        "iqr_based": 0.17377548236042006,
+        "atr_proxy": 0.10722910031170907,
+        "median_candidate": 0.17377548236042006,
+        "clamped": 0.03
+      },
+      "context_signals": {
+        "RSI_14": 29.371537922674406,
+        "MACD_histogram": -42.110317480425664,
+        "SMA_50": 4119.1154,
+        "SMA_200": 3370.10965,
+        "ATR_14": 207.34999999999994,
+        "Volume_Ratio": 2.990780903470674
+      },
+      "overfitting_warnings": null
+    },
+    "feature_scaler": {
+      "path": "models\\crypto\\ETH-USDT\\1d\\long\\feature_scaler.joblib"
+    }
+  },
+  "consensus": {
+    "action": "short",
+    "confidence_pct": 94.57142857142857,
+    "predicted_return_pct": -5.758743633846725,
+    "predicted_return": -0.05758743633846725,
+    "raw_predicted_return_pct": -5.758743633846725,
+    "raw_predicted_return": -0.05758743633846725,
+    "reasoning": "Consensus: SHORT (confidence: 100.0%). Expected return: -5.76%. Consensus price: $3,009.30. Model votes: SHORT: 4 model(s), 100.0% weighted vote. Individual models: random_forest (short, -6.00%, R\u00b2=0.900); lightgbm (short, -6.00%, R\u00b2=0.934); xgboost (short, -6.00%, R\u00b2=0.930); stacked_blend (short, -5.01%, R\u00b2=0.940)",
+    "action_scores": {
+      "long": 0.0,
+      "hold": 0.0,
+      "short": 1.0
+    },
+    "horizon_profile": "Long-Term",
+    "target_horizon_bars": 30,
+    "action_label": "Long-Term SHORT",
+    "neutral_return_threshold_pct": 3.15,
+    "neutral_guard_triggered": false
+  }
+}

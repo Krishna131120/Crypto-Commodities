@@ -85,23 +85,38 @@ def _save_series(path: Path, series: pd.Series):
 
 
 def _download_series(name: str, ticker: str, start: pd.Timestamp, end: pd.Timestamp) -> Optional[pd.Series]:
+    """
+    Download series from yfinance, suppressing errors (context features are optional).
+    """
     if yf is None:
         return None
     try:
-        data = yf.download(
-            ticker,
-            start=start.tz_convert(None),
-            end=(end + pd.Timedelta(days=2)).tz_convert(None),
-            progress=False,
-        )
-        if data.empty:
-            return None
-        series = data["Adj Close"].copy()
-        series.index = pd.DatetimeIndex(series.index).tz_localize("UTC")
-        path = CACHE_DIR / f"{name}.csv"
-        _save_series(path, series)
-        return series
+        # Suppress yfinance errors - these are optional context features
+        import warnings
+        import logging
+        yf_logger = logging.getLogger("yfinance")
+        old_level = yf_logger.level
+        yf_logger.setLevel(logging.CRITICAL)  # Suppress ERROR and WARNING
+        
+        try:
+            data = yf.download(
+                ticker,
+                start=start.tz_convert(None),
+                end=(end + pd.Timedelta(days=2)).tz_convert(None),
+                progress=False,
+                quiet=True,  # Suppress progress output
+            )
+            if data.empty:
+                return None
+            series = data["Adj Close"].copy()
+            series.index = pd.DatetimeIndex(series.index).tz_localize("UTC")
+            path = CACHE_DIR / f"{name}.csv"
+            _save_series(path, series)
+            return series
+        finally:
+            yf_logger.setLevel(old_level)  # Restore original log level
     except Exception:
+        # Silently fail - context features are optional
         return None
 
 

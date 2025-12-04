@@ -730,7 +730,8 @@ def _compute_consensus_action(
         "consensus_action": consensus_action,
         "consensus_confidence": float(consensus_confidence),
         "consensus_price": float(consensus_price),
-        "consensus_return": float(consensus_return),
+        "consensus_return": float(consensus_return),  # May be zeroed by neutral guard
+        "raw_consensus_return": float(raw_consensus_return),  # Actual prediction before neutral guard
         "reasoning": ". ".join(reasoning_parts),
         "model_votes": model_details,
         "action_scores": {k: float(v) for k, v in action_scores.items()},
@@ -2053,6 +2054,10 @@ def train_for_symbol(
         condensed_models[name] = {k: v for k, v in model_entry.items() if v is not None}
 
     # Build simplified, user-friendly summary structure
+    # Use raw_consensus_return for predicted_price so users see actual model predictions
+    # even when neutral guard is triggered (consensus_return may be zeroed)
+    raw_return = consensus.get("raw_consensus_return", consensus.get("consensus_return", 0.0))
+    predicted_price_from_raw = float(latest_market_price * (1.0 + raw_return))
     consensus_price = float(latest_market_price * (1.0 + consensus["consensus_return"]))
     accuracy_values = [
         float(data.get("directional_accuracy"))
@@ -2077,14 +2082,37 @@ def train_for_symbol(
         "last_updated": latest_market_timestamp,
         
         # MAIN PREDICTION - Easy to find
+        # Show actual model prediction (raw return) for predicted_price
+        # but show zeroed return if neutral guard triggered
         "prediction": {
             "current_price": latest_market_price,
-            "predicted_price": consensus_price,
-            "predicted_return_pct": float(consensus["consensus_return"] * 100),
+            "predicted_price": predicted_price_from_raw,  # Use raw return for actual prediction
+            "predicted_return_pct": float(raw_return * 100),  # Show actual prediction return
             "action": consensus["consensus_action"],
             "confidence": consensus_confidence_pct,
             "horizon_days": profile_report.get("horizon_bars", 30),
-            "explanation": f"Price expected to {'rise' if consensus['consensus_action'] == 'long' else 'fall' if consensus['consensus_action'] == 'short' else 'stay flat'} from ${latest_market_price:,.2f} to ${consensus_price:,.2f} ({consensus['consensus_return']*100:+.2f}%) over {profile_report.get('horizon_bars', 30)} days"
+            # Explanation text uses raw return to show actual model prediction
+            # Note: If neutral guard triggered, consensus section will show 0.0% return
+            "explanation": (
+                # Build a logically consistent explanation string:
+                # - if expected return ~ 0, say "stay flat"
+                # - otherwise say "rise" or "fall" with the correct percentage.
+                lambda _price, _target, _ret_pct, _h: (
+                    f"Price expected to stay flat from ${_price:,.2f} to "
+                    f"${_target:,.2f} ({_ret_pct:+.2f}%) over {_h} days"
+                    if abs(_ret_pct) < 1e-9
+                    else (
+                        f"Price expected to "
+                        f"{'rise' if _ret_pct > 0 else 'fall'} from "
+                        f"${_price:,.2f} to ${_target:,.2f} ({_ret_pct:+.2f}%) over {_h} days"
+                    )
+                )
+            )(
+                latest_market_price,
+                predicted_price_from_raw,  # Use raw prediction price
+                raw_return * 100,  # Use raw return for explanation
+                profile_report.get("horizon_bars", 30),
+            ),
         },
         
         # Individual model predictions
@@ -2148,8 +2176,10 @@ def train_for_symbol(
     summary["consensus"] = {
         "action": consensus.get("consensus_action", "hold"),
         "confidence_pct": consensus_confidence_pct,
-        "predicted_return_pct": float(consensus.get("consensus_return", 0.0) * 100),
-        "predicted_return": float(consensus.get("consensus_return", 0.0)),
+        "predicted_return_pct": float(consensus.get("consensus_return", 0.0) * 100),  # May be zeroed by neutral guard
+        "predicted_return": float(consensus.get("consensus_return", 0.0)),  # May be zeroed by neutral guard
+        "raw_predicted_return_pct": float(consensus.get("raw_consensus_return", consensus.get("consensus_return", 0.0)) * 100),  # Actual model prediction
+        "raw_predicted_return": float(consensus.get("raw_consensus_return", consensus.get("consensus_return", 0.0))),  # Actual model prediction
         "reasoning": consensus.get("reasoning", "No consensus available"),
         "action_scores": consensus.get("action_scores", {"long": 0.0, "hold": 1.0, "short": 0.0}),
         "horizon_profile": profile_report.get("label"),

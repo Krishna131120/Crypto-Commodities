@@ -309,6 +309,69 @@ def load_json_file(filepath: Path) -> List[Dict[str, Any]]:
         return []
 
 
+def get_last_timestamp_from_existing_data(
+    asset_type: str,
+    symbol: str,
+    timeframe: str,
+    source_hint: Optional[str] = None
+) -> Optional[datetime]:
+    """
+    Get the last timestamp from existing historical data file.
+    
+    Returns:
+        datetime object of the last timestamp, or None if no data exists.
+        Returns None if data file doesn't exist or is empty.
+    """
+    # Try to find data file - check multiple possible source folders
+    possible_sources = []
+    if source_hint:
+        possible_sources.append(source_hint)
+    
+    # For crypto, check both alpaca and binance folders
+    if asset_type == "crypto":
+        possible_sources.extend(["alpaca", "binance"])
+    elif asset_type == "commodities":
+        possible_sources.extend(["yahoo", "yahoo_chart"])
+    
+    # Remove duplicates while preserving order
+    seen = set()
+    unique_sources = []
+    for src in possible_sources:
+        if src not in seen:
+            seen.add(src)
+            unique_sources.append(src)
+    
+    # Try each possible source folder
+    for source_folder in unique_sources:
+        base_path = get_data_path(asset_type, symbol, timeframe, None, source_folder).parent
+        data_file = base_path / "data.json"
+        
+        if data_file.exists():
+            existing_candles = load_json_file(data_file)
+            if existing_candles:
+                # Sort by timestamp and get the last one
+                sorted_candles = sorted(existing_candles, key=lambda x: x.get("timestamp", ""))
+                last_candle = sorted_candles[-1]
+                last_timestamp_str = last_candle.get("timestamp", "")
+                
+                if last_timestamp_str:
+                    try:
+                        # Parse ISO 8601 timestamp (format: "2024-01-01T00:00:00Z")
+                        if last_timestamp_str.endswith("Z"):
+                            last_timestamp_str = last_timestamp_str[:-1] + "+00:00"
+                        dt = datetime.fromisoformat(last_timestamp_str)
+                        if dt.tzinfo is None:
+                            dt = dt.replace(tzinfo=timezone.utc)
+                        else:
+                            dt = dt.astimezone(timezone.utc)
+                        return dt
+                    except (ValueError, AttributeError) as e:
+                        print(f"  [WARN] Could not parse last timestamp '{last_timestamp_str}': {e}")
+                        continue
+    
+    return None
+
+
 def save_json_file(filepath: Path, candles: List[Dict[str, Any]], append: bool = False):
     """Save candles to a JSON file."""
     filepath.parent.mkdir(parents=True, exist_ok=True)
@@ -363,7 +426,12 @@ def write_candle_to_daily(
 ):
     """Write a candle to the single data.json file (appends to existing data)."""
     if asset_type == "crypto":
-        source_hint = "binance"
+        # Use source from candle if it's alpaca, otherwise default to binance
+        source_hint = candle.get("source") or "binance"
+        if source_hint == "alpaca":
+            source_hint = "alpaca"
+        else:
+            source_hint = "binance"  # Fallback sources go to binance folder
     else:
         source_hint = candle.get("source") or "yahoo"
     # Get path for single data file
@@ -1635,7 +1703,337 @@ class FallbackEngine:
 
 
 # ============================================================================
-# DATA FETCHERS - Binance Historical
+# DATA FETCHERS - Alpaca Historical (PRIMARY SOURCE)
+# ============================================================================
+
+def _convert_to_alpaca_symbol(data_symbol: str) -> str:
+    """
+    Convert our data symbol (BTC-USDT) to Alpaca format (BTC/USD).
+    
+    Alpaca uses format: BASE/QUOTE (e.g., BTC/USD, ETH/USD)
+    Our format: BASE-QUOTE (e.g., BTC-USDT, ETH-USDT)
+    
+    This function is safe and will always return a valid symbol format.
+    If conversion fails, returns the original symbol (fallback sources can handle it).
+    """
+    if not data_symbol or not isinstance(data_symbol, str):
+        return data_symbol  # Return as-is if invalid input
+    
+    try:
+        symbol_upper = data_symbol.upper().strip()
+        
+        # Remove -USDT and replace with /USD
+        if "-USDT" in symbol_upper:
+            base = symbol_upper.replace("-USDT", "").strip()
+            if base:  # Ensure base is not empty
+                return f"{base}/USD"
+        
+        # If already in different format, try to convert
+        if "-" in symbol_upper:
+            parts = symbol_upper.split("-")
+            if len(parts) == 2 and parts[0] and parts[1]:
+                return f"{parts[0]}/{parts[1]}"
+        
+        # If already has /, return as-is (might already be in Alpaca format)
+        if "/" in symbol_upper:
+            return symbol_upper
+        
+        # Fallback: return uppercase version (fallback sources will handle conversion)
+        return symbol_upper
+    except Exception:
+        # If anything fails, return original symbol - fallback sources can handle it
+        return data_symbol.upper() if isinstance(data_symbol, str) else str(data_symbol)
+
+
+def fetch_alpaca_historical(
+    symbol: str,
+    timeframe: str = "1d",
+    years: float = 5.0,
+    start_date: Optional[datetime] = None,
+) -> List[Dict[str, Any]]:
+    """
+    Fetch historical crypto data from Alpaca Data API (PRIMARY SOURCE).
+    
+    NOTE: Alpaca's CryptoHistoricalDataClient does NOT require API keys for crypto data.
+    This is free and unlimited for crypto historical data.
+    
+    Args:
+        symbol: Data symbol (e.g., BTC-USDT)
+        timeframe: Timeframe (1d, 1h, etc.)
+        years: Number of years to fetch (used only if start_date is None)
+        start_date: Optional start date for incremental fetching. If provided, 
+                   only fetches data from this date to now.
+    """
+    try:
+        from alpaca.data.historical import CryptoHistoricalDataClient
+        from alpaca.data.requests import CryptoBarsRequest
+        from alpaca.data.timeframe import TimeFrame
+        from trading.symbol_universe import find_by_data_symbol
+    except ImportError:
+        raise ImportError(
+            "alpaca-py package not installed. Install with: pip install alpaca-py"
+        )
+    
+    # Convert our symbol format to Alpaca format
+    # e.g., BTC-USDT -> BTC/USD
+    # Use try-except to ensure symbol conversion never fails
+    try:
+        asset_mapping = find_by_data_symbol(symbol)
+        if asset_mapping:
+            # Use the trading symbol and convert to Alpaca format
+            # BTCUSD -> BTC/USD
+            trading_sym = asset_mapping.trading_symbol
+            if trading_sym and trading_sym.endswith("USD"):
+                alpaca_symbol = f"{trading_sym[:-3]}/USD"
+            else:
+                alpaca_symbol = _convert_to_alpaca_symbol(symbol)
+        else:
+            alpaca_symbol = _convert_to_alpaca_symbol(symbol)
+    except Exception as sym_exc:
+        # If symbol conversion fails, use fallback conversion
+        print(f"  [WARN] Symbol mapping failed for {symbol}: {sym_exc}, using fallback conversion")
+        alpaca_symbol = _convert_to_alpaca_symbol(symbol)
+    
+    # Map timeframe to Alpaca TimeFrame
+    timeframe_map = {
+        "1m": TimeFrame.Minute,
+        "5m": TimeFrame(5, TimeFrame.Minute),
+        "15m": TimeFrame(15, TimeFrame.Minute),
+        "1h": TimeFrame.Hour,
+        "4h": TimeFrame(4, TimeFrame.Hour),
+        "1d": TimeFrame.Day,
+    }
+    alpaca_tf = timeframe_map.get(timeframe, TimeFrame.Day)
+    
+    # Calculate date range
+    end_date = datetime.now(timezone.utc)
+    
+    # If start_date is provided (incremental fetch), use it
+    # Otherwise, calculate from years parameter (full historical fetch)
+    if start_date is None:
+        calculated_start = end_date - timedelta(days=int(years * 365.25))
+        fetch_mode = "full historical"
+    else:
+        # Ensure start_date is timezone-aware
+        if start_date.tzinfo is None:
+            calculated_start = start_date.replace(tzinfo=timezone.utc)
+        else:
+            calculated_start = start_date.astimezone(timezone.utc)
+        # Subtract 1 day to ensure we get the last candle again (for overlap/verification)
+        calculated_start = calculated_start - timedelta(days=1)
+        fetch_mode = "incremental"
+    
+    print(f"Fetching via Alpaca Data API: {alpaca_symbol} ({timeframe}) - {fetch_mode}")
+    print(f"  Date range: {calculated_start.date()} to {end_date.date()}")
+    
+    try:
+        # No keys required for crypto data!
+        client = CryptoHistoricalDataClient()
+        
+        # Create request
+        request_params = CryptoBarsRequest(
+            symbol_or_symbols=[alpaca_symbol],
+            timeframe=alpaca_tf,
+            start=calculated_start,
+            end=end_date,
+        )
+        
+        # Fetch bars
+        bars = client.get_crypto_bars(request_params)
+        
+        if bars is None:
+            return []
+        
+        # Convert to DataFrame if not already
+        if hasattr(bars, 'df'):
+            df = bars.df
+        else:
+            # If it's already a DataFrame or list, handle accordingly
+            import pandas as pd
+            if isinstance(bars, pd.DataFrame):
+                df = bars
+            else:
+                return []
+        
+        if df is None or len(df) == 0:
+            return []
+        
+        # Convert to our canonical format
+        candles = []
+        for idx, row in df.iterrows():
+            # Alpaca bars have: timestamp (index), open, high, low, close, volume, trade_count, vwap
+            timestamp = idx  # pandas Timestamp (index)
+            if hasattr(timestamp, 'to_pydatetime'):
+                dt = timestamp.to_pydatetime()
+                if dt.tzinfo is None:
+                    dt = dt.replace(tzinfo=timezone.utc)
+                else:
+                    dt = dt.astimezone(timezone.utc)
+            elif hasattr(timestamp, 'timestamp'):
+                dt = datetime.fromtimestamp(timestamp.timestamp(), tz=timezone.utc)
+            else:
+                # Fallback: try to parse as datetime
+                try:
+                    dt = pd.to_datetime(timestamp).to_pydatetime()
+                    if dt.tzinfo is None:
+                        dt = dt.replace(tzinfo=timezone.utc)
+                    else:
+                        dt = dt.astimezone(timezone.utc)
+                except:
+                    continue  # Skip this row if timestamp parsing fails
+            
+            canonical = create_canonical_candle(
+                symbol=symbol,
+                timeframe=timeframe,
+                timestamp=dt,
+                open_price=float(row['open']),
+                high=float(row['high']),
+                low=float(row['low']),
+                close=float(row['close']),
+                volume=float(row.get('volume', 0.0)) if 'volume' in row else 0.0,
+                source="alpaca",
+                fallback_active=False,
+            )
+            candles.append(canonical)
+        
+        print(f"  [OK] Successfully fetched {len(candles)} candles from Alpaca")
+        return candles
+        
+    except ImportError as import_exc:
+        # If alpaca-py is not installed, raise ImportError to trigger fallback
+        error_msg = str(import_exc)
+        print(f"  [ERROR] Alpaca import failed: {error_msg}")
+        print(f"  [INFO] Original symbol '{symbol}' preserved for fallback sources")
+        raise  # Re-raise to trigger fallback (original symbol is preserved)
+    except Exception as exc:
+        # Any other error (API error, symbol not found, etc.) - trigger fallback
+        error_msg = str(exc)
+        print(f"  [ERROR] Alpaca API failed: {error_msg}")
+        print(f"  [INFO] Falling back to alternative data sources with original symbol '{symbol}'...")
+        raise  # Re-raise to trigger fallback (original symbol is preserved)
+
+
+def fetch_alpaca_live(
+    symbol: str,
+    timeframe: str = "1d",
+) -> Optional[Dict[str, Any]]:
+    """
+    Fetch latest live candle from Alpaca Data API.
+    
+    Returns a single canonical candle dict, or None if unavailable.
+    """
+    try:
+        from alpaca.data.historical import CryptoHistoricalDataClient
+        from alpaca.data.requests import CryptoBarsRequest
+        from alpaca.data.timeframe import TimeFrame
+        from trading.symbol_universe import find_by_data_symbol
+    except ImportError:
+        return None
+    
+    # Convert symbol format (with error handling)
+    try:
+        asset_mapping = find_by_data_symbol(symbol)
+        if asset_mapping and asset_mapping.trading_symbol:
+            trading_sym = asset_mapping.trading_symbol
+            if trading_sym.endswith("USD"):
+                alpaca_symbol = f"{trading_sym[:-3]}/USD"
+            else:
+                alpaca_symbol = _convert_to_alpaca_symbol(symbol)
+        else:
+            alpaca_symbol = _convert_to_alpaca_symbol(symbol)
+    except Exception:
+        # If symbol mapping fails, use fallback conversion
+        alpaca_symbol = _convert_to_alpaca_symbol(symbol)
+    
+    timeframe_map = {
+        "1m": TimeFrame.Minute,
+        "5m": TimeFrame(5, TimeFrame.Minute),
+        "15m": TimeFrame(15, TimeFrame.Minute),
+        "1h": TimeFrame.Hour,
+        "4h": TimeFrame(4, TimeFrame.Hour),
+        "1d": TimeFrame.Day,
+    }
+    alpaca_tf = timeframe_map.get(timeframe, TimeFrame.Day)
+    
+    # Fetch last 2 bars (to ensure we get the latest complete one)
+    end_date = datetime.now(timezone.utc)
+    start_date = end_date - timedelta(days=2)
+    
+    try:
+        client = CryptoHistoricalDataClient()
+        request_params = CryptoBarsRequest(
+            symbol_or_symbols=[alpaca_symbol],
+            timeframe=alpaca_tf,
+            start=start_date,
+            end=end_date,
+            limit=2,  # Just get last 2 bars
+        )
+        
+        bars = client.get_crypto_bars(request_params)
+        
+        if bars is None:
+            return None
+        
+        # Convert to DataFrame if not already
+        if hasattr(bars, 'df'):
+            df = bars.df
+        else:
+            import pandas as pd
+            if isinstance(bars, pd.DataFrame):
+                df = bars
+            else:
+                return None
+        
+        if df is None or len(df) == 0:
+            return None
+        
+        # Get the latest bar
+        latest_row = df.iloc[-1]
+        timestamp = df.index[-1]  # pandas Timestamp from index
+        
+        if hasattr(timestamp, 'to_pydatetime'):
+            dt = timestamp.to_pydatetime()
+            if dt.tzinfo is None:
+                dt = dt.replace(tzinfo=timezone.utc)
+            else:
+                dt = dt.astimezone(timezone.utc)
+        elif hasattr(timestamp, 'timestamp'):
+            dt = datetime.fromtimestamp(timestamp.timestamp(), tz=timezone.utc)
+        else:
+            try:
+                import pandas as pd
+                dt = pd.to_datetime(timestamp).to_pydatetime()
+                if dt.tzinfo is None:
+                    dt = dt.replace(tzinfo=timezone.utc)
+                else:
+                    dt = dt.astimezone(timezone.utc)
+            except:
+                return None
+        
+        return create_canonical_candle(
+            symbol=symbol,
+            timeframe=timeframe,
+            timestamp=dt,
+            open_price=float(latest_row['open']),
+            high=float(latest_row['high']),
+            low=float(latest_row['low']),
+            close=float(latest_row['close']),
+            volume=float(latest_row.get('volume', 0.0)) if 'volume' in latest_row else 0.0,
+            source="alpaca",
+            fallback_active=False,
+        )
+        
+    except ImportError:
+        # alpaca-py not installed - return None (will use fallback with original symbol)
+        return None
+    except Exception as exc:
+        # Any other error - return None (will use fallback with original symbol)
+        # Original symbol format is preserved, so fallback sources (Binance, etc.) can handle it
+        return None
+
+
+# ============================================================================
+# DATA FETCHERS - Binance Historical (FALLBACK)
 # ============================================================================
 
 def fetch_binance_rest_historical(
@@ -1755,7 +2153,15 @@ def save_historical_data(
     """Save all historical candles to a single JSON file per symbol/timeframe."""
     if not candles:
         return
+    # Determine source folder from first candle if not provided
+    if source_hint is None and candles:
+        source_hint = candles[0].get("source", "binance")
     source_folder = source_hint or "binance"
+    # Normalize: if source is "alpaca", use "alpaca" folder, otherwise "binance"
+    if source_folder == "alpaca":
+        source_folder = "alpaca"
+    else:
+        source_folder = "binance"  # All fallback sources go to binance folder
     # Sort candles by timestamp
     candles.sort(key=lambda x: x.get("timestamp", ""))
     
@@ -1986,17 +2392,28 @@ def _download_yahoo_with_yfinance(
         
         for attempt in range(3):
             try:
-                hist = yf.download(
-                    tickers=yahoo_symbol,
-                    start=current_start.strftime("%Y-%m-%d"),
-                    end=current_end.strftime("%Y-%m-%d"),
-                    interval=interval,
-                    auto_adjust=False,
-                    progress=False,
-                    group_by="ticker",
-                    threads=False,
-                    session=session
-                )
+                # Suppress yfinance errors - these are optional fallback data sources
+                import warnings
+                import logging
+                yf_logger = logging.getLogger("yfinance")
+                old_level = yf_logger.level
+                yf_logger.setLevel(logging.CRITICAL)  # Suppress ERROR and WARNING
+                
+                try:
+                    hist = yf.download(
+                        tickers=yahoo_symbol,
+                        start=current_start.strftime("%Y-%m-%d"),
+                        end=current_end.strftime("%Y-%m-%d"),
+                        interval=interval,
+                        auto_adjust=False,
+                        progress=False,
+                        quiet=True,
+                        group_by="ticker",
+                        threads=False,
+                        session=session
+                    )
+                finally:
+                    yf_logger.setLevel(old_level)  # Restore original log level
 
                 if isinstance(hist, pd.DataFrame) and isinstance(hist.columns, pd.MultiIndex):
                     try:
@@ -2255,16 +2672,88 @@ def save_yahoo_historical(
         print(f"[FEATURE] Unable to update features for {symbol}/{timeframe}: {exc}")
 
 
+def poll_alpaca_live(
+    symbol: str,
+    timeframe: str = "1d",
+    poll_interval: int = 300,  # 5 minutes default
+    fallback_engine: Optional[FallbackEngine] = None
+):
+    """
+    Poll Alpaca Data API for live crypto data updates (PRIMARY SOURCE).
+    
+    This runs in a background thread and continuously updates data.json
+    with the latest candles from Alpaca.
+    """
+    print(f"Starting Alpaca live polling for {symbol} ({timeframe})")
+    last_timestamp = None
+    
+    while True:
+        try:
+            # Fetch latest candle from Alpaca
+            latest_candle = fetch_alpaca_live(symbol, timeframe)
+            
+            if latest_candle:
+                current_timestamp = latest_candle.get("timestamp")
+                
+                # Only save if this is a new candle (different timestamp)
+                if last_timestamp is None or current_timestamp != last_timestamp:
+                    is_valid, error = validate_candle(latest_candle)
+                    if is_valid:
+                        # Save to data.json
+                        write_candle_to_daily("crypto", symbol, timeframe, latest_candle)
+                        print(f"  [{current_timestamp}] {symbol} {timeframe}: ${latest_candle['close']:.2f} (Alpaca)")
+                        last_timestamp = current_timestamp
+                    else:
+                        print(f"  [WARN] Invalid candle for {symbol}: {error}")
+                else:
+                    # Same timestamp, no update needed
+                    pass
+            else:
+                # Alpaca failed, mark fallback if engine provided
+                if fallback_engine:
+                    fallback_engine.mark_failure("alpaca", "No data returned")
+                    print(f"  [WARN] Alpaca returned no data for {symbol}, will try fallback on next cycle")
+                    print(f"  [INFO] Original symbol '{symbol}' preserved for fallback sources")
+            
+        except ImportError as import_exc:
+            # alpaca-py not installed
+            error_msg = str(import_exc)
+            print(f"  [ERROR] Alpaca import failed for {symbol}: {error_msg}")
+            print(f"  [INFO] Original symbol '{symbol}' preserved for fallback")
+            if fallback_engine:
+                fallback_engine.mark_failure("alpaca", error_msg)
+        except Exception as exc:
+            # Any other error (API error, network, etc.)
+            error_msg = str(exc)
+            print(f"  [ERROR] Alpaca polling error for {symbol}: {error_msg}")
+            print(f"  [INFO] Original symbol '{symbol}' preserved for fallback")
+            if fallback_engine:
+                fallback_engine.mark_failure("alpaca", error_msg)
+        
+        # Wait before next poll
+        time.sleep(poll_interval)
+
+
 def poll_yahoo_live(
     symbol: str,
     timeframe: str = "1d",
     poll_interval: int = 60,
     fallback_engine: Optional[FallbackEngine] = None
 ):
-    """Poll Yahoo Finance for live data updates."""
+    """Poll Yahoo Finance for live data updates (FALLBACK)."""
     print(f"Starting Yahoo Finance live polling for {symbol} ({timeframe})")
     
-    ticker = yf.Ticker(symbol)
+    # Suppress yfinance errors - this is a fallback source
+    import warnings
+    import logging
+    yf_logger = logging.getLogger("yfinance")
+    old_level = yf_logger.level
+    yf_logger.setLevel(logging.CRITICAL)  # Suppress ERROR and WARNING
+    
+    try:
+        ticker = yf.Ticker(symbol)
+    finally:
+        yf_logger.setLevel(old_level)  # Restore original log level
     last_close = None
     
     while True:
@@ -2614,14 +3103,37 @@ def fetch_crypto_historical_with_fallback(
     symbol: str,
     timeframe: str = "1d",
     years: float = 5,
-    fallback_engine: Optional[FallbackEngine] = None
+    fallback_engine: Optional[FallbackEngine] = None,
+    incremental: bool = True,
 ) -> List[Dict[str, Any]]:
     """
     Fetch crypto historical data with automatic fallback between free sources.
+    
+    PRIMARY: Alpaca (free, no keys required for crypto data)
+    FALLBACK: Binance, Coinbase, KuCoin, OKX, local cache
+    
+    Args:
+        symbol: Data symbol (e.g., BTC-USDT)
+        timeframe: Timeframe (1d, 1h, etc.)
+        years: Number of years to fetch (used only if no existing data found)
+        fallback_engine: Optional fallback engine for source switching
+        incremental: If True, check for existing data and only fetch new data
     """
     if fallback_engine is None:
-        sources = ["binance_rest", "coinbase", "kucoin", "okx", "local_cache"]
-        fallback_engine = FallbackEngine(sources, "binance_rest")
+        sources = ["alpaca", "binance_rest", "coinbase", "kucoin", "okx", "local_cache"]
+        fallback_engine = FallbackEngine(sources, "alpaca")
+    
+    # Check for existing data if incremental mode is enabled
+    incremental_start_date = None
+    if incremental:
+        last_timestamp = get_last_timestamp_from_existing_data("crypto", symbol, timeframe)
+        if last_timestamp:
+            # Use last timestamp as start date for incremental fetch
+            incremental_start_date = last_timestamp
+            print(f"[{symbol}] Found existing data, last timestamp: {last_timestamp.isoformat()}")
+            print(f"[{symbol}] Will fetch incremental data from {last_timestamp.date()} to now")
+        else:
+            print(f"[{symbol}] No existing data found, will fetch full {years} years")
     
     all_candles = []
     max_attempts = len(fallback_engine.sources) * 2
@@ -2630,10 +3142,119 @@ def fetch_crypto_historical_with_fallback(
         source = fallback_engine.get_current_source()
         
         try:
-            print(f"[{symbol}] Fetching historical from {source} (attempt {attempt + 1})...")
+            if incremental_start_date:
+                print(f"[{symbol}] Fetching incremental data from {source} (attempt {attempt + 1})...")
+            else:
+                print(f"[{symbol}] Fetching historical from {source} (attempt {attempt + 1})...")
             
-            if source == "binance_rest":
+            if source == "alpaca":
+                # Pass incremental_start_date if available
+                candles = fetch_alpaca_historical(
+                    symbol, 
+                    timeframe, 
+                    years, 
+                    start_date=incremental_start_date
+                )
+                
+                # If Alpaca returned 0 candles for daily data in incremental mode,
+                # use live price API to update the last candle instead of falling back to Binance
+                if len(candles) == 0 and incremental_start_date and timeframe == "1d":
+                    print(f"  [INFO] Alpaca returned 0 daily candles (day not complete yet)")
+                    print(f"  [INFO] Using Alpaca live price API to update last candle instead of falling back to Binance")
+                    
+                    try:
+                        # Get trading symbol for Alpaca
+                        from trading.symbol_universe import find_by_data_symbol
+                        from trading.alpaca_client import AlpacaClient
+                        from pathlib import Path
+                        
+                        asset_mapping = find_by_data_symbol(symbol)
+                        if asset_mapping:
+                            client = AlpacaClient()
+                            last_trade = client.get_last_trade(asset_mapping.trading_symbol)
+                            
+                            if last_trade:
+                                live_price = last_trade.get("price") or last_trade.get("p")
+                                if live_price:
+                                    live_price = float(live_price)
+                                    
+                                    # Load existing data.json and update last candle
+                                    data_paths = [
+                                        get_data_path("crypto", symbol, timeframe, None, "alpaca").parent / "data.json",
+                                        get_data_path("crypto", symbol, timeframe, None, "binance").parent / "data.json",
+                                    ]
+                                    
+                                    data_file = None
+                                    for path in data_paths:
+                                        if path.exists():
+                                            data_file = path
+                                            break
+                                    
+                                    if data_file and data_file.exists():
+                                        existing_candles = load_json_file(data_file)
+                                        if existing_candles:
+                                            # Update the last candle's close price with live price
+                                            last_candle = existing_candles[-1].copy()
+                                            last_candle["close"] = live_price
+                                            if live_price > last_candle.get("high", 0):
+                                                last_candle["high"] = live_price
+                                            if live_price < last_candle.get("low", float("inf")) or last_candle.get("low", 0) == 0:
+                                                last_candle["low"] = live_price
+                                            last_candle["source"] = last_candle.get("source", "alpaca")
+                                            last_candle["live_updated"] = True
+                                            
+                                            # Replace last candle and save
+                                            existing_candles[-1] = last_candle
+                                            save_json_file(data_file, existing_candles, append=False)
+                                            
+                                            print(f"  [OK] Updated last candle with live price ${live_price:.2f} from Alpaca")
+                                            # Mark as success and return empty (data already updated in place)
+                                            # DO NOT fallback to Binance - we've updated with Alpaca live price
+                                            fallback_engine.mark_success(source)
+                                            all_candles = []
+                                            break
+                                        else:
+                                            print(f"  [WARN] No existing candles found to update")
+                                    else:
+                                        print(f"  [WARN] No existing data.json found to update")
+                                else:
+                                    print(f"  [WARN] No price in Alpaca last_trade response")
+                            else:
+                                print(f"  [WARN] Could not get live price from Alpaca")
+                        else:
+                            print(f"  [WARN] Could not find asset mapping for {symbol}")
+                    except Exception as live_exc:
+                        print(f"  [WARN] Failed to update with live price: {live_exc}")
+                        # Live update failed: now allowed to fallback to Binance (or other sources)
+                        # Mark Alpaca as failed so fallback_engine will rotate to the next source.
+                        fallback_engine.mark_failure(source, "No data returned and live price update failed")
+            elif source == "binance_rest":
+                # Binance doesn't support start_date parameter yet, but save_historical_data will merge correctly
                 candles = fetch_binance_rest_historical(symbol, timeframe, years)
+                # If we're doing incremental and got candles, filter to only new ones
+                if incremental_start_date and candles:
+                    # Filter candles to only include those after the last timestamp
+                    filtered_candles = []
+                    for candle in candles:
+                        try:
+                            ts_str = candle.get("timestamp", "")
+                            if ts_str:
+                                if ts_str.endswith("Z"):
+                                    ts_str = ts_str[:-1] + "+00:00"
+                                candle_dt = datetime.fromisoformat(ts_str)
+                                if candle_dt.tzinfo is None:
+                                    candle_dt = candle_dt.replace(tzinfo=timezone.utc)
+                                else:
+                                    candle_dt = candle_dt.astimezone(timezone.utc)
+                                # Only include candles after the last timestamp (with 1 day buffer for overlap)
+                                if candle_dt > (incremental_start_date - timedelta(days=1)):
+                                    filtered_candles.append(candle)
+                        except Exception:
+                            # If timestamp parsing fails, include the candle (better safe than sorry)
+                            filtered_candles.append(candle)
+                    candles = filtered_candles
+                    if candles:
+                        print(f"  [INFO] Filtered to {len(candles)} new candles (after {incremental_start_date.date()})")
             elif source == "coinbase":
                 candles = fetch_coinbase_historical(symbol, timeframe, years)
             elif source == "kucoin":
@@ -2749,8 +3370,8 @@ def ingest_all_historical(
     print("=" * 80)
     
     crypto_fallback = FallbackEngine(
-        ["binance_rest", "coinbase", "kucoin", "okx", "local_cache"],
-        "binance_rest"
+        ["alpaca", "binance_rest", "coinbase", "kucoin", "okx", "local_cache"],
+        "alpaca"  # PRIMARY: Alpaca (free, no keys required for crypto data)
     )
     commodities_fallback = FallbackEngine(
         ["yahoo", "local_cache"],
@@ -2758,15 +3379,22 @@ def ingest_all_historical(
     )
     
     print(f"\n[CRYPTO] Ingesting {len(crypto_symbols)} symbols...")
+    print("  Using incremental fetching: will only fetch new data if existing data found")
     for idx, symbol in enumerate(crypto_symbols, 1):
         try:
             print(f"\n[{idx}/{len(crypto_symbols)}] {symbol} ({timeframe})")
             candles = fetch_crypto_historical_with_fallback(
-                symbol, timeframe, years, crypto_fallback
+                symbol, 
+                timeframe, 
+                years, 
+                crypto_fallback,
+                incremental=True,  # Enable incremental fetching
             )
             if candles:
-                save_historical_data(symbol, timeframe, candles)
-                print(f"  [SUCCESS] {symbol} complete: {len(candles)} candles saved")
+                # Determine source from first candle
+                source_hint = candles[0].get("source", "binance") if candles else "binance"
+                save_historical_data(symbol, timeframe, candles, source_hint=source_hint)
+                print(f"  [SUCCESS] {symbol} complete: {len(candles)} candles saved (source: {source_hint})")
             else:
                 print(f"  [WARNING] No data fetched for {symbol}")
         except Exception as exc:
@@ -2820,13 +3448,28 @@ def start_live_feeds_with_fallback(
     for symbol in crypto_symbols:
         try:
             print(f"\nStarting live feed for {symbol} ({crypto_timeframe})...")
-            sources = ["binance_ws", "coinbase", "kucoin", "okx"]
-            fallback = FallbackEngine(sources, "binance_ws")
+            # PRIMARY: Alpaca polling (free, no keys required for crypto data)
+            # FALLBACK: Binance websocket, Coinbase, KuCoin, OKX
+            sources = ["alpaca", "binance_ws", "coinbase", "kucoin", "okx"]
+            fallback = FallbackEngine(sources, "alpaca")
             crypto_fallbacks[symbol] = fallback
             
-            client = start_binance_live_feed(symbol, crypto_timeframe, fallback)
-            crypto_clients.append((symbol, client))
-            print(f"  [OK] {symbol} live feed started")
+            # Try Alpaca first (polling-based, simpler and more reliable)
+            try:
+                thread = threading.Thread(
+                    target=poll_alpaca_live,
+                    args=(symbol, crypto_timeframe, 300, fallback),  # Poll every 5 minutes
+                    daemon=True
+                )
+                thread.start()
+                crypto_clients.append((symbol, thread))
+                print(f"  [OK] {symbol} Alpaca live polling started (PRIMARY)")
+            except Exception as alpaca_exc:
+                print(f"  [WARN] Alpaca polling failed: {alpaca_exc}, trying Binance fallback...")
+                # Fallback to Binance websocket
+                client = start_binance_live_feed(symbol, crypto_timeframe, fallback)
+                crypto_clients.append((symbol, client))
+                print(f"  [OK] {symbol} Binance live feed started (FALLBACK)")
         except Exception as exc:
             print(f"  [ERROR] Failed to start live feed for {symbol}: {exc}")
     
