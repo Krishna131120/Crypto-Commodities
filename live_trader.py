@@ -406,7 +406,8 @@ def run_trading_cycle(
             # Display predicted action before execution
             action = consensus.get("consensus_action", "hold")
             confidence = consensus.get("consensus_confidence", 0.0)
-            expected_move = consensus.get("consensus_expected_move", 0.0)
+            # Use predicted_return (consensus_return) for expected move
+            expected_move = consensus.get("consensus_return", consensus.get("predicted_return", 0.0))
             print(f"[PREDICTION] {data_symbol}: {action.upper()} (confidence: {confidence*100:.1f}%, expected move: {expected_move*100:+.2f}%)")
             
             # Execute trade with horizon-specific risk parameters

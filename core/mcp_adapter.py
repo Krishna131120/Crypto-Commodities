@@ -10,13 +10,15 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 import math
 
+import numpy as np
+import pandas as pd
+
 from .system_bootstrap import ensure_symbol_ready
 from ml.horizons import PROFILE_BASES, normalize_profile, DEFAULT_HORIZON_PROFILE
 from ml.inference import InferencePipeline
 from ml.risk import RiskManagerConfig
 from ml.rl_feedback import get_feedback_learner
 from ml.bucket_logger import get_bucket_logger
-import pandas as pd
 from core.model_paths import (
     horizon_dir,
     summary_path as build_summary_path,
@@ -693,19 +695,38 @@ class MCPAdapter:
                             "weight": weight,
                         })
                 
-                # Load DQN if available
-                dqn_path = Path("models/dqn") / f"{asset_type}_{symbol}_{timeframe}.json"
+                # Load DQN from JSON summary (saved during training)
+                # DQN JSON summary is saved in models/dqn/ directory during training
+                dqn_json_path = Path("models") / "dqn" / f"{asset_type}_{symbol}_{timeframe}.json"
+                
                 dqn_data = None
                 dqn_action = None
-                if dqn_path.exists():
+                dqn_calculated_return = None
+                
+                # Load DQN data from JSON summary
+                if dqn_json_path.exists():
                     try:
-                        with open(dqn_path, "r", encoding="utf-8") as f:
+                        with open(dqn_json_path, "r", encoding="utf-8") as f:
                             dqn_data = json.load(f)
                             dqn_metrics = dqn_data.get("metrics", {})
                             dqn_action_str = dqn_metrics.get("action", "hold").lower()
                             dqn_action = self._canonical_action(dqn_action_str)
+                            
+                            # Get predicted return from DQN metrics
+                            dqn_predicted_return = dqn_metrics.get("predicted_return")
+                            if dqn_predicted_return is not None:
+                                dqn_calculated_return = float(dqn_predicted_return)
+                            else:
+                                # Estimate from action if predicted_return not available
+                                action_threshold = horizon_config.directional_threshold or 0.01
+                                if dqn_action == "LONG":
+                                    dqn_calculated_return = action_threshold * 1.5
+                                elif dqn_action == "SHORT":
+                                    dqn_calculated_return = -action_threshold * 1.5
+                                else:
+                                    dqn_calculated_return = 0.0
                     except Exception as exc:
-                        print(f"[MCP_ADAPTER] Failed to load DQN from {dqn_path}: {exc}")
+                        print(f"[MCP_ADAPTER] Failed to load DQN from {dqn_json_path}: {exc}")
                 
                 # Compute meta probabilities from action_scores
                 action_scores = consensus_data.get("action_scores", {})
@@ -788,7 +809,7 @@ class MCPAdapter:
                     "unified_action": unified_action,
                     "disagreement_explanation": disagreement_explanation,
                     "model_actions": self._build_model_actions(individual_models),
-                    "dqn_recommendation": self._build_dqn_recommendation(dqn_action, dqn_data, current_price, individual_models),
+                    "dqn_recommendation": self._build_dqn_recommendation(dqn_action, dqn_data, current_price, individual_models, dqn_calculated_return),
                     "individual_models": individual_models,
                     "price_calculation": price_explanation,
                     "meta_learner": {
@@ -980,8 +1001,11 @@ class MCPAdapter:
         meta_confidence: float,
     ) -> Tuple[str, str]:
         """
-        Compute unified action from 3 main models (Random Forest, LightGBM, XGBoost).
-        If they disagree, explain why and recommend DQN.
+        Compute unified action from price prediction models (Random Forest, LightGBM, XGBoost, Stacked Blend).
+        Strategy:
+        1. If models agree (high consensus) -> use their consensus
+        2. If models disagree -> use DQN as tiebreaker (DQN is policy-based, not price prediction)
+        3. DQN is NOT used alongside price models when they agree (different model types)
         
         Returns:
             Tuple of (unified_action, disagreement_explanation)
@@ -1001,41 +1025,67 @@ class MCPAdapter:
         total_models = len(main_models)
         meta_action = self._canonical_action(meta_action)
         
-        # Always format explanation in the same way as crypto (matching format)
+        # Check if models agree (unanimous or strong majority)
+        models_agree = (max_count == total_models) or (max_count >= total_models - 1 and max_action != "HOLD")
+        
+        # Check if models disagree (split votes, no clear majority)
+        models_disagree = not models_agree and max_count < total_models - 1
+        
+        # Always format explanation
         explanation = (
             f"Meta action: {meta_action} (confidence {meta_confidence:.2f}). "
             f"Main models -> LONG:{action_counts['LONG']}, HOLD:{action_counts['HOLD']}, SHORT:{action_counts['SHORT']}"
         )
         
         if len(main_models) < 2:
-            # Still return the formatted explanation even with fewer models
+            # With fewer models, use meta if confident, otherwise consensus
             return meta_action if meta_confidence >= self._meta_min_confidence else canonical_consensus, explanation
         
-        if meta_confidence >= self._meta_min_confidence:
-            return meta_action, explanation
+        # Strategy 1: If models agree strongly, use their consensus (don't use DQN)
+        if models_agree:
+            if max_count == total_models:
+                # Unanimous agreement
+                return max_action, (
+                    f"All {total_models} price prediction models agree: {max_action}. "
+                    f"Using model consensus (DQN not needed)."
+                )
+            else:
+                # Strong majority (all but one agree)
+                return max_action, (
+                    f"Strong model consensus: {max_action} ({max_count}/{total_models}). "
+                    f"Using price model majority (DQN not needed)."
+                )
         
-        if max_count >= 2 and max_action != "HOLD":
-            return max_action, f"Meta low confidence; using majority vote: {max_action} ({max_count}/{total_models})"
-        
-        if max_count == total_models and max_action == "HOLD":
-            return "HOLD", f"Meta low confidence; all {total_models} main models recommend HOLD"
-        
-        if dqn_action:
+        # Strategy 2: If models disagree, use DQN as tiebreaker
+        if models_disagree and dqn_action:
             canon_dqn = self._canonical_action(dqn_action)
             details = ", ".join([f"{name}={action}" for name, action in model_actions.items()])
             return canon_dqn, (
-                f"Meta confidence {meta_confidence:.2f} below threshold; models disagree ({details}). "
-                f"Using DQN recommendation: {canon_dqn}."
+                f"Price models disagree ({details}). "
+                f"Using DQN policy as tiebreaker: {canon_dqn}."
             )
         
-        if max_count > 0:
-            details = ", ".join([f"{name}={action}" for name, action in model_actions.items()])
-            return max_action, (
-                f"Meta confidence {meta_confidence:.2f} below threshold; models disagree ({details}). "
-                f"Falling back to majority vote: {max_action} ({max_count}/{total_models})."
-            )
+        # Strategy 3: If models disagree but no DQN available, use meta or majority
+        if models_disagree:
+            if meta_confidence >= self._meta_min_confidence:
+                details = ", ".join([f"{name}={action}" for name, action in model_actions.items()])
+                return meta_action, (
+                    f"Models disagree ({details}). "
+                    f"Using meta-learner: {meta_action} (confidence {meta_confidence:.2f})."
+                )
+            else:
+                # Fallback to majority vote
+                details = ", ".join([f"{name}={action}" for name, action in model_actions.items()])
+                return max_action, (
+                    f"Models disagree ({details}). "
+                    f"Meta confidence low; using majority vote: {max_action} ({max_count}/{total_models})."
+                )
         
-        return canonical_consensus, f"Meta confidence low and no majority. Using consensus: {canonical_consensus}"
+        # Default: use meta if confident, otherwise consensus
+        if meta_confidence >= self._meta_min_confidence:
+            return meta_action, explanation
+        
+        return canonical_consensus, f"Using consensus: {canonical_consensus}"
     
     def add_feedback(
         self,

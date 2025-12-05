@@ -110,23 +110,41 @@ def _evaluate_classification(
 
 def _build_random_forest(custom_params: Optional[Dict] = None) -> RandomForestRegressor:
     """
-    Conservative RandomForest tuned for noisy financial targets with stronger regularization.
-    Enhanced anti-overfitting: deeper regularization, more conservative parameters.
+    STRONG regularization RandomForest for noisy financial targets.
+    Maximum anti-overfitting: very conservative parameters, strong regularization.
     """
+    # Try to use parallel processing, but fallback to single-threaded if joblib fails
+    import os
+    n_jobs = -1
+    # On Windows, joblib can have issues with multiprocessing if venv was created elsewhere
+    # Test if parallel processing works, otherwise use single thread
+    try:
+        import joblib
+        # Quick test to see if parallel processing works
+        test_result = joblib.Parallel(n_jobs=1, backend='threading')(
+            joblib.delayed(lambda x: x)(1) for _ in range(1)
+        )
+    except Exception:
+        # If joblib has issues, use single thread to avoid subprocess errors
+        n_jobs = 1
+    
     params = {
-        "n_estimators": 250,  # Reduced from 300 to prevent overfitting
-        "max_depth": 3,  # Reduced from 4 for stronger regularization
-        "min_samples_leaf": 30,  # Increased from 20 for more conservative splits
-        "min_samples_split": 60,  # Increased from 40
-        "max_features": 0.4,  # Reduced from 0.5 for more randomness
-        "max_samples": 0.7,  # Reduced from 0.8 for more bagging
+        "n_estimators": 200,  # Further reduced from 250
+        "max_depth": 3,  # Keep at 3 (shallow)
+        "min_samples_leaf": 40,  # Increased from 30
+        "min_samples_split": 80,  # Increased from 60
+        "max_features": 0.35,  # Further reduced from 0.4
+        "max_samples": 0.65,  # Further reduced from 0.7
         "random_state": 42,
-        "n_jobs": -1,
+        "n_jobs": n_jobs,
         "bootstrap": True,
-        "ccp_alpha": 0.002,  # Increased from 0.001 for stronger pruning
+        "ccp_alpha": 0.003,  # Increased from 0.002
     }
     if custom_params:
         params.update(custom_params)
+        # Override n_jobs if explicitly set in custom_params
+        if "n_jobs" in custom_params:
+            params["n_jobs"] = custom_params["n_jobs"]
     return RandomForestRegressor(**params)
 
 
@@ -146,25 +164,25 @@ def _build_random_forest_classifier() -> RandomForestClassifier:
 
 def _build_lightgbm(custom_params: Optional[Dict] = None) -> lgb.LGBMRegressor:
     """
-    LightGBM configuration with stronger regularization for financial data.
-    Enhanced anti-overfitting: more conservative parameters, stronger regularization.
+    LightGBM configuration with STRONG regularization for financial data.
+    Maximum anti-overfitting: very conservative parameters, strong regularization.
     """
     params = {
         "boosting_type": "gbdt",
-        "n_estimators": 400,  # Reduced from 500 (early stopping will handle actual count)
-        "learning_rate": 0.025,  # Reduced from 0.03 for more conservative learning
-        "max_depth": 2,  # Reduced from 3 for stronger regularization
-        "num_leaves": 10,  # Reduced from 15 (2^max_depth constraint)
-        "subsample": 0.7,  # Reduced from 0.75 for more bagging
+        "n_estimators": 300,  # Further reduced from 400
+        "learning_rate": 0.02,  # Further reduced from 0.025
+        "max_depth": 2,  # Keep at 2 (very shallow)
+        "num_leaves": 8,  # Further reduced from 10
+        "subsample": 0.65,  # Further reduced from 0.7
         "subsample_freq": 1,
-        "colsample_bytree": 0.6,  # Reduced from 0.7 for more feature randomness
-        "reg_alpha": 1.5,  # Increased from 1.0 for stronger L1 regularization
-        "reg_lambda": 3.0,  # Increased from 2.0 for stronger L2 regularization
-        "min_child_samples": 30,  # Increased from 20 for more conservative splits
-        "min_split_gain": 0.03,  # Increased from 0.02 to require stronger splits
+        "colsample_bytree": 0.55,  # Further reduced from 0.6
+        "reg_alpha": 2.0,  # Increased from 1.5
+        "reg_lambda": 4.0,  # Increased from 3.0
+        "min_child_samples": 35,  # Increased from 30
+        "min_split_gain": 0.05,  # Increased from 0.03
         "max_bin": 255,
         "extra_trees": False,
-        "min_data_in_bin": 5,  # Increased from 3
+        "min_data_in_bin": 8,  # Increased from 5
         "feature_pre_filter": False,
         "random_state": 42,
         "force_row_wise": True,
@@ -199,19 +217,19 @@ def _build_lightgbm_classifier() -> lgb.LGBMClassifier:
 
 def _build_xgboost(custom_params: Optional[Dict] = None) -> xgb.XGBRegressor:
     """
-    XGBoost configuration with stronger regularization for financial data.
-    Enhanced anti-overfitting: more conservative parameters, stronger regularization.
+    XGBoost configuration with STRONG regularization for financial data.
+    Maximum anti-overfitting: very conservative parameters, strong regularization.
     """
     params = {
-        "n_estimators": 400,  # Reduced from 500 (early stopping will handle actual count)
-        "learning_rate": 0.02,  # Reduced from 0.025 for more conservative learning
-        "max_depth": 2,  # Reduced from 3 for stronger regularization
-        "subsample": 0.7,  # Reduced from 0.75 for more bagging
-        "colsample_bytree": 0.6,  # Reduced from 0.65 for more feature randomness
-        "reg_alpha": 1.5,  # Increased from 1.0 for stronger L1 regularization
-        "reg_lambda": 3.5,  # Increased from 2.5 for stronger L2 regularization
-        "min_child_weight": 7,  # Increased from 5 for more conservative splits
-        "gamma": 0.15,  # Increased from 0.1 to require stronger splits
+        "n_estimators": 300,  # Further reduced from 400
+        "learning_rate": 0.015,  # Further reduced from 0.02
+        "max_depth": 2,  # Keep at 2 (very shallow)
+        "subsample": 0.65,  # Further reduced from 0.7
+        "colsample_bytree": 0.55,  # Further reduced from 0.6
+        "reg_alpha": 2.5,  # Increased from 1.5
+        "reg_lambda": 4.5,  # Increased from 3.5
+        "min_child_weight": 10,  # Increased from 7
+        "gamma": 0.2,  # Increased from 0.15
         "objective": "reg:squarederror",
         "random_state": 42,
         "tree_method": "hist",
@@ -302,7 +320,7 @@ def train_lightgbm(
             eval_set=[(X_val, y_val)],
             eval_metric="l2",
             callbacks=[
-                lgb.early_stopping(stopping_rounds=100, verbose=False),  # Increased from 50
+                lgb.early_stopping(stopping_rounds=20, verbose=False),  # Further reduced: 20 to prevent overfitting
                 lgb.log_evaluation(period=0),  # Disable verbose output
             ],
         )
@@ -311,21 +329,28 @@ def train_lightgbm(
     pred_returns = model.predict(X_val)
     metrics = _evaluate(y_val.to_numpy(), pred_returns)
     
-    # Refit on full dataset if requested (without early stopping to use all data)
+    # Refit on full dataset if requested
+    # IMPORTANT: When refitting, use the SAME number of iterations that early stopping found
+    # to prevent overfitting. Don't train longer just because we have more data.
     if refit_on_full and X_full is not None and y_full is not None:
-        # Use a fresh model with same config but no early stopping for final fit
+        # Get the best iteration from the initial training
+        best_iteration = getattr(model, 'best_iteration_', None) or getattr(model, 'n_estimators', 300)
+        
         with warnings.catch_warnings():
             warnings.filterwarnings("ignore", category=UserWarning)
             warnings.filterwarnings("ignore", message=".*LightGBM.*")
             warnings.filterwarnings("ignore", message=".*lgb.*")
             
+            # Create fresh model with same config but limit iterations to best_iteration
             final_model = _build_lightgbm(param_overrides)
+            if best_iteration:
+                final_model.set_params(n_estimators=min(best_iteration, 300))
             final_model.fit(
                 X_full,
                 y_full,
                 eval_set=[(X_val, y_val)],
                 eval_metric="l2",
-                callbacks=[lgb.early_stopping(stopping_rounds=100, verbose=False)],
+                callbacks=[lgb.early_stopping(stopping_rounds=20, verbose=False)],
             )
             model = final_model
     
@@ -351,7 +376,7 @@ def train_xgboost(
         y_train,
         eval_set=[(X_val, y_val)],
         verbose=False,
-        early_stopping_rounds=100,  # Increased from 50 for more patience
+        early_stopping_rounds=20,  # Further reduced: 20 to prevent overfitting
     )
     
     # Evaluate on validation set
@@ -359,15 +384,22 @@ def train_xgboost(
     metrics = _evaluate(y_val.to_numpy(), pred_returns)
     
     # Refit on full dataset if requested
+    # IMPORTANT: When refitting, use the SAME number of iterations that early stopping found
+    # to prevent overfitting. Don't train longer just because we have more data.
     if refit_on_full and X_full is not None and y_full is not None:
-        # Use a fresh model with same config for final fit
+        # Get the best iteration from the initial training
+        best_iteration = getattr(model, 'best_iteration', None) or getattr(model, 'n_estimators', 300)
+        
+        # Create fresh model with same config but limit iterations to best_iteration
         final_model = _build_xgboost(param_overrides)
+        if best_iteration:
+            final_model.set_params(n_estimators=min(best_iteration, 300))
         final_model.fit(
             X_full,
             y_full,
             eval_set=[(X_val, y_val)],
             verbose=False,
-            early_stopping_rounds=100,
+            early_stopping_rounds=20,
         )
         model = final_model
     
@@ -521,13 +553,26 @@ def train_dqn(
         return Monitor(TradingEnv(val_obs, val_returns))
 
     vec_env = DummyVecEnv([_make_train_env])
-    model = DQN(
-        "MlpPolicy",
-        vec_env,
-        verbose=0,
-        tensorboard_log="logs/tensorboard",
-        **DQN_CONFIG,
-    )
+    # Make tensorboard optional - don't fail if not installed
+    try:
+        model = DQN(
+            "MlpPolicy",
+            vec_env,
+            verbose=0,
+            tensorboard_log="logs/tensorboard",
+            **DQN_CONFIG,
+        )
+    except Exception as e:
+        # If tensorboard fails, create model without it
+        if "tensorboard" in str(e).lower():
+            model = DQN(
+                "MlpPolicy",
+                vec_env,
+                verbose=0,
+                **DQN_CONFIG,
+            )
+        else:
+            raise
     eval_env = DummyVecEnv([_make_eval_env])
     eval_callback = EvalCallback(
         eval_env,

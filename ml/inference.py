@@ -191,16 +191,20 @@ class InferencePipeline:
             if name == "stacked_blend":
                 continue
             try:
-                if hasattr(model, "predict_proba") and "directional" in name:
-                    prob = float(model.predict_proba(features)[0, 1])
-                    pred_return = self._prob_to_return(prob)
-                    base_model_outputs[name] = pred_return
-                    model_outputs[name] = {
-                        "predicted_return": pred_return,
-                        "probability": prob,
-                    }
-                else:
-                    pred = float(model.predict(features)[0])
+                # Suppress sklearn feature name warnings - we're using numpy arrays which is correct
+                import warnings
+                with warnings.catch_warnings():
+                    warnings.filterwarnings("ignore", message="X does not have valid feature names")
+                    if hasattr(model, "predict_proba") and "directional" in name:
+                        prob = float(model.predict_proba(features)[0, 1])
+                        pred_return = self._prob_to_return(prob)
+                        base_model_outputs[name] = pred_return
+                        model_outputs[name] = {
+                            "predicted_return": pred_return,
+                            "probability": prob,
+                        }
+                    else:
+                        pred = float(model.predict(features)[0])
                     # Apply horizon-aware clamping
                     clamped_pred = _clamp(pred, horizon_profile=self.horizon_profile)
                     # Additional sanity check: if prediction is extreme, scale it down
@@ -225,7 +229,11 @@ class InferencePipeline:
                 stacked_model = self.models["stacked_blend"]
                 # Stacked blend expects predictions from base models as input
                 base_predictions = np.array([[base_model_outputs[k] for k in sorted(base_model_outputs.keys())]])
-                stack_pred = float(stacked_model.predict(base_predictions)[0])
+                # Suppress sklearn feature name warnings
+                import warnings
+                with warnings.catch_warnings():
+                    warnings.filterwarnings("ignore", message="X does not have valid feature names")
+                    stack_pred = float(stacked_model.predict(base_predictions)[0])
                 clamped_pred = _clamp(stack_pred, horizon_profile=self.horizon_profile)
                 model_outputs["stacked_blend"] = {"predicted_return": clamped_pred}
             except Exception as exc:

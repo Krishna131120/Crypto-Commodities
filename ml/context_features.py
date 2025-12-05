@@ -134,7 +134,13 @@ def _load_external_series(name: str, ticker: str, start: pd.Timestamp, end: pd.T
 
 
 def _align_series(series: pd.Series, index: pd.DatetimeIndex, method: str = "ffill") -> pd.Series:
-    reindexed = series.reindex(index).fillna(method=method)
+    reindexed = series.reindex(index)
+    if method == "ffill":
+        reindexed = reindexed.ffill()
+    elif method == "bfill":
+        reindexed = reindexed.bfill()
+    else:
+        reindexed = reindexed.fillna(0.0)
     return reindexed
 
 
@@ -146,10 +152,10 @@ def _compute_macro_features(index: pd.DatetimeIndex) -> pd.DataFrame:
         raw = _load_external_series(name, meta["ticker"], start, end)
         aligned = _align_series(raw, index)
         features[name] = aligned
-        features[f"{name}_return_5"] = aligned.pct_change(5)
+        features[f"{name}_return_5"] = aligned.pct_change(5, fill_method=None)
         features[f"{name}_zscore_60"] = (aligned - aligned.rolling(60).mean()) / aligned.rolling(60).std()
     if "us10y_yield" in features and "tips_etf" in features:
-        features["real_yield_spread"] = features["us10y_yield"] - features["tips_etf"].pct_change(5) * 100
+        features["real_yield_spread"] = features["us10y_yield"] - features["tips_etf"].pct_change(5, fill_method=None) * 100
     if "us10y_yield" in features and "us2y_yield" in features:
         features["yield_curve_2s10s"] = features["us10y_yield"] - features["us2y_yield"]
     return pd.DataFrame(features, index=index)
@@ -214,7 +220,7 @@ def _compute_vol_index_features(index: pd.DatetimeIndex) -> pd.DataFrame:
         raw = _load_external_series(name, meta["ticker"], start, end)
         aligned = _align_series(raw, index)
         features[name] = aligned
-        features[f"{name}_pct_change"] = aligned.pct_change(5)
+        features[f"{name}_pct_change"] = aligned.pct_change(5, fill_method=None)
         features[f"{name}_zscore"] = (aligned - aligned.rolling(60).mean()) / aligned.rolling(60).std()
     return pd.DataFrame(features, index=index)
 
@@ -323,7 +329,7 @@ def build_context_features(
         return pd.DataFrame(index=index), metadata
 
     combined = pd.concat(feature_blocks, axis=1)
-    combined = combined.reindex(index).fillna(method="ffill").fillna(method="bfill").fillna(0.0)
+    combined = combined.reindex(index).ffill().bfill().fillna(0.0)
     return combined, metadata
 
 

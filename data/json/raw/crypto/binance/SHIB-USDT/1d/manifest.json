@@ -1,0 +1,15 @@
+{
+  "symbol": "SHIB-USDT",
+  "timeframe": "1d",
+  "asset_type": "crypto",
+  "generated_at": "2025-12-05T08:25:56.216890Z",
+  "data_file": "data.json",
+  "latest_file": "latest.json",
+  "data_file_info": {
+    "filename": "data.json",
+    "size_bytes": 628768,
+    "candle_count": 1671,
+    "first_timestamp": "2021-05-10T00:00:00Z",
+    "last_timestamp": "2025-12-05T00:00:00Z"
+  }
+}

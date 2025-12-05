@@ -91,14 +91,14 @@ HIGH_FEATURE_CORR = 0.995
 WALK_FORWARD_SPLITS = 3
 WALK_FORWARD_MIN_TRAIN = 200
 MIN_ACCEPTABLE_R2 = 0.05
-MAX_TRAIN_VAL_GAP = 0.25
+MAX_TRAIN_VAL_GAP = 0.15  # Tighter: 0.15 instead of 0.25 to catch overfitting earlier
 MIN_SIGNAL_CORR = 0.05
 MIN_MAE_IMPROVEMENT = 1e-4
 MIN_DIRECTIONAL_ACCURACY = 0.52
 MIN_TEST_DIRECTIONAL_ACCURACY = 0.52
 MIN_TEST_R2_STRICT = 0.15
-MAX_VAL_TEST_GAP = 0.10
-MAX_TRAIN_TEST_GAP = 0.20
+MAX_VAL_TEST_GAP = 0.08  # Tighter: 0.08 instead of 0.10
+MAX_TRAIN_TEST_GAP = 0.15  # Tighter: 0.15 instead of 0.20
 SCALER_NAME = "feature_scaler.joblib"
 CONTEXT_CONFIG = ContextFeatureConfig(
     include_macro=True,
@@ -1113,10 +1113,25 @@ def train_for_symbol(
     )
     
     # Prepare full dataset for refitting (train + val, excluding test)
+    # CRITICAL: Test set is NEVER used for training or validation - only for final evaluation
     X_full = pd.concat([X_train, X_val])
     y_full = pd.concat([y_train, y_val])
     baseline_val_mae = float(mean_absolute_error(y_val, np.zeros_like(y_val)))
     baseline_test_mae = float(mean_absolute_error(y_test, np.zeros_like(y_test)))
+    
+    logger.info(
+        "Data splits prepared - test set isolated for final evaluation only",
+        category="DATA",
+        symbol=symbol,
+        asset_type=asset_type,
+        data={
+            "train_rows": len(X_train),
+            "val_rows": len(X_val),
+            "test_rows": len(X_test),
+            "full_train_val_rows": len(X_full),
+            "note": "Test set will NOT be used during training or hyperparameter optimization"
+        }
+    )
     
     reference_price_dataset = float(test_df["close"].iloc[-1])
     train_returns = train_df["target_return"]
@@ -1202,7 +1217,7 @@ def train_for_symbol(
                     asset_type=asset_type,
                 )
 
-        # Comprehensive overfitting detection
+        # Comprehensive overfitting detection with detailed logging
         rejection_reasons: List[str] = []
         val_r2 = entry.get("r2", 0.0)
         val_mae = entry.get("mae")
@@ -1210,17 +1225,67 @@ def train_for_symbol(
             baseline_val_mae - val_mae if val_mae is not None else None
         )
         val_dir = entry.get("directional_accuracy")
+        
+        # Log all metrics for debugging
+        logger.info(
+            f"{name} metrics computed",
+            category="MODEL",
+            symbol=symbol,
+            asset_type=asset_type,
+            data={
+                "model": name,
+                "val_r2": val_r2,
+                "val_mae": val_mae,
+                "val_dir": val_dir,
+                "train_metrics": train_metrics,
+                "test_metrics": test_metrics,
+            }
+        )
+        
         if train_metrics and test_metrics:
             train_r2 = train_metrics.get("r2", 0)
             test_r2 = test_metrics.get("r2", 0)
             test_dir = test_metrics.get("directional_accuracy")
+            train_val_gap = train_r2 - val_r2
+            val_test_gap = val_r2 - test_r2
+            
+            # Log gaps for monitoring
+            logger.info(
+                f"{name} overfitting analysis",
+                category="OVERFITTING",
+                symbol=symbol,
+                asset_type=asset_type,
+                data={
+                    "model": name,
+                    "train_r2": train_r2,
+                    "val_r2": val_r2,
+                    "test_r2": test_r2,
+                    "train_val_gap": train_val_gap,
+                    "val_test_gap": val_test_gap,
+                }
+            )
+            
             if train_r2 - val_r2 > 0.10:
                 _note_overfit(
-                    f"{name}: Train R² ({train_r2:.3f}) >> Val R² ({val_r2:.3f}), gap={train_r2-val_r2:.3f}"
+                    f"{name}: Train R² ({train_r2:.3f}) >> Val R² ({val_r2:.3f}), gap={train_val_gap:.3f}"
                 )
-            if val_r2 - test_r2 > 0.10:
+                logger.warning(
+                    f"{name} shows train/val overfitting: gap={train_val_gap:.3f}",
+                    category="OVERFITTING",
+                    symbol=symbol,
+                    asset_type=asset_type,
+                    data={"model": name, "train_r2": train_r2, "val_r2": val_r2, "gap": train_val_gap}
+                )
+            if val_r2 - test_r2 > 0.08:  # Tighter threshold: 0.08 instead of 0.10
                 _note_overfit(
-                    f"{name}: Val R² ({val_r2:.3f}) >> Test R² ({test_r2:.3f}), gap={val_r2-test_r2:.3f} (generalization failure)"
+                    f"{name}: Val R² ({val_r2:.3f}) >> Test R² ({test_r2:.3f}), gap={val_test_gap:.3f} (generalization failure)"
+                )
+                logger.warning(
+                    f"{name} shows generalization failure: val/test gap={val_test_gap:.3f}",
+                    category="OVERFITTING",
+                    symbol=symbol,
+                    asset_type=asset_type,
+                    data={"model": name, "val_r2": val_r2, "test_r2": test_r2, "gap": val_test_gap}
                 )
             if val_r2 > 0.95:
                 _note_overfit(
@@ -1267,15 +1332,11 @@ def train_for_symbol(
                 rejection_reasons.append(
                     f"test R² {test_r2:.3f} below minimum {effective_r2_threshold:.2f}"
                 )
-            # More lenient gap thresholds for commodities (they tend to have more overfitting)
-            max_train_val_gap = MAX_TRAIN_VAL_GAP
-            max_val_test_gap = MAX_VAL_TEST_GAP
-            max_train_test_gap = MAX_TRAIN_TEST_GAP
-            if asset_type == "commodities":
-                # Commodities data is more challenging, allow larger gaps
-                max_train_val_gap = MAX_TRAIN_VAL_GAP * 1.5  # 0.375 instead of 0.25
-                max_val_test_gap = MAX_VAL_TEST_GAP * 1.5  # 0.15 instead of 0.10
-                max_train_test_gap = MAX_TRAIN_TEST_GAP * 1.3  # 0.26 instead of 0.20
+            # Stricter gap thresholds to catch overfitting early
+            # No special treatment for commodities - apply same strict standards
+            max_train_val_gap = MAX_TRAIN_VAL_GAP  # 0.15 - strict
+            max_val_test_gap = MAX_VAL_TEST_GAP  # 0.08 - strict
+            max_train_test_gap = MAX_TRAIN_TEST_GAP  # 0.15 - strict
             
             if train_r2 - val_r2 > max_train_val_gap:
                 rejection_reasons.append(
@@ -1284,13 +1345,18 @@ def train_for_symbol(
             if isinstance(test_r2, (int, float)) and not np.isnan(test_r2):
                 strict_floor = MIN_TEST_R2_STRICT
                 if has_good_direction:
-                    strict_floor = max(-0.01, strict_floor - 0.10)
-                # More lenient for commodities
-                if asset_type == "commodities" and has_good_direction:
-                    strict_floor = max(-0.01, strict_floor - 0.15)  # Allow lower R² if direction is good
+                    strict_floor = max(-0.01, strict_floor - 0.05)  # Reduced from 0.10 - less lenient
+                # Apply same strict standards to all asset types
                 if test_r2 < strict_floor:
                     rejection_reasons.append(
                         f"test R² {test_r2:.3f} below strict guard {strict_floor:.2f}"
+                    )
+                    logger.warning(
+                        f"{name} rejected: test R² {test_r2:.3f} below threshold {strict_floor:.2f}",
+                        category="MODEL",
+                        symbol=symbol,
+                        asset_type=asset_type,
+                        data={"model": name, "test_r2": test_r2, "threshold": strict_floor}
                     )
                 val_test_gap = val_r2 - test_r2
                 train_test_gap = train_r2 - test_r2
@@ -1342,7 +1408,7 @@ def train_for_symbol(
         elif train_metrics:
             # Fallback if test metrics not available
             train_r2 = train_metrics.get("r2", 0)
-            if train_r2 - val_r2 > 0.10:
+            if train_r2 - val_r2 > 0.08:  # Tighter threshold: 0.08 instead of 0.10
                 _note_overfit(
                     f"{name}: Train R² ({train_r2:.3f}) >> Val R² ({val_r2:.3f})"
                 )
@@ -1991,6 +2057,8 @@ def train_for_symbol(
         
         dqn_entry["predicted_return"] = float(estimated_return)
         dqn_entry["predicted_price"] = float(latest_market_price * (1.0 + estimated_return))
+        
+        # Save DQN summary as JSON (not the model itself)
         _write_dqn_summary(
             output_dir=output_dir,
             asset_type=asset_type,

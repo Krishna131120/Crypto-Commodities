@@ -82,7 +82,7 @@ def _compute_quantile_bins(
         returns.rolling(window, min_periods=max(10, bins)).apply(_rolling_qcut, raw=False)
     )
     quantile_labels = quantile_labels.replace([np.inf, -np.inf], np.nan)
-    quantile_labels = quantile_labels.fillna(method="bfill").fillna(method="ffill")
+    quantile_labels = quantile_labels.bfill().ffill()
     if quantile_labels.isna().any():
         quantile_labels = quantile_labels.fillna(0)
     return quantile_labels.astype(int)
