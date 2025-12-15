@@ -39,14 +39,24 @@ def get_protected_symbols() -> Set[str]:
     """
     Read current Alpaca positions and return a set of CRYPTO trading symbols only
     that should not be modified by this script. Non-crypto positions are ignored.
+    
+    Gracefully handles network errors - returns empty set if Alpaca is unreachable.
     """
     from trading.symbol_universe import all_enabled
     
     # Get only crypto symbols from our universe
     crypto_universe = {asset.trading_symbol.upper() for asset in all_enabled() if asset.asset_type == "crypto"}
     
-    client = AlpacaClient()
-    positions = client.list_positions()
+    try:
+        client = AlpacaClient()
+        positions = client.list_positions()
+    except Exception as e:
+        # Network error or API unavailable - log and continue without protection
+        # This allows the pipeline to run even when Alpaca is unreachable
+        import warnings
+        warnings.warn(f"Could not fetch Alpaca positions (network/API error): {e}. Continuing without position protection.", UserWarning)
+        return set()
+    
     protected: Set[str] = set()
     for pos in positions or []:
         symbol = str(pos.get("symbol", "")).upper()
@@ -109,6 +119,17 @@ def main():
         help="Horizon profile for training (intraday/short/long).",
     )
     parser.add_argument(
+        "--crypto-horizon",
+        default=None,
+        help="Alias for --horizon. Horizon profile for training (intraday/short/long).",
+    )
+    parser.add_argument(
+        "--profit-target",
+        type=float,
+        default=None,
+        help="Profit target percentage (e.g., 0.15 for 0.15%%). If not specified, uses horizon default.",
+    )
+    parser.add_argument(
         "--dry-run",
         action="store_true",
         help="Run trading logic but do not send real orders to Alpaca.",
@@ -116,11 +137,23 @@ def main():
     parser.add_argument(
         "--interval",
         type=int,
-        default=None,
-        help="If set, run repeated trading cycles every N seconds. If omitted, run only one cycle.",
+        default=60,
+        help="Seconds between trading cycles. Runs forever if set. Minimum: 30 seconds (to avoid rate limiting). Default: 60 seconds.",
+    )
+    parser.add_argument(
+        "--allow-existing-positions",
+        action="store_true",
+        help="Allow trading even when symbols already have open positions in Alpaca. "
+             "WARNING: This will let the trading engine manage existing positions.",
     )
 
     args = parser.parse_args()
+    
+    # Validate interval (minimum 30 seconds to avoid API rate limiting)
+    if args.interval is not None and args.interval < 30:
+        print(f"⚠️  WARNING: Interval {args.interval} seconds is too short. Minimum is 30 seconds to avoid rate limiting.")
+        print(f"   Setting interval to 30 seconds.")
+        args.interval = 30
 
     # Normalize user-provided symbols so both data_symbol (BTC-USDT) and
     # trading_symbol (BTC/USD) styles are accepted on the CLI.
@@ -158,7 +191,8 @@ def main():
     crypto_symbols = [_normalize_crypto_symbol(s) for s in raw_symbols]
     timeframe = args.timeframe
     years = max(args.years, 0.5)
-    horizon = args.horizon
+    # Use --crypto-horizon if provided, otherwise use --horizon
+    horizon = args.crypto_horizon if args.crypto_horizon else args.horizon
 
     print("=" * 80)
     print("END-TO-END CRYPTO PIPELINE")
@@ -166,6 +200,8 @@ def main():
     print(f"Symbols:   {', '.join(crypto_symbols)}")
     print(f"Timeframe: {timeframe}")
     print(f"Horizon:   {horizon}")
+    if args.profit_target is not None:
+        print(f"Profit Target: {args.profit_target:.2f}%")
     print(f"Mode:      {'DRY RUN (no real orders)' if args.dry_run else 'LIVE PAPER TRADING'}")
     print("=" * 80)
     print()
@@ -234,20 +270,36 @@ def main():
             f"- horizon: {info['horizon']}"
         )
 
-    # Build set of symbols we must not touch (existing positions).
-    print("    Checking existing Alpaca positions (to avoid touching them)...")
-    protected = get_protected_symbols()
-    if protected:
-        print(f"    Found {len(protected)} protected symbol(s) with open positions:")
-        for sym in sorted(protected):
+    # Check existing positions for informational purposes only.
+    # The execution engine will intelligently manage existing positions:
+    # - Add to LONG positions when prediction is LONG (especially on price drops)
+    # - Exit positions when prediction changes to SHORT or HOLD
+    # - Enter new positions when prediction is LONG and no position exists
+    print("    Checking existing Alpaca positions (for informational purposes)...")
+    existing_positions = get_protected_symbols()
+    if existing_positions:
+        print(f"    Found {len(existing_positions)} symbol(s) with open positions:")
+        for sym in sorted(existing_positions):
             print(f"      - {sym}")
+        print("    ℹ Trading engine will intelligently manage these positions:")
+        print("      • LONG positions: Add more if prediction is LONG (especially on price drops)")
+        print("      • Exit positions: When prediction changes to SHORT or HOLD")
+        print("      • Enter new: When prediction is LONG and no position exists")
     else:
         print("    No existing positions found.")
 
-    tradable_filtered = filter_tradable_symbols(tradable, protected)
-    if not tradable_filtered:
-        print("    ✗ All requested symbols already have open positions; nothing to trade.")
-        return
+    # Filter out symbols with existing positions unless --allow-existing-positions is set
+    if args.allow_existing_positions:
+        tradable_filtered = tradable
+        print(f"    ⚠️  WARNING: --allow-existing-positions is enabled.")
+        print(f"       The trading engine will manage existing positions (may exit them if model changes).")
+    else:
+        tradable_filtered = filter_tradable_symbols(tradable, existing_positions)
+        if existing_positions and len(tradable_filtered) < len(tradable):
+            skipped_count = len(tradable) - len(tradable_filtered)
+            print(f"    ⚠️  Skipped {skipped_count} symbol(s) with existing positions (use --allow-existing-positions to trade them).")
+    
+    print(f"    ✓ {len(tradable_filtered)} symbol(s) ready for trading.")
 
     print(f"    ✓ {len(tradable_filtered)} symbol(s) eligible for trading after filtering.")
 
@@ -276,6 +328,7 @@ def main():
             verbose=True,  # Always verbose to see what's happening
             update_data=True,  # Fetch latest live data each cycle
             regenerate_features_flag=True,  # Regenerate features with new data each cycle
+            profit_target_pct=args.profit_target,  # Pass profit target if specified
         )
 
         # Concise summary
@@ -295,16 +348,14 @@ def main():
                 conf = float(detail.get("confidence") or 0.0) * 100.0
                 print(f"    {symbol}: {action} -> {decision} ({conf:.1f}% confidence)")
 
-        # Stop after one cycle if no interval specified.
-        if args.interval is None:
-            break
-
-        # Otherwise, wait and repeat.
+        # Wait and repeat (runs forever with interval)
         print(f"  Waiting {args.interval} seconds before next cycle...")
+        print(f"  Press Ctrl+C to stop.")
         try:
             time.sleep(args.interval)
         except KeyboardInterrupt:
-            print("\nStopping due to keyboard interrupt.")
+            print("\n\n🛑 Stopping due to keyboard interrupt (Ctrl+C).")
+            print("   Finalizing any open positions...")
             break
 
 

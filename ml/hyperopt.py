@@ -28,15 +28,20 @@ def _compute_overfitting_penalty(y_train, y_val, train_pred, val_pred) -> float:
     """
     Compute penalty for overfitting based on train/val gap.
     Returns penalty factor (1.0 = no penalty, >1.0 = penalty applied).
+    More aggressive penalty to prevent overfitting.
     """
     train_r2 = r2_score(y_train, train_pred)
     val_r2 = r2_score(y_val, val_pred)
     gap = train_r2 - val_r2
     
-    # Penalize if gap > 0.10 (10%)
-    if gap > 0.10:
-        # Exponential penalty: gap of 0.15 = 1.5x penalty, gap of 0.20 = 2.0x penalty
-        penalty = 1.0 + (gap - 0.10) * 10.0
+    # Penalize if gap > 0.05 (5%) - more aggressive threshold
+    if gap > 0.05:
+        # Exponential penalty: gap of 0.10 = 2.0x penalty, gap of 0.15 = 3.5x penalty
+        penalty = 1.0 + (gap - 0.05) * 20.0
+        return float(penalty)
+    # Also penalize negative validation R² more heavily
+    if val_r2 < 0:
+        penalty = 1.0 + abs(val_r2) * 5.0
         return float(penalty)
     return 1.0
 
@@ -48,24 +53,26 @@ def _optimize_lightgbm(X_train, y_train, X_val, y_val, n_trials: int, timeout: O
             warnings.filterwarnings("ignore", message=".*LightGBM.*")
             warnings.filterwarnings("ignore", message=".*lgb.*")
             
-            # VERY conservative parameter ranges to prevent overfitting
-            max_depth = trial.suggest_int("max_depth", 2, 4)  # Further reduced: max 4 instead of 5
+            # EXTREMELY conservative parameter ranges to prevent overfitting
+            max_depth = trial.suggest_int("max_depth", 2, 3)  # Reduced: max 3 instead of 4
             # Constrain num_leaves based on max_depth to prevent overfitting
-            max_leaves = min(2 ** max_depth, 24)  # Further reduced: cap at 24 instead of 32
-            num_leaves = trial.suggest_int("num_leaves", 8, max_leaves)
+            max_leaves = min(2 ** max_depth, 16)  # Further reduced: cap at 16 instead of 24
+            # Ensure min_leaves doesn't exceed max_leaves
+            min_leaves = min(4, max_leaves)  # Reduced: min 4 instead of 8
+            num_leaves = trial.suggest_int("num_leaves", min_leaves, max_leaves)
             
             params = {
                 "boosting_type": "gbdt",
-                "n_estimators": trial.suggest_int("n_estimators", 150, 400),  # Further reduced: max 400 instead of 600
-                "learning_rate": trial.suggest_float("learning_rate", 0.01, 0.03, log=True),  # Further reduced: max 0.03 instead of 0.05
+                "n_estimators": trial.suggest_int("n_estimators", 100, 300),  # Reduced: max 300 instead of 400
+                "learning_rate": trial.suggest_float("learning_rate", 0.01, 0.025, log=True),  # Reduced: max 0.025 instead of 0.03
                 "num_leaves": num_leaves,
                 "max_depth": max_depth,
-                "subsample": trial.suggest_float("subsample", 0.65, 0.80),  # Further reduced: tighter range
-                "colsample_bytree": trial.suggest_float("colsample_bytree", 0.55, 0.75),  # Further reduced: tighter range
-                "min_child_samples": trial.suggest_int("min_child_samples", 25, 50),  # Increased min: 25 instead of 20
-                "reg_alpha": trial.suggest_float("reg_alpha", 1.0, 5.0),  # Increased min: 1.0 instead of 0.5
-                "reg_lambda": trial.suggest_float("reg_lambda", 2.0, 6.0),  # Increased min: 2.0 instead of 1.0
-                "min_split_gain": trial.suggest_float("min_split_gain", 0.02, 0.1),  # Increased min: 0.02 instead of 0.01
+                "subsample": trial.suggest_float("subsample", 0.60, 0.75),  # More aggressive: lower max
+                "colsample_bytree": trial.suggest_float("colsample_bytree", 0.50, 0.70),  # More aggressive: lower max
+                "min_child_samples": trial.suggest_int("min_child_samples", 30, 60),  # Increased: min 30 instead of 25
+                "reg_alpha": trial.suggest_float("reg_alpha", 2.0, 8.0),  # Increased: min 2.0 instead of 1.0
+                "reg_lambda": trial.suggest_float("reg_lambda", 3.0, 10.0),  # Increased: min 3.0 instead of 2.0
+                "min_split_gain": trial.suggest_float("min_split_gain", 0.05, 0.15),  # Increased: min 0.05 instead of 0.02
                 "random_state": 42,
                 "force_row_wise": True,
                 "verbose": -1,  # Suppress LightGBM output
@@ -77,7 +84,7 @@ def _optimize_lightgbm(X_train, y_train, X_val, y_val, n_trials: int, timeout: O
                 eval_set=[(X_val, y_val)],
                 eval_metric="l2",
                 callbacks=[
-                    lgb.early_stopping(stopping_rounds=20, verbose=False),  # Further reduced: 20 instead of 30
+                    lgb.early_stopping(stopping_rounds=15, verbose=False),  # More aggressive: 15 instead of 20
                     lgb.log_evaluation(period=0),  # Disable evaluation logging
                 ],
             )
@@ -96,17 +103,17 @@ def _optimize_lightgbm(X_train, y_train, X_val, y_val, n_trials: int, timeout: O
 
 def _optimize_xgboost(X_train, y_train, X_val, y_val, n_trials: int, timeout: Optional[int]):
     def objective(trial: optuna.Trial) -> float:
-        # VERY conservative parameter ranges to prevent overfitting
+        # EXTREMELY conservative parameter ranges to prevent overfitting
         params = {
-            "n_estimators": trial.suggest_int("n_estimators", 150, 400),  # Further reduced: max 400 instead of 600
-            "learning_rate": trial.suggest_float("learning_rate", 0.01, 0.03, log=True),  # Further reduced: max 0.03 instead of 0.05
-            "max_depth": trial.suggest_int("max_depth", 2, 4),  # Further reduced: max 4 instead of 5
-            "subsample": trial.suggest_float("subsample", 0.65, 0.80),  # Further reduced: tighter range
-            "colsample_bytree": trial.suggest_float("colsample_bytree", 0.55, 0.75),  # Further reduced: tighter range
-            "min_child_weight": trial.suggest_float("min_child_weight", 5.0, 12.0),  # Increased min: 5.0 instead of 3.0
-            "gamma": trial.suggest_float("gamma", 0.1, 0.35),  # Increased min: 0.1 instead of 0.05
-            "reg_alpha": trial.suggest_float("reg_alpha", 1.0, 5.0),  # Increased min: 1.0 instead of 0.5
-            "reg_lambda": trial.suggest_float("reg_lambda", 2.0, 6.0),  # Increased min: 2.0 instead of 1.0
+            "n_estimators": trial.suggest_int("n_estimators", 100, 300),  # Reduced: max 300 instead of 400
+            "learning_rate": trial.suggest_float("learning_rate", 0.01, 0.025, log=True),  # Reduced: max 0.025 instead of 0.03
+            "max_depth": trial.suggest_int("max_depth", 2, 3),  # Reduced: max 3 instead of 4
+            "subsample": trial.suggest_float("subsample", 0.60, 0.75),  # More aggressive: lower max
+            "colsample_bytree": trial.suggest_float("colsample_bytree", 0.50, 0.70),  # More aggressive: lower max
+            "min_child_weight": trial.suggest_float("min_child_weight", 7.0, 15.0),  # Increased: min 7.0 instead of 5.0
+            "gamma": trial.suggest_float("gamma", 0.15, 0.40),  # Increased: min 0.15 instead of 0.1
+            "reg_alpha": trial.suggest_float("reg_alpha", 2.0, 8.0),  # Increased: min 2.0 instead of 1.0
+            "reg_lambda": trial.suggest_float("reg_lambda", 3.0, 10.0),  # Increased: min 3.0 instead of 2.0
             "objective": "reg:squarederror",
             "tree_method": "hist",
             "random_state": 42,
@@ -117,7 +124,7 @@ def _optimize_xgboost(X_train, y_train, X_val, y_val, n_trials: int, timeout: Op
             y_train,
             eval_set=[(X_val, y_val)],
             verbose=False,
-            early_stopping_rounds=20,  # Further reduced: 20 instead of 30
+            early_stopping_rounds=15,  # More aggressive: 15 instead of 20
         )
         val_preds = model.predict(X_val)
         train_preds = model.predict(X_train)
@@ -134,15 +141,15 @@ def _optimize_xgboost(X_train, y_train, X_val, y_val, n_trials: int, timeout: Op
 
 def _optimize_random_forest(X_train, y_train, X_val, y_val, n_trials: int, timeout: Optional[int]):
     def objective(trial: optuna.Trial) -> float:
-        # VERY conservative parameter ranges to prevent overfitting
+        # EXTREMELY conservative parameter ranges to prevent overfitting
         params = {
-            "n_estimators": trial.suggest_int("n_estimators", 100, 350),  # Further reduced: max 350 instead of 500
-            "max_depth": trial.suggest_int("max_depth", 3, 5),  # Further reduced: max 5 instead of 6
-            "min_samples_leaf": trial.suggest_int("min_samples_leaf", 30, 70),  # Increased min: 30 instead of 20
-            "min_samples_split": trial.suggest_int("min_samples_split", 50, 180),  # Increased min: 50 instead of 30
-            "max_features": trial.suggest_float("max_features", 0.3, 0.6),  # Further reduced: max 0.6 instead of 0.7
-            "max_samples": trial.suggest_float("max_samples", 0.6, 0.80),  # Further reduced: max 0.80 instead of 0.85
-            "ccp_alpha": trial.suggest_float("ccp_alpha", 0.002, 0.015),  # Increased min: 0.002 instead of 0.001
+            "n_estimators": trial.suggest_int("n_estimators", 80, 250),  # Reduced: max 250 instead of 350
+            "max_depth": trial.suggest_int("max_depth", 3, 4),  # Reduced: max 4 instead of 5
+            "min_samples_leaf": trial.suggest_int("min_samples_leaf", 40, 80),  # Increased: min 40 instead of 30
+            "min_samples_split": trial.suggest_int("min_samples_split", 60, 200),  # Increased: min 60 instead of 50
+            "max_features": trial.suggest_float("max_features", 0.25, 0.55),  # More aggressive: lower max
+            "max_samples": trial.suggest_float("max_samples", 0.55, 0.75),  # More aggressive: lower max
+            "ccp_alpha": trial.suggest_float("ccp_alpha", 0.005, 0.020),  # Increased: min 0.005 instead of 0.002
             "random_state": 42,
             "n_jobs": -1,
             "bootstrap": True,

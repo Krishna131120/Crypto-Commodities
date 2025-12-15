@@ -2144,6 +2144,37 @@ def fetch_binance_rest_historical(
     return unique_candles
 
 
+def get_binance_current_price(symbol: str) -> Optional[float]:
+    """
+    Get current price for a crypto symbol from Binance REST API.
+    
+    Args:
+        symbol: Data symbol (e.g., "BTC-USDT")
+    
+    Returns:
+        Current price as float, or None if unavailable
+    """
+    try:
+        binance_symbol = symbol.replace("-", "")
+        
+        exchange = ccxt.binance({
+            'enableRateLimit': True,
+            'options': {'defaultType': 'spot'}
+        })
+        
+        # Fetch ticker to get current price
+        ticker = exchange.fetch_ticker(binance_symbol)
+        if ticker and 'last' in ticker:
+            return float(ticker['last'])
+        elif ticker and 'close' in ticker:
+            return float(ticker['close'])
+        
+        return None
+    except Exception as e:
+        # Silently fail - will fall back to other sources
+        return None
+
+
 def save_historical_data(
     symbol: str,
     timeframe: str,

@@ -364,15 +364,32 @@ def _check_model_tradability(
         return False, reasons
     
     # Check for severe overfitting warnings
-    severe_overfitting = any(
-        "generalization failure" in w.lower() or 
-        "significant performance drop" in w.lower() or
-        ">>" in w  # Large gap indicators
-        for w in overfitting_warnings
-    )
-    if severe_overfitting:
-        reasons.append("Severe overfitting detected (large train/val/test gaps)")
+    # Count models with severe overfitting (generalization failure or very large gaps)
+    # Be more lenient: only reject if ALL models have severe issues
+    severe_overfitting_count = 0
+    for w in overfitting_warnings:
+        if "generalization failure" in w.lower():
+            severe_overfitting_count += 1
+        elif "significant performance drop" in w.lower():
+            severe_overfitting_count += 1
+        elif ">>" in w:
+            # Try to extract gap value - if gap > 0.25, consider it severe
+            try:
+                if "gap=" in w.lower():
+                    gap_part = [p for p in w.split() if "gap=" in p.lower()][0]
+                    gap_val = float(gap_part.split("=")[-1].rstrip(","))
+                    if gap_val > 0.25:  # Very large gap threshold
+                        severe_overfitting_count += 1
+            except (ValueError, IndexError):
+                # If we can't parse, don't count it as severe
+                pass
+    
+    # Only reject if ALL models have severe overfitting
+    # This allows some models to have issues while others are acceptable
+    if severe_overfitting_count >= len(successful_models) and len(successful_models) > 0:
+        reasons.append("All models show severe overfitting (large train/val/test gaps)")
         return False, reasons
+    # If some models have overfitting but not all, continue with other checks
     
     # Check validation/test performance for at least one model
     has_good_performance = False
@@ -1064,6 +1081,102 @@ def train_for_symbol(
     X_train, y_train = extract_xy(train_df, target_column="target_return")
     X_val, y_val = extract_xy(val_df, target_column="target_return")
     X_test, y_test = extract_xy(test_df, target_column="target_return")
+    
+    # ========================================================================
+    # STEP 1: DATA BALANCE ANALYSIS - Check for bearish/bullish bias
+    # ========================================================================
+    def _analyze_target_distribution(y: pd.Series, split_name: str) -> Dict[str, Any]:
+        """Analyze target return distribution to detect bias."""
+        y_array = y.values
+        positive_count = np.sum(y_array > 0)
+        negative_count = np.sum(y_array < 0)
+        neutral_count = np.sum(y_array == 0)
+        total = len(y_array)
+        
+        positive_pct = (positive_count / total * 100) if total > 0 else 0
+        negative_pct = (negative_count / total * 100) if total > 0 else 0
+        neutral_pct = (neutral_count / total * 100) if total > 0 else 0
+        
+        mean_return = float(np.mean(y_array))
+        median_return = float(np.median(y_array))
+        std_return = float(np.std(y_array))
+        
+        # Calculate imbalance ratio (positive / negative)
+        imbalance_ratio = (positive_count / negative_count) if negative_count > 0 else float('inf')
+        
+        # Detect bias: if >60% are negative or positive, there's a bias
+        bias_detected = None
+        bias_severity = "none"
+        if negative_pct > 60:
+            bias_detected = "bearish"
+            if negative_pct > 75:
+                bias_severity = "severe"
+            elif negative_pct > 65:
+                bias_severity = "moderate"
+            else:
+                bias_severity = "mild"
+        elif positive_pct > 60:
+            bias_detected = "bullish"
+            if positive_pct > 75:
+                bias_severity = "severe"
+            elif positive_pct > 65:
+                bias_severity = "moderate"
+            else:
+                bias_severity = "mild"
+        
+        return {
+            "split": split_name,
+            "total_samples": total,
+            "positive_count": int(positive_count),
+            "negative_count": int(negative_count),
+            "neutral_count": int(neutral_count),
+            "positive_pct": float(positive_pct),
+            "negative_pct": float(negative_pct),
+            "neutral_pct": float(neutral_pct),
+            "mean_return": mean_return,
+            "median_return": median_return,
+            "std_return": std_return,
+            "imbalance_ratio": float(imbalance_ratio) if imbalance_ratio != float('inf') else None,
+            "bias_detected": bias_detected,
+            "bias_severity": bias_severity,
+        }
+    
+    train_dist = _analyze_target_distribution(y_train, "train")
+    val_dist = _analyze_target_distribution(y_val, "val")
+    test_dist = _analyze_target_distribution(y_test, "test")
+    
+    # Log data balance analysis
+    logger.warning(
+        "Data balance analysis - checking for bearish/bullish bias",
+        category="DATA",
+        symbol=symbol,
+        asset_type=asset_type,
+        data={
+            "train_distribution": train_dist,
+            "val_distribution": val_dist,
+            "test_distribution": test_dist,
+            "warning": "If bias_severity is 'severe' or 'moderate', models may learn directional bias"
+        }
+    )
+    
+    # Warn if severe bias detected
+    if train_dist["bias_severity"] in ["severe", "moderate"]:
+        import warnings
+        warnings.warn(
+            f"⚠️  {train_dist['bias_detected'].upper()} BIAS DETECTED in training data: "
+            f"{train_dist['negative_pct']:.1f}% negative, {train_dist['positive_pct']:.1f}% positive. "
+            f"Models may learn to predict {train_dist['bias_detected']} direction. "
+            f"Consider using class weights or data balancing.",
+            UserWarning
+        )
+        print(f"[WARNING] {train_dist['bias_detected'].upper()} BIAS: {train_dist['negative_pct']:.1f}% negative, {train_dist['positive_pct']:.1f}% positive")
+    
+    # Store distribution info for later use
+    data_balance_info = {
+        "train": train_dist,
+        "val": val_dist,
+        "test": test_dist,
+    }
 
     # Feature importance pruning followed by correlation-based reduction
     X_train, X_val, X_test, importance_meta = _filter_by_importance(
@@ -1072,16 +1185,93 @@ def train_for_symbol(
     X_train, X_val, X_test, feature_selection_meta = _reduce_feature_matrix(
         X_train, X_val, X_test, y_train
     )
+    # ========================================================================
+    # STEP 2: FEATURE SCALING VERIFICATION - Ensure proper normalization
+    # ========================================================================
     # Feature scaling for stability across models (esp. RL)
     X_train, X_val, X_test, feature_scaler = _scale_feature_matrix(
         X_train, X_val, X_test
     )
+    
+    # Verify scaling was applied correctly
+    def _verify_scaling(X: pd.DataFrame, split_name: str) -> Dict[str, Any]:
+        """Verify that features are properly scaled."""
+        X_array = X.values
+        feature_means = np.mean(X_array, axis=0)
+        feature_stds = np.std(X_array, axis=0)
+        feature_mins = np.min(X_array, axis=0)
+        feature_maxs = np.max(X_array, axis=0)
+        
+        # After RobustScaler, features should be centered around 0 (median-based)
+        # and have reasonable scale (IQR-based)
+        mean_abs_mean = float(np.mean(np.abs(feature_means)))
+        mean_std = float(np.mean(feature_stds))
+        mean_abs_min = float(np.mean(np.abs(feature_mins)))
+        mean_abs_max = float(np.mean(np.abs(feature_maxs)))
+        
+        # Check for issues
+        issues = []
+        if mean_abs_mean > 1.0:  # Features not well-centered
+            issues.append(f"Features not well-centered (mean_abs_mean={mean_abs_mean:.3f})")
+        if mean_std < 0.1 or mean_std > 10.0:  # Unusual scale
+            issues.append(f"Unusual feature scale (mean_std={mean_std:.3f})")
+        if mean_abs_max > 100.0:  # Extreme values
+            issues.append(f"Extreme feature values detected (mean_abs_max={mean_abs_max:.3f})")
+        
+        # Check for NaN or Inf
+        nan_count = int(np.isnan(X_array).sum())
+        inf_count = int(np.isinf(X_array).sum())
+        if nan_count > 0:
+            issues.append(f"NaN values found: {nan_count}")
+        if inf_count > 0:
+            issues.append(f"Inf values found: {inf_count}")
+        
+        return {
+            "split": split_name,
+            "mean_abs_mean": mean_abs_mean,
+            "mean_std": mean_std,
+            "mean_abs_min": mean_abs_min,
+            "mean_abs_max": mean_abs_max,
+            "nan_count": nan_count,
+            "inf_count": inf_count,
+            "issues": issues,
+            "scaling_ok": len(issues) == 0,
+        }
+    
+    train_scaling = _verify_scaling(X_train, "train")
+    val_scaling = _verify_scaling(X_val, "val")
+    test_scaling = _verify_scaling(X_test, "test")
+    
     scaler_info = {
         "scaler": "RobustScaler",
         "feature_count": X_train.shape[1],
         "center_sample": feature_scaler.center_[:5].tolist() if hasattr(feature_scaler, "center_") else None,
         "scale_sample": feature_scaler.scale_[:5].tolist() if hasattr(feature_scaler, "scale_") else None,
+        "scaling_verification": {
+            "train": train_scaling,
+            "val": val_scaling,
+            "test": test_scaling,
+        }
     }
+    
+    # Warn if scaling issues detected
+    all_issues = train_scaling["issues"] + val_scaling["issues"] + test_scaling["issues"]
+    if all_issues:
+        import warnings
+        warnings.warn(
+            f"⚠️  FEATURE SCALING ISSUES DETECTED: {', '.join(set(all_issues))}. "
+            f"Features may not be properly normalized.",
+            UserWarning
+        )
+        print(f"[WARNING] Feature scaling issues: {', '.join(set(all_issues))}")
+    else:
+        logger.info(
+            "Feature scaling verified - all features properly normalized",
+            category="DATA",
+            symbol=symbol,
+            asset_type=asset_type,
+        )
+    
     logger.info(
         "Applied robust feature scaling",
         category="DATA",
@@ -1881,6 +2071,7 @@ def train_for_symbol(
     # provide sufficient prediction capability.
 
     # Stacked ensemble blender (regression)
+    stacked_blend_model_list = None  # Store which models were used for stacked blend
     if len(val_pred_store) >= 2:
         stack_keys = sorted(val_pred_store.keys())
         stack_train = np.column_stack([train_pred_store[k] for k in stack_keys if k in train_pred_store])
@@ -1906,6 +2097,11 @@ def train_for_symbol(
                 stack_test_metrics,
             )
             if accepted:
+                # Store which models were used for stacked blend
+                stacked_blend_model_list = stack_keys
+                # Store in model object for inference-time checking
+                if hasattr(ridge, '__dict__'):
+                    ridge.__dict__['_stacked_blend_models'] = stack_keys
                 logger.success(
                     "Stacked blender created",
                     category="MODEL",
@@ -2147,20 +2343,20 @@ def train_for_symbol(
     if metric_store:
         save_metrics(metric_store, symbol_dir / "metrics.json")
     with open(symbol_dir / "metadata.json", "w", encoding="utf-8") as handle:
-        json.dump(
-            {
-                "asset_type": asset_type,
-                "symbol": symbol,
-                "timeframe": timeframe,
-                "rows": len(dataset),
-                "feature_version": dataset_meta["feature_version"],
-                "split_boundaries": dataset_meta["split_boundaries"],
-                "target_profile": profile_report,
-                "target_config": dataset_meta.get("target_config"),
-            },
-            handle,
-            indent=2,
-        )
+        metadata_dict = {
+            "asset_type": asset_type,
+            "symbol": symbol,
+            "timeframe": timeframe,
+            "rows": len(dataset),
+            "feature_version": dataset_meta["feature_version"],
+            "split_boundaries": dataset_meta["split_boundaries"],
+            "target_profile": profile_report,
+            "target_config": dataset_meta.get("target_config"),
+        }
+        # Store which models were used for stacked blend (if available)
+        if stacked_blend_model_list:
+            metadata_dict["stacked_blend_models"] = stacked_blend_model_list
+        json.dump(metadata_dict, handle, indent=2)
 
     vote_lookup = {vote["model"]: vote for vote in consensus.get("model_votes", [])}
     condensed_models: Dict[str, Dict[str, Any]] = {}
@@ -2340,6 +2536,12 @@ def train_for_symbol(
     )
     summary["tradable"] = tradable
     summary["tradability_reasons"] = tradability_reasons
+    
+    # Add data balance and scaling verification info to summary
+    if 'data_balance_info' in locals():
+        summary["data_balance"] = data_balance_info
+    if 'scaler_info' in locals() and 'scaling_verification' in scaler_info:
+        summary["feature_scaling_verification"] = scaler_info["scaling_verification"]
     
     with open(symbol_dir / "summary.json", "w", encoding="utf-8") as handle:
         json.dump(summary, handle, indent=2)

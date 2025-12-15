@@ -1,0 +1,224 @@
+{
+  "symbol": "ETH-USDT",
+  "asset_type": "crypto",
+  "timeframe": "1d",
+  "last_updated": "2025-12-15T00:00:00+00:00",
+  "prediction": {
+    "current_price": 3138.37,
+    "predicted_price": 3037.750867681272,
+    "predicted_return_pct": -3.206095276169722,
+    "action": "short",
+    "confidence": 90.67796610169493,
+    "horizon_days": 4,
+    "explanation": "Price expected to fall from $3,138.37 to $3,037.75 (-3.21%) over 4 days"
+  },
+  "model_predictions": {
+    "lightgbm": {
+      "predicted_price": 3036.3473342282573,
+      "predicted_return_pct": -3.250817009203587,
+      "action": "short",
+      "confidence": 90.67796610169492,
+      "r2_score": 0.8230617270185653,
+      "accuracy": 90.67796610169492
+    },
+    "xgboost": {
+      "predicted_price": 3038.7611101661996,
+      "predicted_return_pct": -3.173905238509178,
+      "action": "short",
+      "confidence": 90.67796610169492,
+      "r2_score": 0.8129603579922825,
+      "accuracy": 90.67796610169492
+    },
+    "stacked_blend": {
+      "predicted_price": 3038.1698970744774,
+      "predicted_return_pct": -3.1927434599974713,
+      "action": "short",
+      "confidence": 90.67796610169492,
+      "r2_score": 0.8264335392726259,
+      "accuracy": 90.67796610169492
+    }
+  },
+  "technical": {
+    "training_data": {
+      "total_rows": 2839,
+      "train_rows": 2129,
+      "val_rows": 354,
+      "test_rows": 354,
+      "split_boundaries": {
+        "train": {
+          "start": "2018-03-05T00:00:00+00:00",
+          "end": "2024-01-01T00:00:00+00:00"
+        },
+        "val": {
+          "start": "2024-01-03T00:00:00+00:00",
+          "end": "2024-12-21T00:00:00+00:00"
+        },
+        "test": {
+          "start": "2024-12-23T00:00:00+00:00",
+          "end": "2025-12-11T00:00:00+00:00"
+        }
+      }
+    },
+    "model_config": {
+      "target_profile": {
+        "name": "short",
+        "label": "Short-Term",
+        "description": "Swing horizon of roughly 3-5 days to capture short moves. Medium position sizes, moderate frequency.",
+        "horizon_bars": 4,
+        "smoothing_window": 4,
+        "directional_threshold": 0.0012,
+        "neutral_band": 0.0006,
+        "quantile_bins": 5,
+        "quantile_window": 140,
+        "trading_style": "Swing trading - hold for several days",
+        "typical_hold_time": "3-5 days",
+        "position_size_pct": 0.1,
+        "stop_loss_pct": 0.02,
+        "min_confidence": 0.1
+      },
+      "target_config": {
+        "horizon": 4,
+        "smoothing_window": 4,
+        "directional_threshold": 0.0012,
+        "neutral_band": 0.0006,
+        "quantile_bins": 5,
+        "quantile_window": 140,
+        "include_directional": true,
+        "include_quantiles": true,
+        "include_smoothed_return": true
+      },
+      "model_reference_price": 3138.37
+    },
+    "analysis": {
+      "dynamic_threshold": 0.03,
+      "threshold_details": {
+        "rolling_mad": 0.04506189761510801,
+        "global_mad": 0.06887930701237478,
+        "iqr_based": 0.05461014135905278,
+        "atr_proxy": 0.0281181026567988,
+        "median_candidate": 0.04506189761510801,
+        "clamped": 0.03
+      },
+      "context_signals": {
+        "RSI_14": 53.78296995804152,
+        "MACD_histogram": 58.51240876430279,
+        "SMA_50": 3319.1582,
+        "SMA_200": 3553.5945500000003,
+        "ATR_14": 179.19642857142853,
+        "Volume_Ratio": 1.145855245087453
+      },
+      "overfitting_warnings": null
+    },
+    "feature_scaler": {
+      "path": "models\\crypto\\ETH-USDT\\1d\\short\\feature_scaler.joblib"
+    }
+  },
+  "consensus": {
+    "action": "short",
+    "confidence_pct": 90.67796610169493,
+    "predicted_return_pct": -3.206095276169722,
+    "predicted_return": -0.03206095276169722,
+    "raw_predicted_return_pct": -3.206095276169722,
+    "raw_predicted_return": -0.03206095276169722,
+    "reasoning": "Consensus: SHORT (confidence: 100.0%). Expected return: -3.21%. Consensus price: $3,037.75. Model votes: SHORT: 3 model(s), 100.0% weighted vote. Individual models: lightgbm (short, -3.25%, R\u00b2=0.823); xgboost (short, -3.17%, R\u00b2=0.813); stacked_blend (short, -3.19%, R\u00b2=0.826)",
+    "action_scores": {
+      "long": 0.0,
+      "hold": 0.0,
+      "short": 1.0
+    },
+    "horizon_profile": "Short-Term",
+    "target_horizon_bars": 4,
+    "action_label": "Short-Term SHORT",
+    "neutral_return_threshold_pct": 3.15,
+    "neutral_guard_triggered": false
+  },
+  "tradable": true,
+  "tradability_reasons": [
+    "All robustness checks passed"
+  ],
+  "data_balance": {
+    "train": {
+      "split": "train",
+      "total_samples": 2129,
+      "positive_count": 1126,
+      "negative_count": 1003,
+      "neutral_count": 0,
+      "positive_pct": 52.88868013151714,
+      "negative_pct": 47.11131986848285,
+      "neutral_pct": 0.0,
+      "mean_return": 0.006259511398761508,
+      "median_return": 0.003365825565770031,
+      "std_return": 0.09161719566645593,
+      "imbalance_ratio": 1.1226321036889333,
+      "bias_detected": null,
+      "bias_severity": "none"
+    },
+    "val": {
+      "split": "val",
+      "total_samples": 354,
+      "positive_count": 202,
+      "negative_count": 152,
+      "neutral_count": 0,
+      "positive_pct": 57.06214689265536,
+      "negative_pct": 42.93785310734463,
+      "neutral_pct": 0.0,
+      "mean_return": 0.007213697120661867,
+      "median_return": 0.006816186563952442,
+      "std_return": 0.07021770334578199,
+      "imbalance_ratio": 1.3289473684210527,
+      "bias_detected": null,
+      "bias_severity": "none"
+    },
+    "test": {
+      "split": "test",
+      "total_samples": 354,
+      "positive_count": 171,
+      "negative_count": 183,
+      "neutral_count": 0,
+      "positive_pct": 48.30508474576271,
+      "negative_pct": 51.69491525423729,
+      "neutral_pct": 0.0,
+      "mean_return": 0.0017747927997339467,
+      "median_return": -0.0018698961316000462,
+      "std_return": 0.07794088708866587,
+      "imbalance_ratio": 0.9344262295081968,
+      "bias_detected": null,
+      "bias_severity": "none"
+    }
+  },
+  "feature_scaling_verification": {
+    "train": {
+      "split": "train",
+      "mean_abs_mean": 0.1152487445242081,
+      "mean_std": 1.3736365520720517,
+      "mean_abs_min": 17.308663719587432,
+      "mean_abs_max": 7.576691706965376,
+      "nan_count": 0,
+      "inf_count": 0,
+      "issues": [],
+      "scaling_ok": true
+    },
+    "val": {
+      "split": "val",
+      "mean_abs_mean": 0.38196390466830016,
+      "mean_std": 0.8878406913637829,
+      "mean_abs_min": 2.592985553963734,
+      "mean_abs_max": 3.58535382361665,
+      "nan_count": 0,
+      "inf_count": 0,
+      "issues": [],
+      "scaling_ok": true
+    },
+    "test": {
+      "split": "test",
+      "mean_abs_mean": 0.375980711142966,
+      "mean_std": 0.978596792963138,
+      "mean_abs_min": 2.5886006166394857,
+      "mean_abs_max": 3.753975389635518,
+      "nan_count": 0,
+      "inf_count": 0,
+      "issues": [],
+      "scaling_ok": true
+    }
+  }
+}

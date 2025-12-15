@@ -54,8 +54,8 @@ PROFILE_METADATA: Dict[str, Dict[str, Any]] = {
         "trading_style": "Scalping - many small trades, quick in/out",
         "typical_hold_time": "Hours to 1 day",
         "position_size_pct": 0.05,  # 5% max per symbol
-        "stop_loss_pct": 0.015,  # 1.5% stop (tighter for fast moves)
-        "min_confidence": 0.12,  # Higher confidence needed for quick trades
+        "stop_loss_pct": 0.025,  # 2.5% stop (wider to avoid false breakouts from BTC volatility)
+        "min_confidence": 0.15,  # Higher confidence needed for quick trades (increased from 0.12)
     },
     "short": {
         "label": "Short-Term",

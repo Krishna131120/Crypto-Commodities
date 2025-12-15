@@ -130,12 +130,18 @@ def run_ingestion(mode: str,
     return live_pending
 
 
-def regenerate_features(asset_type: str, symbols: Set[str], timeframe: str):
+def regenerate_features(asset_type: str, symbols: Set[str], timeframe: str) -> int:
+    """
+    Regenerate features for given symbols.
+    Returns the number of symbols successfully updated.
+    """
     if not symbols:
-        return
+        return 0
     asset_root = DATA_ROOT / asset_type
     if not asset_root.exists():
-        return
+        return 0
+    
+    updated_count = 0
     for source_dir in asset_root.iterdir():
         if not source_dir.is_dir():
             continue
@@ -154,8 +160,11 @@ def regenerate_features(asset_type: str, symbols: Set[str], timeframe: str):
                     data_directory=timeframe_path
                 )
                 print(f"[FEATURE] Updated {asset_type}/{symbol_dir.name}/{timeframe}")
+                updated_count += 1
             except Exception as exc:
                 print(f"[FEATURE ERROR] {asset_type}/{symbol_dir.name}: {exc}")
+    
+    return updated_count
 
 
 def _prompt_train_choice() -> bool:

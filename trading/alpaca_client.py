@@ -221,20 +221,109 @@ class AlpacaClient:
     def cancel_order(self, order_id: str) -> Dict[str, Any]:
         """Cancel an existing order by ID."""
         return self._request("DELETE", f"/orders/{order_id}")
+    
+    def submit_stop_order(
+        self,
+        *,
+        symbol: str,
+        qty: float,
+        stop_price: float,
+        side: str = "sell",  # "sell" for long positions, "buy" for short positions
+        time_in_force: str = "gtc",
+        client_order_id: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        """
+        Submit a standalone stop-loss order for crypto positions.
+        
+        This is used for crypto because Alpaca doesn't support bracket orders (OCO) for crypto.
+        The stop order will execute at the broker level even when the monitoring script is not running.
+        
+        Args:
+            symbol: Trading symbol (e.g., "BTCUSD")
+            qty: Quantity to sell/buy when stop is triggered
+            stop_price: Price at which to trigger the stop order
+            side: "sell" for long positions (stop-loss), "buy" for short positions (stop-loss)
+            time_in_force: Order time in force (default: "gtc" - good till cancelled)
+            client_order_id: Optional client order ID for tracking
+        """
+        body: Dict[str, Any] = {
+            "symbol": symbol.upper(),
+            "side": side.lower(),
+            "type": "stop",  # Stop order type
+            "stop_price": float(stop_price),
+            "qty": float(qty),
+            "time_in_force": time_in_force,
+        }
+        
+        if client_order_id:
+            body["client_order_id"] = client_order_id
+        
+        return self._request("POST", "/orders", json_body=body)
+    
+    def submit_take_profit_order(
+        self,
+        *,
+        symbol: str,
+        qty: float,
+        limit_price: float,
+        side: str = "sell",  # "sell" for long positions, "buy" for short positions
+        time_in_force: str = "gtc",
+        client_order_id: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        """
+        Submit a standalone take-profit limit order for crypto positions.
+        
+        This is used for crypto because Alpaca doesn't support bracket orders (OCO) for crypto.
+        The take-profit order will execute at the broker level even when the monitoring script is not running.
+        
+        Args:
+            symbol: Trading symbol (e.g., "BTCUSD")
+            qty: Quantity to sell/buy when limit is reached
+            limit_price: Price at which to execute the limit order
+            side: "sell" for long positions (take-profit), "buy" for short positions (take-profit)
+            time_in_force: Order time in force (default: "gtc" - good till cancelled)
+            client_order_id: Optional client order ID for tracking
+        """
+        body: Dict[str, Any] = {
+            "symbol": symbol.upper(),
+            "side": side.lower(),
+            "type": "limit",  # Limit order type for take-profit
+            "limit_price": float(limit_price),
+            "qty": float(qty),
+            "time_in_force": time_in_force,
+        }
+        
+        if client_order_id:
+            body["client_order_id"] = client_order_id
+        
+        return self._request("POST", "/orders", json_body=body)
 
     # ------------------------------------------------------------------
     # Market data helpers (basic)
     # ------------------------------------------------------------------
-    def get_last_trade(self, symbol: str) -> Optional[Dict[str, Any]]:
+    def get_last_trade(self, symbol: str, max_retries: int = 5, retry_delay: float = 1.0, force_retry: bool = False) -> Optional[Dict[str, Any]]:
         """
-        Fetch last trade for a symbol using Alpaca's data API.
+        Fetch last trade for a symbol using Alpaca's data API with improved retry logic.
         
         For crypto symbols (BTCUSD, ETHUSD, etc.), uses the crypto endpoint.
         For stocks, uses the stocks endpoint.
         
-        NOTE: Depending on your account and plan, you may or may not have
-        access to all market data endpoints. This is a best-effort helper.
+        Args:
+            symbol: Trading symbol (e.g., "BTCUSD")
+            max_retries: Number of retry attempts (default: 5, increased for reliability)
+            retry_delay: Delay between retries in seconds (default: 1.0, increased for stability)
+            force_retry: If True, will retry even more aggressively (for active positions)
+        
+        Returns:
+            Dict with price data or None if all attempts fail
         """
+        import time
+        
+        # Increase retries and delay if force_retry is True (for active positions)
+        if force_retry:
+            max_retries = max(max_retries, 8)
+            retry_delay = max(retry_delay, 0.5)
+        
         # Data API v2 is under a different base URL; if ALPACA_DATA_BASE_URL
         # is set we will use it, otherwise we try to call via trading base.
         data_base = os.getenv("ALPACA_DATA_BASE_URL", self.config.base_url)
@@ -246,69 +335,127 @@ class AlpacaClient:
         path_symbol = symbol_upper.replace("/", "")
         is_crypto = path_symbol.endswith("USD") and len(path_symbol) <= 8  # BTCUSD, ETHUSD, etc.
         
-        if is_crypto:
-            # Use crypto endpoint: /v1beta1/crypto/{symbol}/trades/latest
-            # Note: Alpaca crypto data API might be at a different base URL
-            crypto_base = os.getenv("ALPACA_CRYPTO_DATA_BASE_URL", "https://data.alpaca.markets")
-            url = f"{crypto_base.rstrip('/')}/v1beta1/crypto/{path_symbol}/trades/latest"
-        else:
-            # Use stocks endpoint
-            url = f"{data_base.rstrip('/')}/stocks/{symbol_upper}/trades/latest"
-        
-        try:
-            # For crypto, try without auth headers first (crypto data API is free)
-            if is_crypto:
-                # Try crypto data API without authentication (free for crypto)
-                try:
-                    import requests as req_lib
-                    crypto_base = os.getenv("ALPACA_CRYPTO_DATA_BASE_URL", "https://data.alpaca.markets")
-                    url = f"{crypto_base.rstrip('/')}/v1beta1/crypto/{path_symbol}/trades/latest"
-                    # Crypto data API doesn't require auth
-                    resp = req_lib.get(url, timeout=10)
-                    if resp.ok:
-                        data = resp.json()
-                        if "trade" in data:
-                            trade = data["trade"]
-                            return {
-                                "price": trade.get("p"),  # price
-                                "p": trade.get("p"),
-                                "t": trade.get("t"),  # timestamp
-                            }
-                except Exception:
-                    pass
-                
-                # Fallback: try latest bar
-                try:
-                    import requests as req_lib
-                    crypto_base = os.getenv("ALPACA_CRYPTO_DATA_BASE_URL", "https://data.alpaca.markets")
-                    url = f"{crypto_base.rstrip('/')}/v1beta1/crypto/{path_symbol}/bars/latest"
-                    resp = req_lib.get(url, timeout=10)
-                    if resp.ok:
-                        data = resp.json()
-                        if "bar" in data:
-                            bar = data["bar"]
-                            return {
-                                "price": bar.get("c"),  # close price
-                                "p": bar.get("c"),
-                                "t": bar.get("t"),  # timestamp
-                            }
-                except Exception:
-                    pass
-            
-            # For stocks or if crypto failed, use authenticated session
-            resp = self._session.get(url, timeout=10)
-            if resp.status_code == 404:
-                return None
+        # Retry loop for reliability
+        last_exception = None
+        for attempt in range(max_retries):
             try:
-                data = resp.json()
-            except ValueError:
-                resp.raise_for_status()
+                if is_crypto:
+                    # For crypto, try multiple endpoints in order of preference
+                    
+                    # Method 1: Try trading API's last trade endpoint (most reliable)
+                    try:
+                        # Trading API endpoint: /v2/stocks/{symbol}/trades/latest (works for crypto too)
+                        url = f"{self.config.base_url.rstrip('/')}/stocks/{path_symbol}/trades/latest"
+                        resp = self._session.get(url, timeout=20)  # Increased timeout
+                        if resp.ok:
+                            data = resp.json()
+                            # Response format: {"trade": {"p": price, "t": timestamp}}
+                            if "trade" in data:
+                                trade = data["trade"]
+                                price = trade.get("p") or trade.get("price")
+                                if price:
+                                    return {
+                                        "price": price,
+                                        "p": price,
+                                        "t": trade.get("t") or trade.get("timestamp"),
+                                    }
+                            # Alternative format: direct price field
+                            elif "p" in data or "price" in data:
+                                price = data.get("p") or data.get("price")
+                                if price:
+                                    return {
+                                        "price": price,
+                                        "p": price,
+                                        "t": data.get("t") or data.get("timestamp"),
+                                    }
+                    except Exception as e:
+                        last_exception = e
+                        # Continue to next method
+                    
+                    # Method 2: Try crypto data API v2 (if available)
+                    try:
+                        crypto_base = os.getenv("ALPACA_CRYPTO_DATA_BASE_URL", "https://data.alpaca.markets")
+                        url = f"{crypto_base.rstrip('/')}/v2/stocks/{path_symbol}/trades/latest"
+                        # Add authentication headers for data API
+                        headers = {
+                            "APCA-API-KEY-ID": self.config.api_key,
+                            "APCA-API-SECRET-KEY": self.config.secret_key,
+                        }
+                        resp = self._session.get(url, headers=headers, timeout=20)
+                        if resp.ok:
+                            data = resp.json()
+                            if "trade" in data:
+                                trade = data["trade"]
+                                price = trade.get("p") or trade.get("price")
+                                if price:
+                                    return {
+                                        "price": price,
+                                        "p": price,
+                                        "t": trade.get("t") or trade.get("timestamp"),
+                                    }
+                    except Exception as e:
+                        last_exception = e
+                        # Continue to next method
+                    
+                    # Method 3: Try position-based price (if we have an open position)
+                    try:
+                        position = self.get_position(path_symbol)
+                        if position:
+                            market_value = float(position.get("market_value", 0) or 0)
+                            qty = float(position.get("qty", 0) or 0)
+                            if qty != 0 and market_value != 0:
+                                price = abs(market_value / qty)
+                                if price > 0:
+                                    return {
+                                        "price": price,
+                                        "p": price,
+                                        "t": None,  # Position doesn't have timestamp
+                                    }
+                    except Exception as e:
+                        last_exception = e
+                        # Continue to retry
+                
+                # For stocks, use standard stocks endpoint
+                if not is_crypto:
+                    url = f"{self.config.base_url.rstrip('/')}/stocks/{symbol_upper}/trades/latest"
+                else:
+                    # Try trading API endpoint (may not work for crypto in paper trading)
+                    url = f"{self.config.base_url.rstrip('/')}/stocks/{path_symbol}/trades/latest"
+                
+                resp = self._session.get(url, timeout=20)  # Increased timeout
+                if resp.status_code == 404:
+                    # Symbol not found, don't retry
+                    return None
+                try:
+                    data = resp.json()
+                except ValueError:
+                    resp.raise_for_status()
+                    # Retry on JSON decode errors
+                    if attempt < max_retries - 1:
+                        time.sleep(retry_delay)
+                        continue
+                    return None
+                if resp.ok:
+                    return data
+                # If not OK, retry
+                if attempt < max_retries - 1:
+                    time.sleep(retry_delay)
+                    continue
                 return None
-            if not resp.ok:
+                
+            except Exception as e:
+                last_exception = e
+                # Retry on any exception
+                if attempt < max_retries - 1:
+                    time.sleep(retry_delay)
+                    continue
+                # On last attempt, log the error for debugging
+                if attempt == max_retries - 1:
+                    import warnings
+                    warnings.warn(f"Alpaca get_last_trade failed after {max_retries} attempts for {symbol}: {last_exception}", UserWarning)
                 return None
-            return data
-        except Exception:
-            return None
+        
+        return None
 
 
 

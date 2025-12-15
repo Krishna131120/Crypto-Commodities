@@ -34,7 +34,30 @@ def _clean_pycache(project_root: Path):
         print("[SKIP] No __pycache__ directories found")
 
 
-def clear_logs():
+def clear_trading_logs():
+    """Clear only trading logs (crypto_trades.jsonl)."""
+    project_root = Path(__file__).parent
+    trading_log_file = project_root / "logs" / "trading" / "crypto_trades.jsonl"
+    
+    print("=" * 60)
+    print("CLEARING TRADING LOGS")
+    print("=" * 60)
+    
+    if trading_log_file.exists():
+        try:
+            trading_log_file.unlink()
+            print(f"[DELETED] Trading logs: {trading_log_file}")
+        except Exception as exc:
+            print(f"[ERROR] Failed to delete trading logs: {exc}")
+    else:
+        print("[SKIP] Trading logs file not found")
+    
+    print("=" * 60)
+    print("Trading logs cleared successfully.")
+    print("=" * 60)
+
+
+def clear_logs(include_trading_logs=True):
     project_root = Path(__file__).parent
     crypto_path = project_root / "data" / "json" / "raw" / "crypto"
     commodities_path = project_root / "data" / "json" / "raw" / "commodities"
@@ -52,6 +75,16 @@ def clear_logs():
     _reset_directory(models_path, "Model artifacts")
     _reset_directory(logs_path, "Training logs")
     
+    # Always clear trading logs by default
+    if include_trading_logs:
+        trading_log_file = project_root / "logs" / "trading" / "crypto_trades.jsonl"
+        if trading_log_file.exists():
+            try:
+                trading_log_file.unlink()
+                print(f"[DELETED] Trading logs: {trading_log_file}")
+            except Exception as exc:
+                print(f"[ERROR] Failed to delete trading logs: {exc}")
+    
     print("\n" + "-" * 60)
     print("CLEANING PYTHON CACHE")
     print("-" * 60)
@@ -63,5 +96,13 @@ def clear_logs():
 
 
 if __name__ == "__main__":
-    clear_logs()
+    import sys
+    if len(sys.argv) > 1 and sys.argv[1] == "--trading-only":
+        clear_trading_logs()
+    elif len(sys.argv) > 1 and sys.argv[1] == "--skip-trading":
+        # Skip trading logs if explicitly requested
+        clear_logs(include_trading_logs=False)
+    else:
+        # Default: clear everything including trading logs
+        clear_logs(include_trading_logs=True)
 
