@@ -35,14 +35,16 @@ def _clean_pycache(project_root: Path):
 
 
 def clear_trading_logs():
-    """Clear only trading logs (crypto_trades.jsonl)."""
+    """Clear only trading logs (crypto_trades.jsonl) and active positions."""
     project_root = Path(__file__).parent
     trading_log_file = project_root / "logs" / "trading" / "crypto_trades.jsonl"
+    active_positions_file = project_root / "data" / "positions" / "active_positions.json"
     
     print("=" * 60)
-    print("CLEARING TRADING LOGS")
+    print("CLEARING TRADING LOGS AND POSITIONS")
     print("=" * 60)
     
+    # Clear trading logs
     if trading_log_file.exists():
         try:
             trading_log_file.unlink()
@@ -52,8 +54,25 @@ def clear_trading_logs():
     else:
         print("[SKIP] Trading logs file not found")
     
+    # Clear active positions
+    if active_positions_file.exists():
+        try:
+            # Clear the file by writing an empty JSON object
+            active_positions_file.write_text("{}")
+            print(f"[CLEARED] Active positions: {active_positions_file}")
+        except Exception as exc:
+            print(f"[ERROR] Failed to clear active positions: {exc}")
+    else:
+        # Create the directory if it doesn't exist and create empty file
+        active_positions_file.parent.mkdir(parents=True, exist_ok=True)
+        try:
+            active_positions_file.write_text("{}")
+            print(f"[CREATED] Active positions file: {active_positions_file}")
+        except Exception as exc:
+            print(f"[ERROR] Failed to create active positions file: {exc}")
+    
     print("=" * 60)
-    print("Trading logs cleared successfully.")
+    print("Trading logs and positions cleared successfully.")
     print("=" * 60)
 
 
@@ -75,7 +94,7 @@ def clear_logs(include_trading_logs=True):
     _reset_directory(models_path, "Model artifacts")
     _reset_directory(logs_path, "Training logs")
     
-    # Always clear trading logs by default
+    # Always clear trading logs and positions by default
     if include_trading_logs:
         trading_log_file = project_root / "logs" / "trading" / "crypto_trades.jsonl"
         if trading_log_file.exists():
@@ -84,6 +103,24 @@ def clear_logs(include_trading_logs=True):
                 print(f"[DELETED] Trading logs: {trading_log_file}")
             except Exception as exc:
                 print(f"[ERROR] Failed to delete trading logs: {exc}")
+        
+        # Clear active positions
+        active_positions_file = project_root / "data" / "positions" / "active_positions.json"
+        if active_positions_file.exists():
+            try:
+                # Clear the file by writing an empty JSON object
+                active_positions_file.write_text("{}")
+                print(f"[CLEARED] Active positions: {active_positions_file}")
+            except Exception as exc:
+                print(f"[ERROR] Failed to clear active positions: {exc}")
+        else:
+            # Create the directory if it doesn't exist and create empty file
+            active_positions_file.parent.mkdir(parents=True, exist_ok=True)
+            try:
+                active_positions_file.write_text("{}")
+                print(f"[CREATED] Active positions file: {active_positions_file}")
+            except Exception as exc:
+                print(f"[ERROR] Failed to create active positions file: {exc}")
     
     print("\n" + "-" * 60)
     print("CLEANING PYTHON CACHE")

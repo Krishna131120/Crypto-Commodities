@@ -54,7 +54,7 @@ PROFILE_METADATA: Dict[str, Dict[str, Any]] = {
         "trading_style": "Scalping - many small trades, quick in/out",
         "typical_hold_time": "Hours to 1 day",
         "position_size_pct": 0.05,  # 5% max per symbol
-        "stop_loss_pct": 0.025,  # 2.5% stop (wider to avoid false breakouts from BTC volatility)
+        "stop_loss_pct": 0.03,  # 3% stop (wider to avoid BTC volatility triggers on intraday moves)
         "min_confidence": 0.15,  # Higher confidence needed for quick trades (increased from 0.12)
     },
     "short": {
@@ -63,7 +63,7 @@ PROFILE_METADATA: Dict[str, Dict[str, Any]] = {
         "trading_style": "Swing trading - hold for several days",
         "typical_hold_time": "3-5 days",
         "position_size_pct": 0.10,  # 10% max per symbol (default)
-        "stop_loss_pct": 0.02,  # 2% stop (standard)
+        "stop_loss_pct": 0.035,  # 3.5% stop (wider to avoid BTC volatility triggers, still protects against major losses)
         "min_confidence": 0.10,  # Standard confidence threshold
     },
     "long": {
@@ -72,7 +72,7 @@ PROFILE_METADATA: Dict[str, Dict[str, Any]] = {
         "trading_style": "Trend following - hold for weeks/months",
         "typical_hold_time": "Weeks to months",
         "position_size_pct": 0.18,  # 18% max per symbol (larger for rare trades)
-        "stop_loss_pct": 0.025,  # 2.5% stop (slightly wider for volatility)
+        "stop_loss_pct": 0.04,  # 4% stop (wider for long-term positions, avoids BTC volatility, still limits major losses)
         "min_confidence": 0.08,  # Lower threshold (bigger moves are rarer but more reliable)
     },
 }
@@ -137,7 +137,7 @@ def get_horizon_risk_config(horizon_profile: str) -> Dict[str, float]:
     meta = PROFILE_METADATA.get(normalize_profile(horizon_profile), {})
     return {
         "max_notional_per_symbol_pct": meta.get("position_size_pct", 0.10),
-        "default_stop_loss_pct": meta.get("stop_loss_pct", 0.02),
+        "default_stop_loss_pct": meta.get("stop_loss_pct", 0.035),
         "min_confidence": meta.get("min_confidence", 0.10),
     }
 

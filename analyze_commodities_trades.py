@@ -1,4 +1,4 @@
-"""Analyze trade logs to calculate total profit/loss and show live positions."""
+"""Analyze commodities trade logs to calculate total profit/loss and show live positions."""
 import json
 from pathlib import Path
 from collections import defaultdict
@@ -6,26 +6,43 @@ from datetime import datetime
 from typing import List, Dict, Any, Optional
 
 def get_live_positions() -> List[Dict[str, Any]]:
-    """Get live positions from Alpaca API."""
+    """Get live positions from Dhan MCX API."""
     try:
-        from trading.alpaca_client import AlpacaClient
-        client = AlpacaClient()
+        from trading.dhan_client import DhanClient, DhanConfig
+        import os
+        
+        # Get credentials from environment variables
+        access_token = os.getenv("DHAN_ACCESS_TOKEN")
+        client_id = os.getenv("DHAN_CLIENT_ID")
+        
+        if not access_token or not client_id:
+            print("  ⚠️  Could not load DHAN credentials.")
+            print("      Set DHAN_ACCESS_TOKEN and DHAN_CLIENT_ID environment variables.")
+            print("      PowerShell: $env:DHAN_ACCESS_TOKEN=\"your_token\"")
+            print("      PowerShell: $env:DHAN_CLIENT_ID=\"1107954503\"")
+            return []
+        
+        client = DhanClient(access_token=access_token, client_id=client_id)
         positions = client.list_positions()
         
         live_positions = []
         for pos in positions or []:
+            # DhanClient normalizes positions to this format:
+            # {"symbol": str, "qty": float, "market_value": float, "avg_entry_price": float, "ltp": float, "unrealized_pl": float}
             qty = float(pos.get("qty", 0) or 0)
             if qty == 0:
                 continue
             
             symbol = pos.get("symbol", "")
             avg_entry = float(pos.get("avg_entry_price", 0) or 0)
-            current_price = float(pos.get("current_price", 0) or 0)
+            current_price = float(pos.get("ltp", pos.get("current_price", 0)) or 0)
             market_value = float(pos.get("market_value", 0) or 0)
             unrealized_pl = float(pos.get("unrealized_pl", 0) or 0)
+            
+            # Determine side (long/short) - positive qty = long, negative = short
             side = "long" if qty > 0 else "short"
             
-            # Calculate unrealized P/L percentage
+            # Calculate unrealized P/L percentage if we have entry price
             if avg_entry > 0:
                 if side == "long":
                     unrealized_pl_pct = ((current_price - avg_entry) / avg_entry) * 100
@@ -33,6 +50,10 @@ def get_live_positions() -> List[Dict[str, Any]]:
                     unrealized_pl_pct = ((avg_entry - current_price) / avg_entry) * 100
             else:
                 unrealized_pl_pct = 0.0
+            
+            # If market value not provided, calculate it
+            if market_value == 0 and current_price > 0:
+                market_value = abs(qty) * current_price
             
             live_positions.append({
                 "symbol": symbol,
@@ -47,7 +68,7 @@ def get_live_positions() -> List[Dict[str, Any]]:
         
         return live_positions
     except Exception as exc:
-        print(f"  ⚠️  Could not fetch live positions from Alpaca: {exc}")
+        print(f"  ⚠️  Could not fetch live positions from Dhan MCX: {exc}")
         return []
 
 
@@ -158,34 +179,36 @@ def get_closed_positions_from_file(positions_file: Path, filter_symbol: Optional
             # Only include closed positions with P/L data
             status = pos_data.get('status', '')
             if status != 'open' and pos_data.get('realized_pl') is not None:
-                closed_trades.append({
-                    'symbol': symbol,
-                    'side': pos_data.get('side', 'long'),
-                    'entry_price': pos_data.get('entry_price', 0),
-                    'exit_price': pos_data.get('exit_price', 0),
-                    'quantity': abs(pos_data.get('quantity', 0)),
-                    'realized_pl': pos_data.get('realized_pl', 0),
-                    'realized_pl_pct': pos_data.get('realized_pl_pct', 0),
-                    'exit_reason': pos_data.get('exit_reason', 'unknown'),
-                    'entry_time': pos_data.get('entry_time', ''),
-                    'exit_time': exit_time,
-                })
+                # Only include commodities positions
+                if pos_data.get('asset_type') == 'commodities':
+                    closed_trades.append({
+                        'symbol': symbol,
+                        'side': pos_data.get('side', 'long'),
+                        'entry_price': pos_data.get('entry_price', 0),
+                        'exit_price': pos_data.get('exit_price', 0),
+                        'quantity': abs(pos_data.get('quantity', 0)),
+                        'realized_pl': pos_data.get('realized_pl', 0),
+                        'realized_pl_pct': pos_data.get('realized_pl_pct', 0),
+                        'exit_reason': pos_data.get('exit_reason', 'unknown'),
+                        'entry_time': pos_data.get('entry_time', ''),
+                        'exit_time': exit_time,
+                    })
     except Exception as exc:
         print(f"  ⚠️  Error reading position file: {exc}")
     
     return closed_trades
 
 
-def analyze_trades(filter_symbol: Optional[str] = None, filter_date: Optional[str] = None):
+def analyze_commodities_trades(filter_symbol: Optional[str] = None, filter_date: Optional[str] = None):
     """
-    Analyze trades: show live positions first, then historical P/L from logs.
+    Analyze commodities trades: show live positions first, then historical P/L from logs.
     
     Args:
-        filter_symbol: Only analyze trades for this symbol (e.g., 'BTCUSD')
-        filter_date: Only analyze trades from this date (e.g., '2025-12-15')
+        filter_symbol: Only analyze trades for this symbol (e.g., 'GOLD')
+        filter_date: Only analyze trades from this date (e.g., '2025-12-19')
     """
     print("=" * 80)
-    print("TRADE ANALYSIS")
+    print("COMMODITIES TRADE ANALYSIS (MCX - Dhan)")
     print("=" * 80)
     
     filter_info = []
@@ -201,7 +224,7 @@ def analyze_trades(filter_symbol: Optional[str] = None, filter_date: Optional[st
     # PART 1: LIVE POSITIONS
     # ========================================================================
     print("=" * 80)
-    print("LIVE POSITIONS (Current Open Positions)")
+    print("LIVE POSITIONS (Current Open Positions on MCX)")
     print("=" * 80)
     
     live_positions = get_live_positions()
@@ -230,11 +253,11 @@ def analyze_trades(filter_symbol: Optional[str] = None, filter_date: Optional[st
                 status = "[PROFIT]" if unrealized_pl > 0 else "[LOSS]" if unrealized_pl < 0 else "[FLAT]"
                 
                 print(f"Position {i}: {symbol} ({side})")
-                print(f"  Entry Price:      ${entry:,.2f}")
-                print(f"  Current Price:     ${current:,.2f}")
-                print(f"  Quantity:          {qty:.6f}")
-                print(f"  Market Value:      ${market_val:,.2f}")
-                print(f"  Unrealized P/L:    ${unrealized_pl:+,.2f} ({unrealized_pl_pct:+.2f}%)")
+                print(f"  Entry Price:      ₹{entry:,.2f}")
+                print(f"  Current Price:     ₹{current:,.2f}")
+                print(f"  Quantity:          {qty:.2f} lots")
+                print(f"  Market Value:      ₹{market_val:,.2f}")
+                print(f"  Unrealized P/L:    ₹{unrealized_pl:+,.2f} ({unrealized_pl_pct:+.2f}%)")
                 print(f"  Status:            {status}")
                 print()
                 
@@ -245,8 +268,8 @@ def analyze_trades(filter_symbol: Optional[str] = None, filter_date: Optional[st
             print("LIVE POSITIONS SUMMARY")
             print("-" * 80)
             print(f"Total Positions:        {len(live_positions)}")
-            print(f"Total Market Value:     ${total_market_value:,.2f}")
-            print(f"Total Unrealized P/L:   ${total_unrealized_pl:+,.2f}")
+            print(f"Total Market Value:     ₹{total_market_value:,.2f}")
+            print(f"Total Unrealized P/L:   ₹{total_unrealized_pl:+,.2f}")
             print()
         else:
             print("No open positions found (after filtering).")
@@ -262,7 +285,7 @@ def analyze_trades(filter_symbol: Optional[str] = None, filter_date: Optional[st
     print("HISTORICAL TRADES (From Trading Logs)")
     print("=" * 80)
     
-    log_file = Path("logs/trading/crypto_trades.jsonl")
+    log_file = Path("logs/trading/commodities_trades.jsonl")
     positions_file = Path("data/positions/active_positions.json")
     
     # Parse closed trades from logs
@@ -320,10 +343,10 @@ def analyze_trades(filter_symbol: Optional[str] = None, filter_date: Optional[st
                 losing_trades += 1
             
             print(f"Trade {i}: {symbol} ({side})")
-            print(f"  Entry:              ${entry_price:,.2f}")
-            print(f"  Exit:               ${exit_price:,.2f}")
-            print(f"  Quantity:           {quantity:.6f}")
-            print(f"  Realized P/L:        ${realized_pl:+,.2f} ({realized_pl_pct:+.2f}%)")
+            print(f"  Entry:              ₹{entry_price:,.2f}")
+            print(f"  Exit:               ₹{exit_price:,.2f}")
+            print(f"  Quantity:           {quantity:.2f} lots")
+            print(f"  Realized P/L:        ₹{realized_pl:+,.2f} ({realized_pl_pct:+.2f}%)")
             print(f"  Exit Reason:         {exit_reason}")
             print(f"  Status:              {status}")
             if trade.get('entry_time'):
@@ -344,9 +367,9 @@ def analyze_trades(filter_symbol: Optional[str] = None, filter_date: Optional[st
         print(f"  Losing:                {losing_trades}")
         print(f"  Win Rate:              {win_rate:.1f}%")
         print()
-        print(f"Total Profit:            ${total_profit:,.2f}")
-        print(f"Total Loss:              ${total_loss:,.2f}")
-        print(f"Net Profit/Loss:         ${net_profit:+,.2f}")
+        print(f"Total Profit:            ₹{total_profit:,.2f}")
+        print(f"Total Loss:              ₹{total_loss:,.2f}")
+        print(f"Net Profit/Loss:         ₹{net_profit:+,.2f}")
         
         if (total_profit + total_loss) > 0:
             net_return_pct = (net_profit / (total_profit + total_loss)) * 100
@@ -355,10 +378,10 @@ def analyze_trades(filter_symbol: Optional[str] = None, filter_date: Optional[st
     else:
         if not log_file.exists() and not positions_file.exists():
             print("No trading logs found.")
-            print("  • Trading logs: logs/trading/crypto_trades.jsonl")
+            print("  • Trading logs: logs/trading/commodities_trades.jsonl")
             print("  • Position file: data/positions/active_positions.json")
         elif not log_file.exists():
-            print("Trading log file not found: logs/trading/crypto_trades.jsonl")
+            print("Trading log file not found: logs/trading/commodities_trades.jsonl")
             print("Showing closed positions from position manager file only...")
         else:
             print("No closed trades found in logs (after filtering).")
@@ -375,19 +398,19 @@ def analyze_trades(filter_symbol: Optional[str] = None, filter_date: Optional[st
         if live_positions:
             total_unrealized = sum(p['unrealized_pl'] for p in live_positions)
             print(f"Live Positions:          {len(live_positions)}")
-            print(f"  Total Unrealized P/L:  ${total_unrealized:+,.2f}")
+            print(f"  Total Unrealized P/L:  ₹{total_unrealized:+,.2f}")
         
         if all_closed_trades:
             net_historical = sum(t['realized_pl'] for t in all_closed_trades)
-            print(f"Historical Trades:      {len(all_closed_trades)}")
-            print(f"  Net Realized P/L:      ${net_historical:+,.2f}")
+            print(f"Historical Trades:       {len(all_closed_trades)}")
+            print(f"  Net Realized P/L:      ₹{net_historical:+,.2f}")
         
         if live_positions and all_closed_trades:
             total_unrealized = sum(p['unrealized_pl'] for p in live_positions)
             net_historical = sum(t['realized_pl'] for t in all_closed_trades)
             combined_pl = total_unrealized + net_historical
-            print(f"\nCombined P/L:            ${combined_pl:+,.2f}")
-            print(f"  (Unrealized: ${total_unrealized:+,.2f} + Realized: ${net_historical:+,.2f})")
+            print(f"\nCombined P/L:            ₹{combined_pl:+,.2f}")
+            print(f"  (Unrealized: ₹{total_unrealized:+,.2f} + Realized: ₹{net_historical:+,.2f})")
         print()
 
 
@@ -402,12 +425,12 @@ if __name__ == "__main__":
             filter_symbol = None
             filter_date = None
         elif sys.argv[1] == "--help":
-            print("Usage: python analyze_trades.py [--all] [--symbol SYMBOL] [--date YYYY-MM-DD]")
+            print("Usage: python analyze_commodities_trades.py [--all] [--symbol SYMBOL] [--date YYYY-MM-DD]")
             print()
             print("Options:")
             print("  --all              Show all trades (no filters)")
-            print("  --symbol SYMBOL    Filter by trading symbol (e.g., BTCUSD)")
-            print("  --date YYYY-MM-DD Filter by date (e.g., 2025-12-19)")
+            print("  --symbol SYMBOL     Filter by trading symbol (e.g., GOLD)")
+            print("  --date YYYY-MM-DD  Filter by date (e.g., 2025-12-19)")
             print()
             print("Default: Shows all trades without filters")
             sys.exit(0)
@@ -424,4 +447,4 @@ if __name__ == "__main__":
                 else:
                     i += 1
     
-    analyze_trades(filter_symbol=filter_symbol, filter_date=filter_date)
+    analyze_commodities_trades(filter_symbol=filter_symbol, filter_date=filter_date)

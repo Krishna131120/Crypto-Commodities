@@ -1,0 +1,49 @@
+================================================================================
+COMPLETE .env FILE TEMPLATE (Alpaca + DHAN)
+================================================================================
+
+Copy this to your .env file and fill in your actual credentials:
+
+================================================================================
+# ALPACA API (for Crypto Trading)
+================================================================================
+# Get these from: https://app.alpaca.markets/paper/dashboard/overview
+ALPACA_API_KEY="your_alpaca_api_key_here"
+ALPACA_SECRET_KEY="your_alpaca_secret_key_here"
+ALPACA_BASE_URL="https://paper-api.alpaca.markets"
+
+# Alternative Alpaca variable names (if your code uses these):
+# APCA_API_KEY_ID="your_alpaca_api_key_here"
+# APCA_API_SECRET_KEY="your_alpaca_secret_key_here"
+# APCA_API_BASE_URL="https://paper-api.alpaca.markets"
+
+================================================================================
+# DHAN API (for MCX Commodities Trading)
+================================================================================
+# Get token from: https://web.dhan.co → Profile → DhanHQ Trading APIs
+# Token expires every 24 hours - use refresh_dhan_token.py to refresh daily
+DHAN_ACCESS_TOKEN="your_dhan_token_here"
+DHAN_CLIENT_ID="1107954503"
+
+# Optional: Override DHAN base URL (default: https://api.dhan.co)
+# DHAN_BASE_URL="https://api.dhan.co"
+
+================================================================================
+IMPORTANT NOTES
+================================================================================
+
+1. refresh_dhan_token.py will ONLY update DHAN_ACCESS_TOKEN
+   - Your Alpaca credentials will remain unchanged
+   - All other lines in .env will be preserved
+
+2. Daily Token Refresh:
+   - Run: python refresh_dhan_token.py
+   - This automatically updates DHAN_ACCESS_TOKEN in this file
+   - No need to manually edit after first setup
+
+3. Security:
+   - .env file is in .gitignore (won't be committed to git)
+   - Never share your .env file
+   - Keep your tokens secret
+
+================================================================================

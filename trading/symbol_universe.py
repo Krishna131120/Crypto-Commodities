@@ -1,15 +1,21 @@
 """
 Symbol universe and data_symbol <-> trading_symbol mapping.
 
-This module defines a small, curated starting universe of assets where:
+This module defines a comprehensive universe of assets where:
 - `data_symbol` is the symbol used by the ingestion/feature pipeline
-  (e.g. Binance or Yahoo-style symbols like BTC-USDT, GC=F).
-- `trading_symbol` is the symbol used on the Alpaca side for order
-  submission (e.g. BTCUSD, GLD, USO).
+  (e.g. Binance or Yahoo-style symbols like BTC-USDT, GC=F, or MCX-specific symbols like MCX_GOLDM).
+- `trading_symbol` is the symbol used at the broker for order submission:
+  - Crypto: Alpaca format (BTCUSD, ETHUSD, etc.)
+  - Commodities: MCX contract symbols (GOLD, SILVER, CRUDEOIL, etc.) - DHAN broker ONLY
+
+IMPORTANT FOR COMMODITIES:
+- ALL commodities MUST use DHAN broker (MCX exchange)
+- No Alpaca fallback - commodities will raise an error if AlpacaClient is used
+- MCX contract symbols are auto-generated based on trading horizon
+- Includes 28+ MCX commodities: Bullion, Energy, Base Metals, Agricultural
 
 We deliberately keep this mapping explicit and human-auditable so that:
-- You can easily extend / edit it as you add more assets or change
-  how you want to proxy commodities (e.g. GC=F -> GLD).
+- You can easily extend / edit it as you add more assets
 - The live trading engine never guesses a trading symbol; it always
   uses this mapping and will refuse to trade symbols that are not mapped.
 """
@@ -19,18 +25,41 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Dict, List, Optional
 
+try:
+    from .mcx_symbol_mapper import get_mcx_contract_for_horizon
+except ImportError:
+    # Fallback if mcx_symbol_mapper not available
+    def get_mcx_contract_for_horizon(yahoo_symbol: str, horizon: str) -> str:
+        return yahoo_symbol  # Return as-is if mapper not available
+
 
 @dataclass(frozen=True)
 class AssetMapping:
-    """Link between data/feature symbol and Alpaca trading symbol."""
+    """Link between data/feature symbol and broker trading symbol."""
 
     logical_name: str          # Human label, e.g. "bitcoin", "gold"
     asset_type: str            # "crypto" or "commodities"
     data_symbol: str           # Symbol used in your data/feature pipeline
-    trading_symbol: str        # Symbol used at Alpaca for orders
+    trading_symbol: str        # Symbol used at broker for orders (Alpaca format or MCX format)
     timeframe: str = "1d"      # Default timeframe for features/models
     horizon_profile: str = "short"  # Default horizon profile for training/trading
     enabled: bool = True       # If False, will not be traded even if models exist
+    
+    def get_mcx_symbol(self, horizon: Optional[str] = None) -> str:
+        """
+        Get MCX contract symbol for this asset.
+        
+        Args:
+            horizon: Trading horizon ("intraday", "short", "long")
+            
+        Returns:
+            MCX contract symbol (e.g., "GOLDFEB24")
+        """
+        if self.asset_type != "commodities":
+            return self.trading_symbol  # Return as-is for non-commodities
+        
+        horizon = horizon or self.horizon_profile
+        return get_mcx_contract_for_horizon(self.data_symbol, horizon)
 
 
 # NOTE: This is a *starting* universe focused on symbols that already exist
@@ -41,14 +70,12 @@ class AssetMapping:
 # - Trading symbols follow Alpaca's crypto format (BTCUSD, ETHUSD, ...).
 #
 # Commodities:
-# - Data symbols are Yahoo-style futures (CL=F, GC=F, SI=F, PL=F).
-# - Trading symbols are *ETF proxies* that roughly track the underlying:
-#   - Crude oil:  CL=F  -> USO   (United States Oil Fund)
-#   - Gold:       GC=F  -> GLD   (SPDR Gold Shares)
-#   - Silver:     SI=F  -> SLV   (iShares Silver Trust)
-#   - Platinum:   PL=F  -> PPLT  (Aberdeen Physical Platinum Shares)
-# If you prefer to use different instruments (or if your Alpaca account
-# has futures enabled), you can update these mappings.
+# - Data symbols are Yahoo-style futures (CL=F, GC=F, SI=F, etc.) or MCX-specific symbols (MCX_*)
+# - Trading symbols are MCX contract symbols (GOLD, SILVER, CRUDEOIL, etc.)
+# - ALL commodities MUST use DHAN broker (MCX exchange) - no Alpaca fallback
+# - MCX contract symbols are auto-generated based on horizon (e.g., GOLDDEC25 for current month)
+# - Includes: Bullion (Gold, Silver variants), Energy (Crude Oil, Natural Gas), 
+#   Base Metals (Aluminium, Copper, Lead, Nickel, Zinc), Agricultural (Cotton, Cardamom, etc.)
 UNIVERSE: List[AssetMapping] = [
     # Crypto
     AssetMapping(
@@ -243,6 +270,238 @@ UNIVERSE: List[AssetMapping] = [
         asset_type="crypto",
         data_symbol="YFI-USDT",
         trading_symbol="YFIUSD",
+        timeframe="1d",
+        horizon_profile="short",
+    ),
+    # Commodities - MCX Only (DHAN broker required)
+    # Bullion
+    AssetMapping(
+        logical_name="gold",
+        asset_type="commodities",
+        data_symbol="GC=F",
+        trading_symbol="GOLD",  # MCX Gold futures (not ETF proxy)
+        timeframe="1d",
+        horizon_profile="short",
+    ),
+    AssetMapping(
+        logical_name="gold_mini",
+        asset_type="commodities",
+        data_symbol="MCX_GOLDM",
+        trading_symbol="GOLDM",  # MCX Gold Mini
+        timeframe="1d",
+        horizon_profile="short",
+    ),
+    AssetMapping(
+        logical_name="gold_guinea",
+        asset_type="commodities",
+        data_symbol="MCX_GOLDGUINEA",
+        trading_symbol="GOLDGUINEA",  # MCX Gold Guinea
+        timeframe="1d",
+        horizon_profile="short",
+    ),
+    AssetMapping(
+        logical_name="gold_petal",
+        asset_type="commodities",
+        data_symbol="MCX_GOLDPETAL",
+        trading_symbol="GOLDPETAL",  # MCX Gold Petal
+        timeframe="1d",
+        horizon_profile="short",
+    ),
+    AssetMapping(
+        logical_name="silver",
+        asset_type="commodities",
+        data_symbol="SI=F",
+        trading_symbol="SILVER",  # MCX Silver futures (not ETF proxy)
+        timeframe="1d",
+        horizon_profile="short",
+    ),
+    AssetMapping(
+        logical_name="silver_mini",
+        asset_type="commodities",
+        data_symbol="MCX_SILVERM",
+        trading_symbol="SILVERM",  # MCX Silver Mini
+        timeframe="1d",
+        horizon_profile="short",
+    ),
+    AssetMapping(
+        logical_name="silver_micro",
+        asset_type="commodities",
+        data_symbol="MCX_SILVERMIC",
+        trading_symbol="SILVERMIC",  # MCX Silver Micro
+        timeframe="1d",
+        horizon_profile="short",
+    ),
+    AssetMapping(
+        logical_name="silver_1000",
+        asset_type="commodities",
+        data_symbol="MCX_SILVER1000",
+        trading_symbol="SILVER1000",  # MCX Silver 1000
+        timeframe="1d",
+        horizon_profile="short",
+    ),
+    AssetMapping(
+        logical_name="platinum",
+        asset_type="commodities",
+        data_symbol="PL=F",
+        trading_symbol="PLATINUM",  # MCX Platinum futures (if available)
+        timeframe="1d",
+        horizon_profile="short",
+    ),
+    
+    # Energy
+    AssetMapping(
+        logical_name="crude_oil",
+        asset_type="commodities",
+        data_symbol="CL=F",
+        trading_symbol="CRUDEOIL",  # MCX Crude Oil futures (not ETF proxy)
+        timeframe="1d",
+        horizon_profile="short",
+    ),
+    AssetMapping(
+        logical_name="crude_oil_mini",
+        asset_type="commodities",
+        data_symbol="MCX_CRUDEOILM",
+        trading_symbol="CRUDEOILM",  # MCX Crude Oil Mini
+        timeframe="1d",
+        horizon_profile="short",
+    ),
+    AssetMapping(
+        logical_name="brent_crude",
+        asset_type="commodities",
+        data_symbol="BZ=F",
+        trading_symbol="BRENTCRUDE",  # MCX Brent Crude
+        timeframe="1d",
+        horizon_profile="short",
+    ),
+    AssetMapping(
+        logical_name="natural_gas",
+        asset_type="commodities",
+        data_symbol="NG=F",
+        trading_symbol="NATURALGAS",  # MCX Natural Gas futures
+        timeframe="1d",
+        horizon_profile="short",
+    ),
+    
+    # Base Metals
+    AssetMapping(
+        logical_name="aluminium",
+        asset_type="commodities",
+        data_symbol="MCX_ALUMINIUM",
+        trading_symbol="ALUMINIUM",  # MCX Aluminium
+        timeframe="1d",
+        horizon_profile="short",
+    ),
+    AssetMapping(
+        logical_name="aluminium_mini",
+        asset_type="commodities",
+        data_symbol="MCX_ALUMINI",
+        trading_symbol="ALUMINI",  # MCX Aluminium Mini
+        timeframe="1d",
+        horizon_profile="short",
+    ),
+    AssetMapping(
+        logical_name="copper",
+        asset_type="commodities",
+        data_symbol="HG=F",
+        trading_symbol="COPPER",  # MCX Copper
+        timeframe="1d",
+        horizon_profile="short",
+    ),
+    AssetMapping(
+        logical_name="lead",
+        asset_type="commodities",
+        data_symbol="MCX_LEAD",
+        trading_symbol="LEAD",  # MCX Lead
+        timeframe="1d",
+        horizon_profile="short",
+    ),
+    AssetMapping(
+        logical_name="lead_mini",
+        asset_type="commodities",
+        data_symbol="MCX_LEADMINI",
+        trading_symbol="LEADMINI",  # MCX Lead Mini
+        timeframe="1d",
+        horizon_profile="short",
+    ),
+    AssetMapping(
+        logical_name="nickel",
+        asset_type="commodities",
+        data_symbol="MCX_NICKEL",
+        trading_symbol="NICKEL",  # MCX Nickel
+        timeframe="1d",
+        horizon_profile="short",
+    ),
+    AssetMapping(
+        logical_name="zinc",
+        asset_type="commodities",
+        data_symbol="MCX_ZINC",
+        trading_symbol="ZINC",  # MCX Zinc
+        timeframe="1d",
+        horizon_profile="short",
+    ),
+    AssetMapping(
+        logical_name="zinc_mini",
+        asset_type="commodities",
+        data_symbol="MCX_ZINCMINI",
+        trading_symbol="ZINCMINI",  # MCX Zinc Mini
+        timeframe="1d",
+        horizon_profile="short",
+    ),
+    
+    # Agricultural
+    AssetMapping(
+        logical_name="corn",
+        asset_type="commodities",
+        data_symbol="ZC=F",
+        trading_symbol="CORN",  # MCX Corn (if available)
+        timeframe="1d",
+        horizon_profile="short",
+    ),
+    AssetMapping(
+        logical_name="soybean",
+        asset_type="commodities",
+        data_symbol="ZS=F",
+        trading_symbol="SOYBEAN",  # MCX Soybean (if available)
+        timeframe="1d",
+        horizon_profile="short",
+    ),
+    AssetMapping(
+        logical_name="wheat",
+        asset_type="commodities",
+        data_symbol="ZW=F",
+        trading_symbol="WHEAT",  # MCX Wheat (if available)
+        timeframe="1d",
+        horizon_profile="short",
+    ),
+    AssetMapping(
+        logical_name="cardamom",
+        asset_type="commodities",
+        data_symbol="MCX_CARDAMOM",
+        trading_symbol="CARDAMOM",  # MCX Cardamom
+        timeframe="1d",
+        horizon_profile="short",
+    ),
+    AssetMapping(
+        logical_name="cotton",
+        asset_type="commodities",
+        data_symbol="CT=F",
+        trading_symbol="COTTON",  # MCX Cotton
+        timeframe="1d",
+        horizon_profile="short",
+    ),
+    AssetMapping(
+        logical_name="crude_palm_oil",
+        asset_type="commodities",
+        data_symbol="MCX_CPO",
+        trading_symbol="CPO",  # MCX Crude Palm Oil
+        timeframe="1d",
+        horizon_profile="short",
+    ),
+    AssetMapping(
+        logical_name="mentha_oil",
+        asset_type="commodities",
+        data_symbol="MCX_MENTHAOIL",
+        trading_symbol="MENTHAOIL",  # MCX Mentha Oil
         timeframe="1d",
         horizon_profile="short",
     ),

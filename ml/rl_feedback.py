@@ -296,13 +296,26 @@ class RLFeedbackLearner:
             vec_env = DummyVecEnv([_make_feedback_env])
             
             # Create new model with same architecture
-            retrain_model = DQN(
-                "MlpPolicy",
-                vec_env,
-                verbose=0,
-                tensorboard_log="logs/tensorboard",
-                **DQN_CONFIG,
-            )
+            # Make tensorboard optional - silently fallback if not installed
+            try:
+                retrain_model = DQN(
+                    "MlpPolicy",
+                    vec_env,
+                    verbose=0,
+                    tensorboard_log="logs/tensorboard",
+                    **DQN_CONFIG,
+                )
+            except Exception as e:
+                # If tensorboard fails, create model without it (silent fallback)
+                if "tensorboard" in str(e).lower():
+                    retrain_model = DQN(
+                        "MlpPolicy",
+                        vec_env,
+                        verbose=0,
+                        **DQN_CONFIG,
+                    )
+                else:
+                    raise
             
             # Transfer weights from base model
             retrain_model.policy.load_state_dict(base_model.policy.state_dict())

@@ -29,7 +29,7 @@ from typing import Any, Dict, List, Set
 from pipeline_runner import run_ingestion, regenerate_features
 from train_models import train_symbols
 from trading.alpaca_client import AlpacaClient
-from trading.execution_engine import ExecutionEngine
+from trading.execution_engine import ExecutionEngine, TradingRiskConfig
 from trading.symbol_universe import all_enabled, find_by_data_symbol, find_by_trading_symbol
 from live_trader import discover_tradable_symbols, run_trading_cycle
 from ml.horizons import print_horizon_summary
@@ -126,8 +126,19 @@ def main():
     parser.add_argument(
         "--profit-target",
         type=float,
+        required=True,
+        help="REQUIRED: Profit target percentage (e.g., 10.0 for 10%%). You must specify this before trading.",
+    )
+    parser.add_argument(
+        "--stop-loss-pct",
+        type=float,
         default=None,
-        help="Profit target percentage (e.g., 0.15 for 0.15%%). If not specified, uses horizon default.",
+        help="Stop-loss percentage (e.g., 2.0 for 2%%). Default: 3.5%% for crypto, 2.0%% for commodities. If not specified, uses default based on asset type.",
+    )
+    parser.add_argument(
+        "--manual-stop-loss",
+        action="store_true",
+        help="Enable manual stop-loss management. System will NOT submit or execute stop-loss orders automatically. You manage stop-losses yourself.",
     )
     parser.add_argument(
         "--dry-run",
@@ -144,7 +155,9 @@ def main():
         "--allow-existing-positions",
         action="store_true",
         help="Allow trading even when symbols already have open positions in Alpaca. "
-             "WARNING: This will let the trading engine manage existing positions.",
+             "By default, symbols with existing positions are SKIPPED to avoid conflicts. "
+             "With this flag: trading engine will manage existing positions (may exit them if model prediction changes). "
+             "WARNING: This may close your existing positions if the model changes its prediction.",
     )
 
     args = parser.parse_args()
@@ -200,8 +213,15 @@ def main():
     print(f"Symbols:   {', '.join(crypto_symbols)}")
     print(f"Timeframe: {timeframe}")
     print(f"Horizon:   {horizon}")
-    if args.profit_target is not None:
-        print(f"Profit Target: {args.profit_target:.2f}%")
+    print(f"Profit Target: {args.profit_target:.2f}% (REQUIRED - user specified)")
+    if args.stop_loss_pct is not None:
+        print(f"Stop-Loss: {args.stop_loss_pct:.2f}% (user specified)")
+    else:
+        print(f"Stop-Loss: 3.5% (default for crypto)")
+    if args.manual_stop_loss:
+        print(f"Stop-Loss Mode: MANUAL (you manage stop-losses)")
+    else:
+        print(f"Stop-Loss Mode: AUTOMATIC (system manages stop-losses)")
     print(f"Mode:      {'DRY RUN (no real orders)' if args.dry_run else 'LIVE PAPER TRADING'}")
     print("=" * 80)
     print()
@@ -210,33 +230,33 @@ def main():
     print_horizon_summary()
 
     # ------------------------------------------------------------------
-    # Stage 1: Historical ingestion
+    # Stage 1: Historical ingestion (CRYPTO ONLY)
     # ------------------------------------------------------------------
     print("[1/4] Ingesting historical data...")
     run_ingestion(
         mode="historical",
         crypto_symbols=crypto_symbols,
-        commodities_symbols=None,
+        commodities_symbols=None,  # Crypto-only script - no commodities
         timeframe=timeframe,
         years=years,
     )
     print("    ✓ Historical data ingestion complete.")
 
     # ------------------------------------------------------------------
-    # Stage 2: Feature generation
+    # Stage 2: Feature generation (CRYPTO ONLY)
     # ------------------------------------------------------------------
     print("[2/4] Regenerating features...")
     regenerate_features("crypto", set(crypto_symbols), timeframe)
     print("    ✓ Feature generation complete.")
 
     # ------------------------------------------------------------------
-    # Stage 3: Model training
+    # Stage 3: Model training (CRYPTO ONLY)
     # ------------------------------------------------------------------
     print("[3/4] Training models...")
-    horizon_map = {"crypto": horizon}
+    horizon_map = {"crypto": horizon}  # Crypto-only - no commodities
     train_symbols(
         crypto_symbols=crypto_symbols,
-        commodities_symbols=[],
+        commodities_symbols=[],  # Crypto-only script - no commodities
         timeframe=timeframe,
         output_dir="models",
         horizon_profiles=horizon_map,
@@ -249,7 +269,14 @@ def main():
     print("[4/4] Preparing live trading...")
 
     # Discover which of the requested symbols actually have trained models.
-    all_tradable = discover_tradable_symbols(asset_type="crypto", timeframe=timeframe)
+    # CRITICAL: Pass the trained horizon as override_horizon so discover_tradable_symbols
+    # finds the correct models (e.g., intraday models instead of default short models)
+    all_tradable = discover_tradable_symbols(
+        asset_type="crypto", 
+        timeframe=timeframe,
+        override_horizon=horizon  # Override asset's default horizon_profile with the trained horizon
+    )
+    
     # Restrict to the user-selected symbols only.
     requested_set = {s.upper() for s in crypto_symbols}
     tradable = [
@@ -303,13 +330,38 @@ def main():
 
     print(f"    ✓ {len(tradable_filtered)} symbol(s) eligible for trading after filtering.")
 
-    # Initialize execution engine (will use env vars for Alpaca).
+    # Initialize execution engine and position manager (will use env vars for Alpaca).
     try:
-        engine = ExecutionEngine()
+        from trading.position_manager import PositionManager
+        
+        risk_config = TradingRiskConfig(
+            manual_stop_loss=args.manual_stop_loss,
+            user_stop_loss_pct=args.stop_loss_pct,  # User override if provided
+        )
+        position_manager = PositionManager()
+        engine = ExecutionEngine(risk_config=risk_config, position_manager=position_manager)
+        if args.manual_stop_loss:
+            print("    ⚠️  MANUAL STOP-LOSS MODE enabled - you are responsible for managing stop-losses")
     except Exception as exc:
         print(f"    ✗ Failed to initialize ExecutionEngine: {exc}")
         print("      Make sure ALPACA_API_KEY and ALPACA_SECRET_KEY are set.")
         return
+
+    # Sync existing Alpaca positions with position manager (if --allow-existing-positions is set)
+    if args.allow_existing_positions and existing_positions:
+        print("\n[SYNC] Syncing existing Alpaca positions with position manager...")
+        from end_to_end import sync_existing_alpaca_positions
+        sync_results = sync_existing_alpaca_positions(
+            position_manager=position_manager,
+            tradable_symbols=tradable_filtered,
+            profit_target_pct=args.profit_target,
+            verbose=True,
+        )
+        if sync_results["positions_synced"] > 0:
+            print(f"    ✓ Synced {sync_results['positions_synced']} existing position(s)")
+            print(f"    ℹ These positions will be monitored with profit target: {args.profit_target:.2f}%")
+        else:
+            print("    ℹ No positions needed syncing (or all already tracked)")
 
     print()
     print("Starting live trading...")
@@ -328,7 +380,8 @@ def main():
             verbose=True,  # Always verbose to see what's happening
             update_data=True,  # Fetch latest live data each cycle
             regenerate_features_flag=True,  # Regenerate features with new data each cycle
-            profit_target_pct=args.profit_target,  # Pass profit target if specified
+            profit_target_pct=args.profit_target,  # REQUIRED - user must specify
+            user_stop_loss_pct=args.stop_loss_pct,  # Optional - user override if provided
         )
 
         # Concise summary

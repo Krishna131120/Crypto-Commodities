@@ -54,9 +54,18 @@ def _iter_symbol_dirs(asset_type: str, symbol: str, timeframe: str) -> Iterable[
             yield candidate
 
 
-def load_candles(asset_type: str, symbol: str, timeframe: str) -> pd.DataFrame:
+def load_candles(asset_type: str, symbol: str, timeframe: str, clean_data: bool = True) -> pd.DataFrame:
     """
     Load OHLCV candles for a given asset/symbol/timeframe as a Pandas DataFrame.
+    
+    Args:
+        asset_type: Type of asset (crypto/commodities)
+        symbol: Symbol name
+        timeframe: Timeframe string
+        clean_data: Whether to apply asset-specific cleaning (default: True)
+        
+    Returns:
+        Cleaned DataFrame with OHLCV data
     """
     for directory in _iter_symbol_dirs(asset_type, symbol, timeframe):
         data_file = directory / "data.json"
@@ -71,7 +80,24 @@ def load_candles(asset_type: str, symbol: str, timeframe: str) -> pd.DataFrame:
             continue
         df["timestamp"] = pd.to_datetime(df["timestamp"], utc=True)
         df = df.sort_values("timestamp").set_index("timestamp")
-        return df.astype(float, errors="ignore")
+        df = df.astype(float, errors="ignore")
+        
+        # Apply asset-specific cleaning
+        if clean_data and asset_type == "commodities":
+            from ml.commodity_cleaning import clean_commodity_candles, get_commodity_cleaning_config
+            
+            cleaning_config = get_commodity_cleaning_config(symbol)
+            df, cleaning_stats = clean_commodity_candles(
+                df,
+                symbol=symbol,
+                remove_outliers=cleaning_config["remove_outliers"],
+                fill_gaps=cleaning_config["fill_gaps"],
+                validate_ohlc=cleaning_config["validate_ohlc"],
+                min_volume_threshold=cleaning_config.get("min_volume_threshold"),
+            )
+            # Log cleaning stats if logger is available (will be passed through assemble_dataset)
+        
+        return df
     raise DatasetNotFoundError(
         f"No data.json found for {asset_type}/{symbol}/{timeframe}"
     )
@@ -183,7 +209,7 @@ def assemble_dataset(
     Returns:
         Tuple of (dataset, metadata)
     """
-    candles = load_candles(asset_type, symbol, timeframe)
+    candles = load_candles(asset_type, symbol, timeframe, clean_data=True)
     if logger:
         logger.info(
             f"Loaded {len(candles)} raw candles",
@@ -196,6 +222,12 @@ def assemble_dataset(
         print(f"[DATA] Loaded {len(candles)} raw candles for {symbol}")
     
     features, feature_version = build_feature_frame(candles)
+    
+    # NOTE: Commodity-specific normalization is NOT applied here because:
+    # 1. Features are already computed from raw candles (which were cleaned)
+    # 2. Feature normalization happens during model training via RobustScaler
+    # 3. Applying normalization here would break feature relationships
+    # The commodity cleaning in load_candles() handles data quality, not feature scaling
     if expected_feature_version is not None and feature_version != expected_feature_version:
         raise ValueError(
             f"Feature schema mismatch (expected {expected_feature_version}, got {feature_version})"
@@ -226,7 +258,16 @@ def assemble_dataset(
         if col not in base.columns and col not in {"target", "target_return"}
     ]
     initial_nans = dataset[feature_cols].isna().sum().sum()
-    dataset[feature_cols] = dataset[feature_cols].ffill()
+    
+    # For commodities, use more aggressive cleaning of feature NaNs
+    if asset_type == "commodities":
+        # Forward-fill with limit to avoid propagating errors too far
+        dataset[feature_cols] = dataset[feature_cols].ffill(limit=5)
+        # Backward-fill for remaining NaNs at the start (warm-up period)
+        dataset[feature_cols] = dataset[feature_cols].bfill(limit=3)
+    else:
+        # Crypto: standard forward-fill
+        dataset[feature_cols] = dataset[feature_cols].ffill()
 
     # Drop rows that still contain NaNs after forward-fill (typically the warm-up period)
     residual_mask = dataset[feature_cols].isna().any(axis=1)

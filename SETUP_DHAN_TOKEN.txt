@@ -1,0 +1,77 @@
+================================================================================
+WHERE TO ENTER YOUR DHAN TOKEN (Daily Refresh)
+================================================================================
+
+LOCATION 1: .env File (RECOMMENDED)
+------------------------------------
+File: Crypto-Commodities/.env
+
+Content:
+  DHAN_ACCESS_TOKEN="your_token_here"
+  DHAN_CLIENT_ID="1107954503"
+
+Why Recommended:
+  - refresh_dhan_token.py automatically updates this file
+  - No need to manually edit after first setup
+  - Works with all trading scripts
+
+LOCATION 2: Environment Variables
+----------------------------------
+PowerShell:
+  $env:DHAN_ACCESS_TOKEN="your_token_here"
+  $env:DHAN_CLIENT_ID="1107954503"
+
+Note: These reset when you close terminal
+
+LOCATION 3: Command Line (for testing)
+---------------------------------------
+python trade_commodities_dhan.py --dhan-token "your_token" --dhan-client-id "1107954503"
+
+================================================================================
+DAILY TOKEN REFRESH
+================================================================================
+
+MANUAL REFRESH:
+  python refresh_dhan_token.py
+
+This script will:
+  1. Load your token from .env file
+  2. Refresh it using DHAN API
+  3. Update .env file automatically
+  4. Show you new expiry time
+
+AUTOMATED REFRESH (Windows Task Scheduler):
+  1. Open Task Scheduler
+  2. Create Basic Task
+  3. Daily at 9:00 AM
+  4. Run: python refresh_dhan_token.py
+  5. Start in: Crypto-Commodities folder
+
+================================================================================
+FIRST TIME SETUP
+================================================================================
+
+1. Get token from: https://web.dhan.co
+   → Profile → DhanHQ Trading APIs → Generate Access Token
+
+2. Create .env file in project root:
+   DHAN_ACCESS_TOKEN="paste_your_token_here"
+   DHAN_CLIENT_ID="1107954503"
+
+3. Test refresh:
+   python refresh_dhan_token.py
+
+4. Set up automation (optional):
+   Use Windows Task Scheduler to run refresh_dhan_token.py daily
+
+================================================================================
+VERIFICATION
+================================================================================
+
+Test your token:
+  python test_dhan_api_connection.py
+
+Check token expiry:
+  python check_token_expiry.py
+
+================================================================================

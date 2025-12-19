@@ -29,8 +29,17 @@ HORIZON_CLAMPS = {
     "long": 0.12,       # ±12% max for 30-day (reduced from 20% - more realistic)
 }
 
-# Sanity check: typical daily volatility for crypto (conservative)
-TYPICAL_DAILY_VOLATILITY = 0.03  # 3% daily volatility for BTC
+# Asset-type-aware typical daily volatility
+# Crypto: Higher volatility (BTC ~3% daily)
+# Commodities: Lower volatility (Gold ~1.5%, Crude Oil ~2.5%, Silver ~2%)
+TYPICAL_DAILY_VOLATILITY = {
+    "crypto": 0.03,        # 3% daily volatility for BTC (conservative)
+    "commodities": 0.02,   # 2% daily volatility for commodities (conservative average)
+}
+
+def get_typical_volatility(asset_type: str = "crypto") -> float:
+    """Get typical daily volatility for asset type."""
+    return TYPICAL_DAILY_VOLATILITY.get(asset_type.lower(), 0.025)  # Default 2.5%
 
 
 def calculate_dynamic_confidence_cap(
@@ -159,6 +168,7 @@ class InferencePipeline:
         model_dir: Path,
         risk_config: Optional[RiskManagerConfig] = None,
         live_tracker: Optional[LiveMetricsTracker] = None,
+        asset_type: Optional[str] = None,
     ):
         self.model_dir = Path(model_dir)
         self.scaler = None
@@ -167,6 +177,36 @@ class InferencePipeline:
         self.summary: Dict[str, any] = {}
         self.metadata: Dict[str, any] = {}
         self.dynamic_threshold = 0.01
+        # Extract asset_type from model_dir path if not provided
+        # Path structure: models/{asset_type}/{symbol}/{timeframe}/{horizon}/
+        if asset_type:
+            self.asset_type = asset_type.lower()
+        else:
+            model_dir_parts = self.model_dir.parts
+            # Try to find 'crypto' or 'commodities' in path
+            if 'crypto' in model_dir_parts:
+                self.asset_type = 'crypto'
+            elif 'commodities' in model_dir_parts:
+                self.asset_type = 'commodities'
+            else:
+                self.asset_type = 'crypto'  # Default fallback
+        
+        # Adjust risk config based on asset_type if not explicitly provided
+        # Commodities typically have lower volatility and can use lower confidence thresholds
+        if risk_config is None:
+            # Create default config with asset-aware min_confidence
+            asset_min_confidence = {
+                "crypto": 0.55,      # Crypto: higher volatility, need higher confidence
+                "commodities": 0.45,  # Commodities: lower volatility, can accept lower confidence
+            }
+            min_conf = asset_min_confidence.get(self.asset_type, 0.55)
+            risk_config = RiskManagerConfig(min_confidence=min_conf)
+        else:
+            # If config provided but min_confidence is default (0.55), adjust for commodities
+            if risk_config.min_confidence == 0.55 and self.asset_type == "commodities":
+                # Only adjust if using default value (user didn't explicitly set it)
+                risk_config.min_confidence = 0.45
+        
         self.risk_manager = RiskManager(risk_config)
         self.live_tracker = live_tracker or LiveMetricsTracker()
         self.target_profile: Optional[Dict[str, Any]] = None
@@ -189,6 +229,9 @@ class InferencePipeline:
             self.dynamic_threshold = float(
                 self.summary.get("analysis", {}).get("dynamic_threshold", self.dynamic_threshold)
             )
+            # Update asset_type from summary if available (more reliable than path)
+            if "asset_type" in self.summary:
+                self.asset_type = self.summary["asset_type"].lower()
         metadata_path = self.model_dir / "metadata.json"
         if metadata_path.exists():
             self.metadata = json.loads(metadata_path.read_text(encoding="utf-8"))
@@ -407,23 +450,47 @@ class InferencePipeline:
                         prob = float(model.predict_proba(features)[0, 1])
                         pred_return = self._prob_to_return(prob)
                         base_model_outputs[name] = pred_return
+                        # Determine action from predicted return
+                        action = "long" if pred_return > self.dynamic_threshold else "short" if pred_return < -self.dynamic_threshold else "hold"
+                        # Calculate confidence based on model metrics (R² and directional accuracy)
+                        model_metrics = self.metrics.get(name, {})
+                        r2 = model_metrics.get("r2", 0.0) or 0.0
+                        directional = model_metrics.get("directional_accuracy", 0.5) or 0.5
+                        # Confidence = weighted combination of R² and directional accuracy
+                        confidence = min(0.95, (r2 * 0.6) + ((directional - 0.5) * 0.4 * 2.0))
+                        confidence = max(0.05, confidence)  # Minimum 5% confidence
                         model_outputs[name] = {
                             "predicted_return": pred_return,
                             "probability": prob,
+                            "action": action,
+                            "confidence": float(confidence),
                         }
                     else:
                         pred = float(model.predict(features)[0])
                         # Apply horizon-aware clamping
                         clamped_pred = _clamp(pred, horizon_profile=self.horizon_profile)
                         # Additional sanity check: if prediction is extreme, scale it down
-                        if self.horizon_profile == "intraday" and abs(clamped_pred) > TYPICAL_DAILY_VOLATILITY:
+                        typical_vol = get_typical_volatility(self.asset_type)
+                        if self.horizon_profile == "intraday" and abs(clamped_pred) > typical_vol:
                             # For intraday, if prediction exceeds typical daily volatility, scale it
-                            scale_factor = TYPICAL_DAILY_VOLATILITY / abs(clamped_pred)
+                            scale_factor = typical_vol / abs(clamped_pred)
                             clamped_pred = clamped_pred * min(scale_factor, 1.0)
                         base_model_outputs[name] = clamped_pred
+                        # Determine action from predicted return
+                        action = "long" if clamped_pred > self.dynamic_threshold else "short" if clamped_pred < -self.dynamic_threshold else "hold"
+                        # Calculate confidence based on model metrics (R² and directional accuracy)
+                        model_metrics = self.metrics.get(name, {})
+                        r2 = model_metrics.get("r2", 0.0) or 0.0
+                        directional = model_metrics.get("directional_accuracy", 0.5) or 0.5
+                        # Confidence = weighted combination of R² and directional accuracy
+                        # R² contributes 60%, directional accuracy contributes 40%
+                        confidence = min(0.95, (r2 * 0.6) + ((directional - 0.5) * 0.4 * 2.0))  # Scale directional to 0-1 range
+                        confidence = max(0.05, confidence)  # Minimum 5% confidence
                         model_outputs[name] = {
                             "predicted_return": clamped_pred,
                             "raw_prediction": float(pred),  # Store raw prediction for debugging
+                            "action": action,
+                            "confidence": float(confidence),
                         }
             except Exception as exc:
                 # Log the error for debugging but continue with other models
@@ -475,7 +542,19 @@ class InferencePipeline:
                             warnings.filterwarnings("ignore", message="X does not have valid feature names")
                             stack_pred = float(stacked_model.predict(base_predictions)[0])
                         clamped_pred = _clamp(stack_pred, horizon_profile=self.horizon_profile)
-                        model_outputs["stacked_blend"] = {"predicted_return": clamped_pred}
+                        # Determine action from predicted return
+                        action = "long" if clamped_pred > self.dynamic_threshold else "short" if clamped_pred < -self.dynamic_threshold else "hold"
+                        # Calculate confidence based on model metrics
+                        model_metrics = self.metrics.get("stacked_blend", {})
+                        r2 = model_metrics.get("r2", 0.0) or 0.0
+                        directional = model_metrics.get("directional_accuracy", 0.5) or 0.5
+                        confidence = min(0.95, (r2 * 0.6) + ((directional - 0.5) * 0.4 * 2.0))
+                        confidence = max(0.05, confidence)
+                        model_outputs["stacked_blend"] = {
+                            "predicted_return": clamped_pred,
+                            "action": action,
+                            "confidence": float(confidence),
+                        }
                 elif expected_features is not None and len(base_model_outputs) != expected_features:
                     # Number of models doesn't match and we don't know which models were used
                     # Skip stacked blend (this is the old behavior)
@@ -640,9 +719,10 @@ class InferencePipeline:
                     # Strong green candle - price going UP significantly
                     # Only override if movement is meaningful (>0.1%)
                     price_action_confidence = min(0.75 + abs(price_change_pct) * 5, 0.90)  # 0.75-0.90 range (reduced from 0.85-0.95)
+                    typical_vol = get_typical_volatility(self.asset_type)
                     intraday_price_action_override = {
                         "action": "long",
-                        "return": min(price_change_pct * 1.2, TYPICAL_DAILY_VOLATILITY),  # Reduced scaling (1.2x instead of 1.5x)
+                        "return": min(price_change_pct * 1.2, typical_vol),  # Reduced scaling (1.2x instead of 1.5x)
                         "confidence": price_action_confidence,
                         "reasoning": f"Real-time price action: STRONG GREEN candle (+{price_change_pct*100:.2f}%). Price moving UP from ${previous_close:.2f} to ${current_price:.2f}",
                         "price_action_detected": True,
@@ -654,9 +734,10 @@ class InferencePipeline:
                     # Strong red candle - price going DOWN significantly
                     # Only override if movement is meaningful (>0.1%)
                     price_action_confidence = min(0.75 + abs(price_change_pct) * 5, 0.90)  # 0.75-0.90 range
+                    typical_vol = get_typical_volatility(self.asset_type)
                     intraday_price_action_override = {
                         "action": "short",
-                        "return": max(price_change_pct * 1.2, -TYPICAL_DAILY_VOLATILITY),  # Reduced scaling
+                        "return": max(price_change_pct * 1.2, -typical_vol),  # Reduced scaling
                         "confidence": price_action_confidence,
                         "reasoning": f"Real-time price action: STRONG RED candle ({price_change_pct*100:.2f}%). Price moving DOWN from ${previous_close:.2f} to ${current_price:.2f}",
                         "price_action_detected": True,
@@ -769,10 +850,10 @@ class InferencePipeline:
         
         # Apply more aggressive dampening for all horizons, not just intraday
         if self.horizon_profile == "intraday":
-            # For intraday, cap at typical daily volatility (3%)
+            # For intraday, cap at typical daily volatility (asset-aware)
             # BUT: if we have price action override, don't cap it (it's based on real-time data)
             if not consensus.get("intraday_price_action_override", False):
-                max_intraday_move = TYPICAL_DAILY_VOLATILITY
+                max_intraday_move = get_typical_volatility(self.asset_type)
                 if abs(consensus_return) > max_intraday_move:
                     # Scale down extreme predictions
                     scale = max_intraday_move / abs(consensus_return)
@@ -992,6 +1073,11 @@ class InferencePipeline:
         # For intraday with strong price action, allow trading even if risk manager is cautious
         # (price action is real-time data, more reliable than model predictions)
         if not allowed and not (consensus.get("intraday_price_action_override") and abs(final_consensus_return) > 0.001):
+            # Preserve original prediction before blocking
+            consensus["raw_consensus_action"] = consensus.get("consensus_action", "hold")
+            consensus["raw_consensus_return"] = consensus.get("consensus_return", 0.0)
+            consensus["raw_consensus_confidence"] = consensus.get("consensus_confidence", 0.0)
+            # Force hold but keep original values for display
             consensus["consensus_action"] = "hold"
             consensus["risk_blocked"] = True
         consensus["position_size"] = self.risk_manager.max_position_allowed(confidence, volatility)
@@ -1123,6 +1209,11 @@ class InferencePipeline:
         else:
             agreement_ratio = 0.0
         
+        # CRITICAL FIX: If only 1 model, force agreement_ratio to be lower
+        # Single model consensus is unreliable - reduce confidence significantly
+        if total_count == 1:
+            agreement_ratio = max(0.3, agreement_ratio * 0.5)  # Reduce by 50%, minimum 30%
+        
         # Calculate dynamic confidence cap based on market conditions and model performance
         dynamic_cap = calculate_dynamic_confidence_cap(
             total_models=total_count,
@@ -1175,12 +1266,33 @@ class InferencePipeline:
             # consistent across all symbols/horizons.
             neutral_guard_triggered = True
             best_action = "hold"
-            confidence = max(action_scores.get("hold", 0.0), min(0.55, confidence))
+            # When neutral guard triggers, preserve some confidence since models did make predictions
+            # The predictions were just too small to act on, but models are still functioning
+            # Use the original confidence (before neutral guard) but cap it reasonably
+            # Minimum confidence should reflect that models are working, just signal is weak
+            hold_score = action_scores.get("hold", 0.0)
+            # Preserve original confidence but cap it, with minimum floor
+            # If models made predictions (even if small), give at least 5% confidence
+            min_confidence_when_guard_triggered = 0.05  # 5% minimum when guard triggers
+            confidence = max(
+                min_confidence_when_guard_triggered,  # Minimum floor
+                max(hold_score, min(0.55, confidence))  # Use hold score or original confidence, capped at 55%
+            )
             consensus_return = 0.0
         
         # Final cap check using dynamic cap (calculated above)
         # This ensures consistency and prevents overconfidence
         confidence = min(dynamic_cap, confidence)  # Ensure never exceeds dynamic cap
+        
+        # Calculate agreement count (how many models agree with best action)
+        agreement_count = 0
+        if best_action == "long":
+            agreement_count = positive_count
+        elif best_action == "short":
+            agreement_count = negative_count
+        else:  # hold
+            # For hold, count models that are close to neutral
+            agreement_count = total_count - positive_count - negative_count
         
         # Note: horizon_profile is passed via self.horizon_profile in predict() method
         # We'll clamp in predict() method after consensus is computed
@@ -1189,6 +1301,10 @@ class InferencePipeline:
             "consensus_return": float(consensus_return),  # Will be clamped in predict()
             "consensus_confidence": confidence,
             "action_scores": action_scores,
+            # Add model agreement info for execution engine filtering
+            "model_agreement_ratio": agreement_ratio,
+            "total_models": total_count,
+            "agreement_count": agreement_count,
             "neutral_guard_triggered": neutral_guard_triggered,
             "neutral_return_threshold": float(neutral_threshold),
             "raw_consensus_return": float(raw_consensus_return),

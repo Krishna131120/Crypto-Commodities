@@ -7,8 +7,14 @@ import math
 import time
 import threading
 import requests
-import websocket
-import ccxt
+try:
+    import websocket
+except ImportError:
+    websocket = None  # Optional - only needed for Binance WebSocket
+try:
+    import ccxt
+except ImportError:
+    ccxt = None  # Optional - only needed for some crypto exchanges
 import yfinance as yf
 import pandas as pd
 import numpy as np
@@ -2338,6 +2344,8 @@ class BinanceWebSocketClient:
         stream_name = self._get_stream_name()
         url = f"{config.BINANCE_WS_URL}/{stream_name}"
         
+        if websocket is None:
+            raise ImportError("websocket-client module is required for Binance WebSocket. Install with: pip install websocket-client")
         self.ws = websocket.WebSocketApp(
             url,
             on_message=self._on_message,

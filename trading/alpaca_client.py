@@ -25,6 +25,8 @@ from typing import Any, Dict, Optional
 
 import requests
 
+from .broker_interface import BrokerClient
+
 
 DEFAULT_PAPER_BASE_URL = "https://paper-api.alpaca.markets/v2"
 
@@ -98,7 +100,7 @@ class AlpacaConfig:
         return cls(api_key=api_key, secret_key=secret_key, base_url=base_url.rstrip("/"))
 
 
-class AlpacaClient:
+class AlpacaClient(BrokerClient):
     """Thin wrapper around Alpaca's REST API for paper trading."""
 
     def __init__(self, config: Optional[AlpacaConfig] = None):
@@ -111,6 +113,10 @@ class AlpacaClient:
                 "Content-Type": "application/json",
             }
         )
+    
+    @property
+    def broker_name(self) -> str:
+        return "alpaca"
 
     # ------------------------------------------------------------------
     # Low-level request helper

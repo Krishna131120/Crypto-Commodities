@@ -94,15 +94,28 @@ def _generate_features(asset_type: str, symbol: str, timeframe: str, data_dir: P
 
 def _train_models(asset_type: str, symbol: str, timeframe: str, horizon_profile: str) -> None:
     print(f"[BOOTSTRAP] Training models for {asset_type}/{symbol}/{timeframe} ({horizon_profile})")
-    horizon_map = {asset_type: horizon_profile}
-    crypto_symbols = [symbol] if asset_type == "crypto" else []
-    commodity_symbols = [symbol] if asset_type != "crypto" else []
-    train_symbols(
-        crypto_symbols=crypto_symbols,
-        commodities_symbols=commodity_symbols,
-        timeframe=timeframe,
-        horizon_profiles=horizon_map,
-    )
+    
+    # Use commodity-specific training for commodities, crypto-specific for crypto
+    if asset_type == "commodities":
+        from train_commodities import train_commodity_symbols
+        horizon_map = {symbol: horizon_profile}
+        train_commodity_symbols(
+            commodities_symbols=[symbol],
+            timeframe=timeframe,
+            horizon_profiles=horizon_map,
+        )
+    else:
+        # Crypto training
+        horizon_map = {asset_type: horizon_profile}
+        crypto_symbols = [symbol] if asset_type == "crypto" else []
+        commodity_symbols = [symbol] if asset_type != "crypto" else []
+        from train_models import train_symbols
+        train_symbols(
+            crypto_symbols=crypto_symbols,
+            commodities_symbols=commodity_symbols,
+            timeframe=timeframe,
+            horizon_profiles=horizon_map,
+        )
 
 
 def ensure_symbol_ready(
