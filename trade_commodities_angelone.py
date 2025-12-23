@@ -1,11 +1,11 @@
 """
-End-to-end Commodities Trading Pipeline with DHAN MCX
+End-to-end Commodities Trading Pipeline with Angel One MCX
 
 This script runs the complete flow for selected commodity symbols:
 1) Historical ingestion  (raw candles)
 2) Feature generation    (features.json)
 3) Model training        (models/commodities/...)
-4) Live trading cycles on DHAN MCX with profit target monitoring
+4) Live trading cycles on Angel One MCX with profit target monitoring
 
 Features:
 - Automatic data fetching, feature calculation, and model training
@@ -37,7 +37,7 @@ from typing import Any, Dict, List, Optional
 
 from pipeline_runner import run_ingestion, regenerate_features
 from train_models import train_symbols
-from trading.dhan_client import DhanClient
+from trading.angelone_client import AngelOneClient
 from trading.execution_engine import ExecutionEngine, TradingRiskConfig
 from trading.position_manager import PositionManager
 from trading.symbol_universe import find_by_data_symbol
@@ -45,23 +45,25 @@ from live_trader import discover_tradable_symbols, run_trading_cycle
 from ml.horizons import print_horizon_summary
 
 
-def setup_dhan_client(access_token: str, client_id: str) -> DhanClient:
+def setup_angelone_client(api_key: str, client_id: str, password: str, totp_secret: Optional[str] = None) -> AngelOneClient:
     """
-    Setup DHAN client with provided credentials.
+    Setup Angel One client with provided credentials.
     
     Args:
-        access_token: DHAN access token (JWT)
-        client_id: DHAN client ID
+        api_key: Angel One API key
+        client_id: Angel One client ID
+        password: Trading password/MPIN
+        totp_secret: Optional TOTP secret (if using pyotp library)
         
     Returns:
-        Configured DhanClient instance
+        Configured AngelOneClient instance
     """
-    return DhanClient(access_token=access_token, client_id=client_id)
+    return AngelOneClient(api_key=api_key, client_id=client_id, password=password, totp_secret=totp_secret)
 
 
 def main():
     parser = argparse.ArgumentParser(
-        description="End-to-end commodities trading pipeline: ingest -> features -> train -> trade on MCX using DHAN API"
+        description="End-to-end commodities trading pipeline: ingest -> features -> train -> trade on MCX using Angel One API"
     )
     parser.add_argument(
         "--commodities-symbols",
@@ -87,12 +89,20 @@ def main():
         help="Years of historical data to fetch (default: 5.0)",
     )
     parser.add_argument(
-        "--dhan-token",
-        help="DHAN access token (or set DHAN_ACCESS_TOKEN env var)",
+        "--angelone-api-key",
+        help="Angel One API key (or set ANGEL_ONE_API_KEY env var)",
     )
     parser.add_argument(
-        "--dhan-client-id",
-        help="DHAN client ID (or set DHAN_CLIENT_ID env var)",
+        "--angelone-client-id",
+        help="Angel One client ID (or set ANGEL_ONE_CLIENT_ID env var)",
+    )
+    parser.add_argument(
+        "--angelone-password",
+        help="Angel One trading password/MPIN (or set ANGEL_ONE_PASSWORD env var)",
+    )
+    parser.add_argument(
+        "--angelone-totp-secret",
+        help="Angel One TOTP secret (or set ANGEL_ONE_TOTP_SECRET env var)",
     )
     parser.add_argument(
         "--stop-loss-pct",
@@ -119,14 +129,16 @@ def main():
     
     args = parser.parse_args()
     
-    # Get DHAN credentials
+    # Get Angel One credentials
     # Priority: Command line args > .env file > Environment variables
     # User preference: Use .env file only (as requested)
-    access_token = args.dhan_token
-    client_id = args.dhan_client_id
+    api_key = args.angelone_api_key
+    client_id = args.angelone_client_id
+    password = args.angelone_password
+    totp_secret = args.angelone_totp_secret
     
     # Read from .env file FIRST (user preference)
-    if (not access_token or not client_id) and os.path.exists(".env"):
+    if os.path.exists(".env"):
         try:
             with open(".env", "r", encoding="utf-8") as fh:
                 for line in fh:
@@ -137,30 +149,49 @@ def main():
                         continue
                     key, val = line.split("=", 1)
                     key = key.strip()
-                    val = val.strip().strip('"').strip("'")
-                    if key == "DHAN_ACCESS_TOKEN" and not access_token:
-                        access_token = val
-                    elif key == "DHAN_CLIENT_ID" and not client_id:
+                    val = val.strip()
+                    # Remove quotes if present
+                    if val.startswith('"') and val.endswith('"'):
+                        val = val[1:-1]
+                    elif val.startswith("'") and val.endswith("'"):
+                        val = val[1:-1]
+                    
+                    # Always read from .env if not provided via command line
+                    if key == "ANGEL_ONE_API_KEY" and not api_key:
+                        api_key = val
+                    elif key == "ANGEL_ONE_CLIENT_ID" and not client_id:
                         client_id = val
-        except Exception:
+                    elif key == "ANGEL_ONE_PASSWORD" and not password:
+                        password = val
+                    elif key == "ANGEL_ONE_TOTP_SECRET" and not totp_secret:
+                        totp_secret = val
+        except Exception as e:
+            print(f"[WARNING] Failed to read .env file: {e}")
             pass  # If .env parsing fails, continue
     
     # Fallback to environment variables only if .env didn't provide values
-    if not access_token:
-        access_token = os.getenv("DHAN_ACCESS_TOKEN")
+    if not api_key:
+        api_key = os.getenv("ANGEL_ONE_API_KEY")
     if not client_id:
-        client_id = os.getenv("DHAN_CLIENT_ID")
+        client_id = os.getenv("ANGEL_ONE_CLIENT_ID")
+    if not password:
+        password = os.getenv("ANGEL_ONE_PASSWORD")
+    if not totp_secret:
+        totp_secret = os.getenv("ANGEL_ONE_TOTP_SECRET")
     
-    if not access_token or not client_id:
-        print("[ERROR] DHAN credentials required!")
+    if not api_key or not client_id or not password:
+        print("[ERROR] Angel One credentials required!")
         print()
-        print("SET YOUR DHAN CREDENTIALS IN .env FILE:")
+        print("SET YOUR ANGEL ONE CREDENTIALS IN .env FILE:")
         print("=" * 80)
         print("Create/edit .env file in project root:")
-        print('    DHAN_ACCESS_TOKEN="your_token_here"')
-        print('    DHAN_CLIENT_ID="1107954503"')
+        print('    ANGEL_ONE_API_KEY="your_api_key_here"')
+        print('    ANGEL_ONE_CLIENT_ID="your_client_id"')
+        print('    ANGEL_ONE_PASSWORD="your_trading_password_or_mpin"')
+        print('    ANGEL_ONE_TOTP_SECRET="your_totp_secret"  # Optional if using pyotp')
         print()
-        print("NOTE: Access token expires every 24 hours. Update .env file when needed.")
+        print("NOTE: TOTP must be enabled in your Angel One account.")
+        print("      See ANGEL_ONE_REQUIREMENTS.md for setup instructions.")
         print("=" * 80)
         sys.exit(1)
     
@@ -170,7 +201,7 @@ def main():
     years = max(args.years, 0.5)
     
     print("=" * 80)
-    print("END-TO-END COMMODITIES PIPELINE (DHAN MCX)")
+    print("END-TO-END COMMODITIES PIPELINE (ANGEL ONE MCX)")
     print("=" * 80)
     print(f"Symbols:        {', '.join(commodities_symbols)}")
     print(f"Timeframe:      {timeframe}")
@@ -190,20 +221,29 @@ def main():
     # Show available horizons and their trading behavior
     print_horizon_summary()
     
-    # Setup DHAN client
+    # Setup Angel One client
     print("\n" + "=" * 80)
-    print("SETTING UP DHAN MCX CONNECTION")
+    print("SETTING UP ANGEL ONE MCX CONNECTION")
     print("=" * 80)
     try:
-        dhan_client = setup_dhan_client(access_token, client_id)
-        print("[OK] DHAN client initialized successfully")
+        angelone_client = setup_angelone_client(api_key, client_id, password, totp_secret)
+        print("[OK] Angel One client initialized successfully")
+        
+        # Show token info (first 20 chars for security)
+        if hasattr(angelone_client, '_access_token') and angelone_client._access_token:
+            token_preview = angelone_client._access_token[:20] + "..."
+            print(f"[INFO] Access token obtained: {token_preview}")
+            if hasattr(angelone_client, '_token_expiry') and angelone_client._token_expiry:
+                from datetime import datetime
+                expiry = datetime.fromtimestamp(angelone_client._token_expiry)
+                print(f"[INFO] Token expires at: {expiry.strftime('%Y-%m-%d %H:%M:%S')}")
     except Exception as e:
-        print(f"[ERROR] Failed to initialize DHAN client: {e}")
+        print(f"[ERROR] Failed to initialize Angel One client: {e}")
         sys.exit(1)
     
     # Test account connection
     try:
-        account = dhan_client.get_account()
+        account = angelone_client.get_account()
         equity = account.get("equity", 0)
         buying_power = account.get("buying_power", 0)
         print(f"[OK] Account connected")
@@ -212,7 +252,7 @@ def main():
         if equity <= 0:
             print(f"[WARNING] Account equity is zero or negative!")
     except Exception as e:
-        print(f"[ERROR] Failed to connect to DHAN account: {e}")
+        print(f"[ERROR] Failed to connect to Angel One account: {e}")
         sys.exit(1)
     
     # ------------------------------------------------------------------
@@ -314,7 +354,7 @@ def main():
         )
         position_manager = PositionManager()
         execution_engine = ExecutionEngine(
-            client=dhan_client,
+            client=angelone_client,
             risk_config=risk_config,
             position_manager=position_manager,
             log_path=Path("logs") / "trading" / "commodities_trades.jsonl",
@@ -334,7 +374,7 @@ def main():
         print("   All other positions (stocks, other exchanges) will be LEFT UNTOUCHED.")
         print("=" * 80)
         try:
-            all_positions = dhan_client.list_positions()
+            all_positions = angelone_client.list_positions()
             if all_positions:
                 mcx_positions = []
                 other_positions = []
@@ -367,7 +407,7 @@ def main():
                         if abs(qty) > 0:
                             close_side = "sell" if qty > 0 else "buy"
                             try:
-                                close_resp = dhan_client.submit_order(
+                                close_resp = angelone_client.submit_order(
                                     symbol=symbol,
                                     qty=int(abs(qty)),
                                     side=close_side,
@@ -435,7 +475,7 @@ def main():
             
             # Show ONLY MCX active positions (filter out non-commodities)
             try:
-                all_positions = dhan_client.list_positions()
+                all_positions = angelone_client.list_positions()
                 if all_positions:
                     # STRICT FILTERING: Only show MCX positions
                     mcx_positions = [pos for pos in all_positions 
@@ -509,7 +549,7 @@ def main():
         # Liquidate ONLY MCX commodities positions on exit (leave others untouched)
         if not args.dry_run:
             try:
-                all_positions = dhan_client.list_positions()
+                all_positions = angelone_client.list_positions()
                 if all_positions:
                     # STRICT FILTERING: Only process MCX positions
                     mcx_positions = []
@@ -534,7 +574,7 @@ def main():
                             if abs(qty) > 0:
                                 close_side = "sell" if qty > 0 else "buy"
                                 try:
-                                    close_resp = dhan_client.submit_order(
+                                    close_resp = angelone_client.submit_order(
                                         symbol=symbol,
                                         qty=int(abs(qty)),
                                         side=close_side,
@@ -568,7 +608,7 @@ def main():
         # Try to liquidate ONLY MCX positions on error (leave others untouched)
         if not args.dry_run:
             try:
-                all_positions = dhan_client.list_positions()
+                all_positions = angelone_client.list_positions()
                 if all_positions:
                     # STRICT FILTERING: Only process MCX positions
                     mcx_positions = [pos for pos in all_positions 
@@ -582,7 +622,7 @@ def main():
                             if abs(qty) > 0:
                                 close_side = "sell" if qty > 0 else "buy"
                                 try:
-                                    dhan_client.submit_order(
+                                    angelone_client.submit_order(
                                         symbol=symbol,
                                         qty=int(abs(qty)),
                                         side=close_side,

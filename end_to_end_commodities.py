@@ -14,7 +14,7 @@ This script is a single entry point so you can:
 
 IMPORTANT:
 - This script only shows predictions, it does NOT execute trades.
-- For live trading with DHAN API, use a separate trading script (to be created).
+- For live trading with Angel One API, use trade_commodities_angelone.py script.
 """
 
 from __future__ import annotations
@@ -489,7 +489,7 @@ def main():
     
     print(f"\n{'='*80}")
     print("NOTE: These are predictions only. No trades were executed.")
-    print("      For live trading with DHAN API, use a separate trading script.")
+    print("      For live trading with Angel One API, use trade_commodities_angelone.py script.")
     print(f"{'='*80}")
 
 

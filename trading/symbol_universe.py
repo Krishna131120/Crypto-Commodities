@@ -9,7 +9,7 @@ This module defines a comprehensive universe of assets where:
   - Commodities: MCX contract symbols (GOLD, SILVER, CRUDEOIL, etc.) - DHAN broker ONLY
 
 IMPORTANT FOR COMMODITIES:
-- ALL commodities MUST use DHAN broker (MCX exchange)
+- ALL commodities MUST use Angel One broker (MCX exchange)
 - No Alpaca fallback - commodities will raise an error if AlpacaClient is used
 - MCX contract symbols are auto-generated based on trading horizon
 - Includes 28+ MCX commodities: Bullion, Energy, Base Metals, Agricultural
@@ -72,7 +72,7 @@ class AssetMapping:
 # Commodities:
 # - Data symbols are Yahoo-style futures (CL=F, GC=F, SI=F, etc.) or MCX-specific symbols (MCX_*)
 # - Trading symbols are MCX contract symbols (GOLD, SILVER, CRUDEOIL, etc.)
-# - ALL commodities MUST use DHAN broker (MCX exchange) - no Alpaca fallback
+# - ALL commodities MUST use Angel One broker (MCX exchange) - no Alpaca fallback
 # - MCX contract symbols are auto-generated based on horizon (e.g., GOLDDEC25 for current month)
 # - Includes: Bullion (Gold, Silver variants), Energy (Crude Oil, Natural Gas), 
 #   Base Metals (Aluminium, Copper, Lead, Nickel, Zinc), Agricultural (Cotton, Cardamom, etc.)
@@ -273,7 +273,276 @@ UNIVERSE: List[AssetMapping] = [
         timeframe="1d",
         horizon_profile="short",
     ),
-    # Commodities - MCX Only (DHAN broker required)
+    # Additional USDT pairs
+    AssetMapping(
+        logical_name="curve_dao",
+        asset_type="crypto",
+        data_symbol="CRV-USDT",
+        trading_symbol="CRVUSD",
+        timeframe="1d",
+        horizon_profile="short",
+    ),
+    AssetMapping(
+        logical_name="polkadot",
+        asset_type="crypto",
+        data_symbol="DOT-USDT",
+        trading_symbol="DOTUSD",
+        timeframe="1d",
+        horizon_profile="short",
+    ),
+    AssetMapping(
+        logical_name="pepe",
+        asset_type="crypto",
+        data_symbol="PEPE-USDT",
+        trading_symbol="PEPEUSD",
+        timeframe="1d",
+        horizon_profile="short",
+    ),
+    AssetMapping(
+        logical_name="skycoin",
+        asset_type="crypto",
+        data_symbol="SKY-USDT",
+        trading_symbol="SKYUSD",
+        timeframe="1d",
+        horizon_profile="short",
+    ),
+    AssetMapping(
+        logical_name="trump",
+        asset_type="crypto",
+        data_symbol="TRUMP-USDT",
+        trading_symbol="TRUMPUSD",
+        timeframe="1d",
+        horizon_profile="short",
+    ),
+    AssetMapping(
+        logical_name="ripple",
+        asset_type="crypto",
+        data_symbol="XRP-USDT",
+        trading_symbol="XRPUSD",
+        timeframe="1d",
+        horizon_profile="short",
+    ),
+    AssetMapping(
+        logical_name="tezos",
+        asset_type="crypto",
+        data_symbol="XTZ-USDT",
+        trading_symbol="XTZUSD",
+        timeframe="1d",
+        horizon_profile="short",
+    ),
+    AssetMapping(
+        logical_name="sandbox",
+        asset_type="crypto",
+        data_symbol="SAND-USDT",
+        trading_symbol="SANDUSD",
+        timeframe="1d",
+        horizon_profile="short",
+    ),
+    # USDC pairs (traded as USD on Alpaca)
+    AssetMapping(
+        logical_name="aave_usdc",
+        asset_type="crypto",
+        data_symbol="AAVE-USDC",
+        trading_symbol="AAVEUSD",
+        timeframe="1d",
+        horizon_profile="short",
+    ),
+    AssetMapping(
+        logical_name="avalanche_usdc",
+        asset_type="crypto",
+        data_symbol="AVAX-USDC",
+        trading_symbol="AVAXUSD",
+        timeframe="1d",
+        horizon_profile="short",
+    ),
+    AssetMapping(
+        logical_name="basic_attention_token_usdc",
+        asset_type="crypto",
+        data_symbol="BAT-USDC",
+        trading_symbol="BATUSD",
+        timeframe="1d",
+        horizon_profile="short",
+    ),
+    AssetMapping(
+        logical_name="bitcoin_cash_usdc",
+        asset_type="crypto",
+        data_symbol="BCH-USDC",
+        trading_symbol="BCHUSD",
+        timeframe="1d",
+        horizon_profile="short",
+    ),
+    AssetMapping(
+        logical_name="bitcoin_usdc",
+        asset_type="crypto",
+        data_symbol="BTC-USDC",
+        trading_symbol="BTCUSD",
+        timeframe="1d",
+        horizon_profile="short",
+    ),
+    AssetMapping(
+        logical_name="curve_dao_usdc",
+        asset_type="crypto",
+        data_symbol="CRV-USDC",
+        trading_symbol="CRVUSD",
+        timeframe="1d",
+        horizon_profile="short",
+    ),
+    AssetMapping(
+        logical_name="dogecoin_usdc",
+        asset_type="crypto",
+        data_symbol="DOGE-USDC",
+        trading_symbol="DOGEUSD",
+        timeframe="1d",
+        horizon_profile="short",
+    ),
+    AssetMapping(
+        logical_name="polkadot_usdc",
+        asset_type="crypto",
+        data_symbol="DOT-USDC",
+        trading_symbol="DOTUSD",
+        timeframe="1d",
+        horizon_profile="short",
+    ),
+    AssetMapping(
+        logical_name="ethereum_usdc",
+        asset_type="crypto",
+        data_symbol="ETH-USDC",
+        trading_symbol="ETHUSD",
+        timeframe="1d",
+        horizon_profile="short",
+    ),
+    AssetMapping(
+        logical_name="graph_usdc",
+        asset_type="crypto",
+        data_symbol="GRT-USDC",
+        trading_symbol="GRTUSD",
+        timeframe="1d",
+        horizon_profile="short",
+    ),
+    AssetMapping(
+        logical_name="chainlink_usdc",
+        asset_type="crypto",
+        data_symbol="LINK-USDC",
+        trading_symbol="LINKUSD",
+        timeframe="1d",
+        horizon_profile="short",
+    ),
+    AssetMapping(
+        logical_name="litecoin_usdc",
+        asset_type="crypto",
+        data_symbol="LTC-USDC",
+        trading_symbol="LTCUSD",
+        timeframe="1d",
+        horizon_profile="short",
+    ),
+    AssetMapping(
+        logical_name="shiba_inu_usdc",
+        asset_type="crypto",
+        data_symbol="SHIB-USDC",
+        trading_symbol="SHIBUSD",
+        timeframe="1d",
+        horizon_profile="short",
+    ),
+    AssetMapping(
+        logical_name="skycoin_usdc",
+        asset_type="crypto",
+        data_symbol="SKY-USDC",
+        trading_symbol="SKYUSD",
+        timeframe="1d",
+        horizon_profile="short",
+    ),
+    AssetMapping(
+        logical_name="sushi_usdc",
+        asset_type="crypto",
+        data_symbol="SUSHI-USDC",
+        trading_symbol="SUSHIUSD",
+        timeframe="1d",
+        horizon_profile="short",
+    ),
+    AssetMapping(
+        logical_name="uniswap_usdc",
+        asset_type="crypto",
+        data_symbol="UNI-USDC",
+        trading_symbol="UNIUSD",
+        timeframe="1d",
+        horizon_profile="short",
+    ),
+    AssetMapping(
+        logical_name="tezos_usdc",
+        asset_type="crypto",
+        data_symbol="XTZ-USDC",
+        trading_symbol="XTZUSD",
+        timeframe="1d",
+        horizon_profile="short",
+    ),
+    AssetMapping(
+        logical_name="yearn_finance_usdc",
+        asset_type="crypto",
+        data_symbol="YFI-USDC",
+        trading_symbol="YFIUSD",
+        timeframe="1d",
+        horizon_profile="short",
+    ),
+    # USD pairs (direct USD trading on Alpaca)
+    AssetMapping(
+        logical_name="usdc_usd",
+        asset_type="crypto",
+        data_symbol="USDC-USD",
+        trading_symbol="USDCUSD",
+        timeframe="1d",
+        horizon_profile="short",
+    ),
+    AssetMapping(
+        logical_name="usdg_usd",
+        asset_type="crypto",
+        data_symbol="USDG-USD",
+        trading_symbol="USDGUSD",
+        timeframe="1d",
+        horizon_profile="short",
+    ),
+    AssetMapping(
+        logical_name="usdt_usd",
+        asset_type="crypto",
+        data_symbol="USDT-USD",
+        trading_symbol="USDTUSD",
+        timeframe="1d",
+        horizon_profile="short",
+    ),
+    # BTC pairs (Note: Alpaca may not directly support BTC-quoted pairs,
+    # but we include them for data collection - trading will use USD pairs)
+    AssetMapping(
+        logical_name="bitcoin_cash_btc",
+        asset_type="crypto",
+        data_symbol="BCH-BTC",
+        trading_symbol="BCHUSD",  # Use USD equivalent for trading
+        timeframe="1d",
+        horizon_profile="short",
+    ),
+    AssetMapping(
+        logical_name="ethereum_btc",
+        asset_type="crypto",
+        data_symbol="ETH-BTC",
+        trading_symbol="ETHUSD",  # Use USD equivalent for trading
+        timeframe="1d",
+        horizon_profile="short",
+    ),
+    AssetMapping(
+        logical_name="litecoin_btc",
+        asset_type="crypto",
+        data_symbol="LTC-BTC",
+        trading_symbol="LTCUSD",  # Use USD equivalent for trading
+        timeframe="1d",
+        horizon_profile="short",
+    ),
+    AssetMapping(
+        logical_name="uniswap_btc",
+        asset_type="crypto",
+        data_symbol="UNI-BTC",
+        trading_symbol="UNIUSD",  # Use USD equivalent for trading
+        timeframe="1d",
+        horizon_profile="short",
+    ),
+    # Commodities - MCX Only (Angel One broker required)
     # Bullion
     AssetMapping(
         logical_name="gold",

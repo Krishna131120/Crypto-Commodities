@@ -165,9 +165,48 @@ def _compute_split_boundaries(
         raise ValueError("Cannot compute boundaries for empty index.")
     slices = _compute_split_indices(len(index), train_ratio, val_ratio, gap_days)
 
+    # CRITICAL: Validate that test period doesn't extend beyond current date
+    from datetime import datetime, timezone
+    now = datetime.now(timezone.utc)
+    
     def _segment(name: str) -> Dict[str, str]:
         start_idx, end_idx = slices[name]
         end_idx = max(start_idx, end_idx - 1)
+        
+        # For test set, ensure it doesn't extend beyond current date
+        if name == "test":
+            test_end_dt = index[end_idx]
+            # Convert to timezone-aware datetime
+            if isinstance(test_end_dt, pd.Timestamp):
+                test_end_dt = test_end_dt.to_pydatetime()
+            if test_end_dt.tzinfo is None:
+                test_end_dt = test_end_dt.replace(tzinfo=timezone.utc)
+            else:
+                test_end_dt = test_end_dt.astimezone(timezone.utc)
+            
+            # If test end is in the future, find the last valid index
+            if test_end_dt > now:
+                # Find all indices that are not in the future
+                valid_mask = []
+                for idx_val in index:
+                    if isinstance(idx_val, pd.Timestamp):
+                        idx_dt = idx_val.to_pydatetime()
+                    else:
+                        idx_dt = idx_val
+                    if idx_dt.tzinfo is None:
+                        idx_dt = idx_dt.replace(tzinfo=timezone.utc)
+                    else:
+                        idx_dt = idx_dt.astimezone(timezone.utc)
+                    valid_mask.append(idx_dt <= now)
+                
+                # Find the last valid index position
+                valid_positions = [i for i, valid in enumerate(valid_mask) if valid]
+                if valid_positions:
+                    end_idx = min(end_idx, max(valid_positions))
+                else:
+                    # If no valid indices, use the start index
+                    end_idx = start_idx
+        
         return {
             "start": index[start_idx].isoformat(),
             "end": index[end_idx].isoformat(),
@@ -261,10 +300,26 @@ def assemble_dataset(
     
     # For commodities, use more aggressive cleaning of feature NaNs
     if asset_type == "commodities":
-        # Forward-fill with limit to avoid propagating errors too far
-        dataset[feature_cols] = dataset[feature_cols].ffill(limit=5)
+        # Forward-fill with larger limit for commodities (they have more NaNs due to indicators needing warm-up)
+        # Use a limit that's reasonable but not too large (e.g., 50-100 periods for daily data)
+        fill_limit = min(100, len(dataset) // 10)  # 10% of dataset or 100, whichever is smaller
+        dataset[feature_cols] = dataset[feature_cols].ffill(limit=fill_limit)
         # Backward-fill for remaining NaNs at the start (warm-up period)
-        dataset[feature_cols] = dataset[feature_cols].bfill(limit=3)
+        # Use larger limit for backward fill too
+        bfill_limit = min(50, len(dataset) // 20)  # 5% of dataset or 50, whichever is smaller
+        dataset[feature_cols] = dataset[feature_cols].bfill(limit=bfill_limit)
+        
+        # For features that still have NaNs after ffill/bfill, fill with 0 or median
+        # This is better than dropping rows, especially for indicator features
+        for col in feature_cols:
+            if dataset[col].isna().any():
+                # For indicator features, 0 is often a reasonable default
+                # For price-based features, use forward-fill without limit as last resort
+                if any(indicator in col.lower() for indicator in ['signal', 'crossover', 'fractal', 'ichimoku']):
+                    dataset[col] = dataset[col].fillna(0.0)
+                else:
+                    # For other features, try forward-fill without limit, then 0
+                    dataset[col] = dataset[col].ffill().fillna(0.0)
     else:
         # Crypto: standard forward-fill
         dataset[feature_cols] = dataset[feature_cols].ffill()

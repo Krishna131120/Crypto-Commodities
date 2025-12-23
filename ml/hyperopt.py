@@ -93,30 +93,26 @@ def _optimize_lightgbm(X_train, y_train, X_val, y_val, n_trials: int, timeout: O
             warnings.filterwarnings("ignore", message=".*LightGBM.*")
             warnings.filterwarnings("ignore", message=".*lgb.*")
             
-            # STEP 4 FIX: Very permissive ranges to ensure learning
-            # Use deeper trees and more leaves to guarantee learning capacity
-            max_depth = trial.suggest_int("max_depth", 5, 10)  # Deeper trees for learning
-            max_leaves = min(2 ** max_depth, 127)  # Allow many more leaves (up to 127)
-            min_leaves = max(15, max_leaves - 30)  # Wider range, ensure minimum capacity
+            # Balanced ranges: enough capacity to learn, but not so much it overfits
+            # For commodities, use more conservative parameters to prevent overfitting
+            max_depth = trial.suggest_int("max_depth", 3, 5)  # REDUCED: Lower depth to prevent overfitting
+            max_leaves = min(2 ** max_depth, 30)  # REDUCED: Limit leaves to prevent overfitting
+            min_leaves = max(15, max_leaves - 15)  # Reasonable range
             num_leaves = trial.suggest_int("num_leaves", min_leaves, max_leaves)
             
-            min_iterations = 150  # More iterations to ensure learning
-            n_est = trial.suggest_int("n_estimators", min_iterations, 500)  # More iterations
-            
-            # STEP 4 FIX: Start with GUARANTEED learning parameters
-            # Use uniform distribution that heavily favors learning-friendly values
-            # First ensure model CAN learn, then we'll add regularization to prevent overfitting
+            min_iterations = 200  # Enough iterations to learn
+            n_est = trial.suggest_int("n_estimators", min_iterations, 250)  # REDUCED: Fewer trees to prevent overfitting
             
             # Learning rate: Balanced range - too high causes instability, too low prevents learning
-            learning_rate = trial.suggest_float("learning_rate", 0.05, 0.15)  # Balanced range for stability
+            learning_rate = trial.suggest_float("learning_rate", 0.06, 0.12)  # Slightly more conservative
             
-            # Regularization: Moderate range - need some regularization to prevent overfitting
-            reg_alpha = trial.suggest_float("reg_alpha", 0.1, 2.0)  # Moderate regularization
-            reg_lambda = trial.suggest_float("reg_lambda", 0.1, 3.0)  # Moderate regularization
+            # Regularization: Increased range to prevent overfitting
+            reg_alpha = trial.suggest_float("reg_alpha", 1.0, 4.0)  # INCREASED: More regularization to prevent overfitting
+            reg_lambda = trial.suggest_float("reg_lambda", 2.0, 6.0)  # INCREASED: More regularization to prevent overfitting
             
-            # Ensure enough capacity to learn - very permissive
-            min_child_samples = trial.suggest_int("min_child_samples", 1, 10)  # Very permissive
-            min_split_gain = trial.suggest_float("min_split_gain", 0.0, 0.02)  # Minimal pruning
+            # More restrictive to prevent overfitting
+            min_child_samples = trial.suggest_int("min_child_samples", 5, 15)  # More restrictive
+            min_split_gain = trial.suggest_float("min_split_gain", 0.01, 0.05)  # More pruning
             
             params = {
                 "boosting_type": "gbdt",
@@ -124,8 +120,8 @@ def _optimize_lightgbm(X_train, y_train, X_val, y_val, n_trials: int, timeout: O
                 "learning_rate": learning_rate,  # Higher to ensure learning
                 "num_leaves": num_leaves,
                 "max_depth": max_depth,
-                "subsample": trial.suggest_float("subsample", 0.8, 1.0),  # Use most/all data
-                "colsample_bytree": trial.suggest_float("colsample_bytree", 0.8, 1.0),  # Use most/all features
+                "subsample": trial.suggest_float("subsample", 0.75, 0.95),  # Use most data (not all to prevent overfitting)
+                "colsample_bytree": trial.suggest_float("colsample_bytree", 0.75, 0.95),  # Use most features (not all to prevent overfitting)
                 "min_child_samples": min_child_samples,  # Very permissive
                 "reg_alpha": reg_alpha,  # Low regularization
                 "reg_lambda": reg_lambda,  # Low regularization
@@ -153,14 +149,26 @@ def _optimize_lightgbm(X_train, y_train, X_val, y_val, n_trials: int, timeout: O
             pred_variance = np.var(val_preds) if len(val_preds) > 1 else 0.0
             train_variance = np.var(train_preds) if len(train_preds) > 1 else 0.0
             
-            # Use more lenient threshold - only reject if truly constant
+            # Use adaptive threshold - only reject if truly constant
             # Check if predictions are actually constant (std dev near zero)
             pred_std = np.std(val_preds) if len(val_preds) > 1 else 0.0
             train_std = np.std(train_preds) if len(train_preds) > 1 else 0.0
             target_std = np.std(y_val.to_numpy()) if len(y_val) > 1 else 0.0
+            target_mean_abs = np.abs(y_val.to_numpy()).mean() if len(y_val) > 0 else 0.0
             
-            # Only reject if predictions are truly constant (std < 1% of target std)
-            if pred_std < (target_std * 0.01) or train_std < (target_std * 0.01):
+            # Adaptive constant prediction check:
+            # 1. If target_std is very small (< 0.001), use absolute threshold (0.0001)
+            # 2. Otherwise, use relative threshold (0.1% of target_std or 0.5% of mean_abs, whichever is larger)
+            if target_std < 0.001:
+                # Very small target std - use absolute threshold
+                constant_threshold = 0.0001
+            else:
+                # Use relative threshold - more lenient for small target std
+                relative_threshold = max(target_std * 0.001, target_mean_abs * 0.005)  # 0.1% of std or 0.5% of mean_abs
+                constant_threshold = max(relative_threshold, 0.00005)  # Minimum 0.00005
+            
+            # Only reject if predictions are truly constant
+            if pred_std < constant_threshold or train_std < constant_threshold:
                 # Constant predictions - return very high loss to reject this trial
                 return 1e10
             
@@ -194,29 +202,29 @@ def _optimize_xgboost(X_train, y_train, X_val, y_val, n_trials: int, timeout: Op
         # FIXED: More permissive ranges to allow actual learning
         # XGBoost works but we need to ensure hyperopt can find good parameters
         min_iterations = 100
-        n_est = trial.suggest_int("n_estimators", min_iterations, 500)  # More iterations
+        n_est = trial.suggest_int("n_estimators", min_iterations, 300)  # REDUCED: Fewer trees to prevent overfitting
         
         # STEP 4 FIX: Start with GUARANTEED learning parameters
         # Use uniform distribution that heavily favors learning-friendly values
         # First ensure model CAN learn, then we'll add regularization to prevent overfitting
         
-        # Learning rate: Balanced range for stability
-        learning_rate = trial.suggest_float("learning_rate", 0.05, 0.12)  # Balanced range
+        # Learning rate: More conservative to prevent overfitting
+        learning_rate = trial.suggest_float("learning_rate", 0.04, 0.08)  # REDUCED: Lower learning rate
         
-        # Regularization: Moderate range to prevent overfitting while allowing learning
-        reg_alpha = trial.suggest_float("reg_alpha", 0.5, 3.0)  # Moderate regularization
-        reg_lambda = trial.suggest_float("reg_lambda", 1.0, 4.0)  # Moderate regularization
+        # Regularization: INCREASED to prevent overfitting
+        reg_alpha = trial.suggest_float("reg_alpha", 2.0, 6.0)  # INCREASED: Much more regularization
+        reg_lambda = trial.suggest_float("reg_lambda", 3.0, 8.0)  # INCREASED: Much more regularization
         
-        # Ensure enough capacity to learn - very permissive
-        min_child_weight = trial.suggest_float("min_child_weight", 0.5, 2.0)  # Very permissive
-        gamma = trial.suggest_float("gamma", 0.0, 0.1)  # Minimal pruning
+        # More restrictive to prevent overfitting
+        min_child_weight = trial.suggest_float("min_child_weight", 2.0, 5.0)  # INCREASED: More restrictive
+        gamma = trial.suggest_float("gamma", 0.1, 0.3)  # INCREASED: More pruning
         
         params = {
             "n_estimators": n_est,
             "learning_rate": learning_rate,  # Higher to ensure learning
-            "max_depth": trial.suggest_int("max_depth", 5, 9),  # Deeper trees for learning
-            "subsample": trial.suggest_float("subsample", 0.85, 1.0),  # Use most/all data
-            "colsample_bytree": trial.suggest_float("colsample_bytree", 0.85, 1.0),  # Use most/all features
+            "max_depth": trial.suggest_int("max_depth", 3, 5),  # REDUCED: Lower depth to prevent overfitting
+            "subsample": trial.suggest_float("subsample", 0.75, 0.95),  # Use most data (not all to prevent overfitting)
+            "colsample_bytree": trial.suggest_float("colsample_bytree", 0.75, 0.95),  # Use most features (not all to prevent overfitting)
             "min_child_weight": min_child_weight,  # Very permissive
             "gamma": gamma,  # Minimal pruning
             "reg_alpha": reg_alpha,  # Low regularization
@@ -239,13 +247,21 @@ def _optimize_xgboost(X_train, y_train, X_val, y_val, n_trials: int, timeout: Op
         val_preds = model.predict(X_val)
         train_preds = model.predict(X_train)
         
-        # CRITICAL: Check if predictions are constant - use relative threshold
+        # CRITICAL: Check if predictions are constant - use adaptive threshold
         pred_std = np.std(val_preds) if len(val_preds) > 1 else 0.0
         train_std = np.std(train_preds) if len(train_preds) > 1 else 0.0
         target_std = np.std(y_val.to_numpy()) if len(y_val) > 1 else 0.0
+        target_mean_abs = np.abs(y_val.to_numpy()).mean() if len(y_val) > 0 else 0.0
         
-        # Only reject if predictions are truly constant (std < 1% of target std)
-        if pred_std < (target_std * 0.01) or train_std < (target_std * 0.01):
+        # Adaptive constant prediction check (same as LightGBM)
+        if target_std < 0.001:
+            constant_threshold = 0.0001
+        else:
+            relative_threshold = max(target_std * 0.001, target_mean_abs * 0.005)
+            constant_threshold = max(relative_threshold, 0.00005)
+        
+        # Only reject if predictions are truly constant
+        if pred_std < constant_threshold or train_std < constant_threshold:
             # Constant predictions - return very high loss to reject this trial
             return 1e10
         
@@ -284,13 +300,13 @@ def _optimize_random_forest(X_train, y_train, X_val, y_val, n_trials: int, timeo
         # First ensure model CAN learn, then we'll add regularization to prevent overfitting
         
         params = {
-            "n_estimators": trial.suggest_int("n_estimators", 350, 500),  # More trees for learning
-            "max_depth": trial.suggest_int("max_depth", 10, 20),  # Much deeper trees for learning capacity
-            "min_samples_leaf": trial.suggest_int("min_samples_leaf", 1, 2),  # Very permissive
-            "min_samples_split": trial.suggest_int("min_samples_split", 2, 4),  # Very permissive
-            "max_features": trial.suggest_float("max_features", 0.95, 1.0),  # Use almost all features
-            "max_samples": trial.suggest_float("max_samples", 0.95, 1.0),  # Use almost all data
-            "ccp_alpha": trial.suggest_float("ccp_alpha", 0.0, 0.001),  # Minimal pruning (uniform, favors 0)
+            "n_estimators": trial.suggest_int("n_estimators", 200, 300),  # REDUCED: Fewer trees to prevent overfitting
+            "max_depth": trial.suggest_int("max_depth", 5, 8),  # REDUCED: Lower depth to prevent overfitting
+            "min_samples_leaf": trial.suggest_int("min_samples_leaf", 2, 5),  # More restrictive
+            "min_samples_split": trial.suggest_int("min_samples_split", 5, 10),  # More restrictive
+            "max_features": trial.suggest_float("max_features", 0.8, 0.95),  # Use most features (not all to prevent overfitting)
+            "max_samples": trial.suggest_float("max_samples", 0.8, 0.95),  # Use most data (not all to prevent overfitting)
+            "ccp_alpha": trial.suggest_float("ccp_alpha", 0.0001, 0.001),  # Some pruning to prevent overfitting
             "random_state": 42,
             "n_jobs": _get_safe_n_jobs(),
             "bootstrap": True,
@@ -300,13 +316,21 @@ def _optimize_random_forest(X_train, y_train, X_val, y_val, n_trials: int, timeo
         val_preds = model.predict(X_val)
         train_preds = model.predict(X_train)
         
-        # CRITICAL: Check if predictions are constant - use relative threshold
+        # CRITICAL: Check if predictions are constant - use adaptive threshold
         pred_std = np.std(val_preds) if len(val_preds) > 1 else 0.0
         train_std = np.std(train_preds) if len(train_preds) > 1 else 0.0
         target_std = np.std(y_val.to_numpy()) if len(y_val) > 1 else 0.0
+        target_mean_abs = np.abs(y_val.to_numpy()).mean() if len(y_val) > 0 else 0.0
         
-        # Only reject if predictions are truly constant (std < 1% of target std)
-        if pred_std < (target_std * 0.01) or train_std < (target_std * 0.01):
+        # Adaptive constant prediction check (same as LightGBM)
+        if target_std < 0.001:
+            constant_threshold = 0.0001
+        else:
+            relative_threshold = max(target_std * 0.001, target_mean_abs * 0.005)
+            constant_threshold = max(relative_threshold, 0.00005)
+        
+        # Only reject if predictions are truly constant
+        if pred_std < constant_threshold or train_std < constant_threshold:
             # Constant predictions - return very high loss to reject this trial
             return 1e10
         

@@ -1,5 +1,5 @@
 ================================================================================
-COMPLETE .env FILE TEMPLATE (Alpaca + DHAN)
+COMPLETE .env FILE TEMPLATE (Alpaca + Angel One)
 ================================================================================
 
 Copy this to your .env file and fill in your actual credentials:
@@ -18,28 +18,31 @@ ALPACA_BASE_URL="https://paper-api.alpaca.markets"
 # APCA_API_BASE_URL="https://paper-api.alpaca.markets"
 
 ================================================================================
-# DHAN API (for MCX Commodities Trading)
+# ANGEL ONE API (for MCX Commodities Trading)
 ================================================================================
-# Get token from: https://web.dhan.co → Profile → DhanHQ Trading APIs
-# Token expires every 24 hours - use refresh_dhan_token.py to refresh daily
-DHAN_ACCESS_TOKEN="your_dhan_token_here"
-DHAN_CLIENT_ID="1107954503"
+# Register for API key at: https://smartapi.angelone.in/
+# Enable TOTP in your Angel One account
+ANGEL_ONE_API_KEY="your_angel_one_api_key_here"
+ANGEL_ONE_CLIENT_ID="your_client_id"
+ANGEL_ONE_PASSWORD="your_trading_password_or_mpin"
+ANGEL_ONE_TOTP_SECRET="your_totp_secret"  # Optional if using pyotp library
 
-# Optional: Override DHAN base URL (default: https://api.dhan.co)
-# DHAN_BASE_URL="https://api.dhan.co"
+# Optional: Override Angel One base URL (default: https://apiconnect.angelbroking.com)
+# ANGEL_ONE_BASE_URL="https://apiconnect.angelbroking.com"
 
 ================================================================================
 IMPORTANT NOTES
 ================================================================================
 
-1. refresh_dhan_token.py will ONLY update DHAN_ACCESS_TOKEN
-   - Your Alpaca credentials will remain unchanged
-   - All other lines in .env will be preserved
+1. TOTP Setup:
+   - Enable TOTP in your Angel One account
+   - Scan QR code with authenticator app (Google Authenticator, etc.)
+   - Use TOTP secret for automatic token generation
 
-2. Daily Token Refresh:
-   - Run: python refresh_dhan_token.py
-   - This automatically updates DHAN_ACCESS_TOKEN in this file
-   - No need to manually edit after first setup
+2. Authentication:
+   - Login requires: Client ID + Password + TOTP
+   - Access token valid for session duration
+   - System will auto-refresh token when expired
 
 3. Security:
    - .env file is in .gitignore (won't be committed to git)

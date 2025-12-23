@@ -85,7 +85,10 @@ def clear_logs(include_trading_logs=True):
     logs_path = project_root / "logs"
 
     print("=" * 60)
-    print("RESETTING DATA / FEATURES / MODELS / LOGS")
+    if include_trading_logs:
+        print("RESETTING DATA / FEATURES / MODELS / LOGS (INCLUDING TRADING LOGS)")
+    else:
+        print("RESETTING DATA / FEATURES / MODELS / LOGS (PRESERVING TRADING LOGS)")
     print("=" * 60)
 
     _reset_directory(crypto_path, "Crypto data")
@@ -94,7 +97,7 @@ def clear_logs(include_trading_logs=True):
     _reset_directory(models_path, "Model artifacts")
     _reset_directory(logs_path, "Training logs")
     
-    # Always clear trading logs and positions by default
+    # Only clear trading logs if explicitly requested
     if include_trading_logs:
         trading_log_file = project_root / "logs" / "trading" / "crypto_trades.jsonl"
         if trading_log_file.exists():
@@ -136,10 +139,10 @@ if __name__ == "__main__":
     import sys
     if len(sys.argv) > 1 and sys.argv[1] == "--trading-only":
         clear_trading_logs()
-    elif len(sys.argv) > 1 and sys.argv[1] == "--skip-trading":
-        # Skip trading logs if explicitly requested
-        clear_logs(include_trading_logs=False)
-    else:
-        # Default: clear everything including trading logs
+    elif len(sys.argv) > 1 and sys.argv[1] == "--include-trading":
+        # Include trading logs if explicitly requested
         clear_logs(include_trading_logs=True)
+    else:
+        # Default: clear everything EXCEPT trading logs (preserve trade history)
+        clear_logs(include_trading_logs=False)
 

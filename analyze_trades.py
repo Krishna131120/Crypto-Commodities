@@ -3,7 +3,7 @@ import json
 from pathlib import Path
 from collections import defaultdict
 from datetime import datetime
-from typing import List, Dict, Any, Optional
+from typing import List, Dict, Any, Optional, Tuple
 
 def get_live_positions() -> List[Dict[str, Any]]:
     """Get live positions from Alpaca API."""
@@ -51,12 +51,19 @@ def get_live_positions() -> List[Dict[str, Any]]:
         return []
 
 
-def parse_trading_logs(log_file: Path, filter_symbol: Optional[str] = None, filter_date: Optional[str] = None) -> List[Dict[str, Any]]:
-    """Parse trading logs to extract closed trades with P/L."""
+def parse_trading_logs(log_file: Path, filter_symbol: Optional[str] = None, filter_date: Optional[str] = None) -> Tuple[List[Dict[str, Any]], List[Dict[str, Any]]]:
+    """Parse trading logs to extract all trades (entries and exits) with P/L.
+    
+    Returns:
+        tuple: (closed_trades, all_trades) where:
+            - closed_trades: List of completed trades with P/L
+            - all_trades: List of all buy/sell entries with timestamps
+    """
     if not log_file.exists():
-        return []
+        return [], []
     
     closed_trades = []
+    all_trades = []  # All buy/sell entries for display
     current_positions = {}  # symbol -> entry info
     
     try:
@@ -80,29 +87,43 @@ def parse_trading_logs(log_file: Path, filter_symbol: Optional[str] = None, filt
                     continue
                 
                 decision = trade.get('decision', '')
+                current_price = trade.get('current_price', 0)
                 
-                # Track entries
-                if decision == 'enter_long' or decision == 'enter_short':
-                    entry_price = trade.get('entry_price', 0)
-                    entry_qty = trade.get('entry_qty', 0)
+                # Track entries (BUY)
+                if decision in ('enter_long', 'enter_short'):
+                    entry_price = trade.get('entry_price', current_price)
+                    entry_qty = trade.get('entry_qty', trade.get('trade_qty', 0))
+                    side = 'long' if decision == 'enter_long' else 'short'
+                    
                     if entry_price > 0 and entry_qty > 0:
                         current_positions[symbol] = {
                             'entry_price': entry_price,
                             'quantity': entry_qty,
                             'entry_time': timestamp,
-                            'side': 'long' if decision == 'enter_long' else 'short',
+                            'side': side,
                         }
+                        
+                        # Record buy entry
+                        all_trades.append({
+                            'symbol': symbol,
+                            'action': 'BUY',
+                            'side': side,
+                            'price': entry_price,
+                            'quantity': entry_qty,
+                            'timestamp': timestamp,
+                            'type': 'entry',
+                        })
                 
-                # Track exits - look for exit_position decision
-                elif decision in ('exit_position', 'would_exit_position'):
-                    # Exit has realized P/L directly in the log
-                    exit_price = trade.get('exit_price', 0)
+                # Track exits (SELL)
+                elif decision in ('exit_position', 'exit_long', 'exit_short', 'would_exit_position'):
+                    exit_price = trade.get('exit_price', current_price)
+                    exit_qty = trade.get('trade_qty', trade.get('entry_qty', 0))
                     realized_pl = trade.get('realized_pl', 0)
                     realized_pl_pct = trade.get('realized_pl_pct', 0)
                     exit_reason = trade.get('exit_reason', 'unknown')
                     entry_price = trade.get('entry_price', 0)
                     
-                    # If we have entry info from current_positions, use it; otherwise use from log
+                    # Determine side
                     if symbol in current_positions:
                         entry_info = current_positions[symbol]
                         entry_price = entry_info['entry_price']
@@ -114,14 +135,28 @@ def parse_trading_logs(log_file: Path, filter_symbol: Optional[str] = None, filt
                         entry_time = timestamp  # Fallback
                         side = 'long' if trade.get('existing_side') == 'long' else 'short'
                     
-                    # Only add if we have valid P/L data
+                    # Record sell exit
+                    all_trades.append({
+                        'symbol': symbol,
+                        'action': 'SELL',
+                        'side': side,
+                        'price': exit_price,
+                        'quantity': exit_qty,
+                        'timestamp': timestamp,
+                        'type': 'exit',
+                        'realized_pl': realized_pl,
+                        'realized_pl_pct': realized_pl_pct,
+                        'exit_reason': exit_reason,
+                    })
+                    
+                    # Only add closed trade if we have valid P/L data
                     if exit_price > 0 and entry_price > 0:
                         closed_trades.append({
                             'symbol': symbol,
                             'side': side,
                             'entry_price': entry_price,
                             'exit_price': exit_price,
-                            'quantity': trade.get('trade_qty', trade.get('entry_qty', 0)),
+                            'quantity': exit_qty,
                             'realized_pl': realized_pl,
                             'realized_pl_pct': realized_pl_pct,
                             'exit_reason': exit_reason,
@@ -132,7 +167,8 @@ def parse_trading_logs(log_file: Path, filter_symbol: Optional[str] = None, filt
     except Exception as exc:
         print(f"  ⚠️  Error reading trading logs: {exc}")
     
-    return closed_trades
+    # Store all trades for display
+    return closed_trades, all_trades
 
 
 def get_closed_positions_from_file(positions_file: Path, filter_symbol: Optional[str] = None, filter_date: Optional[str] = None) -> List[Dict[str, Any]]:
@@ -256,17 +292,68 @@ def analyze_trades(filter_symbol: Optional[str] = None, filter_date: Optional[st
         print()
     
     # ========================================================================
-    # PART 2: HISTORICAL P/L FROM TRADING LOGS
+    # PART 2: ALL TRADES (BUY/SELL ENTRIES WITH TIMESTAMPS)
     # ========================================================================
     print("=" * 80)
-    print("HISTORICAL TRADES (From Trading Logs)")
+    print("ALL TRADES (Buy/Sell Entries with Timestamps)")
     print("=" * 80)
     
     log_file = Path("logs/trading/crypto_trades.jsonl")
     positions_file = Path("data/positions/active_positions.json")
     
-    # Parse closed trades from logs
-    closed_trades_from_logs = parse_trading_logs(log_file, filter_symbol, filter_date)
+    # Parse all trades from logs (returns closed_trades and all_trades)
+    closed_trades_from_logs, all_trades_from_logs = parse_trading_logs(log_file, filter_symbol, filter_date)
+    
+    # Display all buy/sell entries
+    if all_trades_from_logs:
+        print(f"\nFound {len(all_trades_from_logs)} trade entry/exit record(s):\n")
+        
+        # Sort by timestamp
+        all_trades_from_logs.sort(key=lambda x: x.get('timestamp', ''))
+        
+        for i, trade in enumerate(all_trades_from_logs, 1):
+            symbol = trade['symbol']
+            action = trade['action']
+            side = trade['side'].upper()
+            price = trade['price']
+            quantity = trade['quantity']
+            timestamp = trade['timestamp']
+            
+            # Format timestamp for display
+            try:
+                dt = datetime.fromisoformat(timestamp.replace('Z', '+00:00'))
+                formatted_time = dt.strftime('%Y-%m-%d %H:%M:%S')
+            except:
+                formatted_time = timestamp
+            
+            print(f"Trade {i}: {action} {symbol} ({side})")
+            print(f"  Timestamp:          {formatted_time}")
+            print(f"  Action:              {action}")
+            print(f"  Side:                {side}")
+            print(f"  Price:               ${price:,.2f}")
+            print(f"  Quantity:            {quantity:.6f}")
+            
+            # Show P/L if it's an exit
+            if trade.get('type') == 'exit':
+                realized_pl = trade.get('realized_pl', 0)
+                realized_pl_pct = trade.get('realized_pl_pct', 0)
+                exit_reason = trade.get('exit_reason', 'unknown')
+                status = "[PROFIT]" if realized_pl > 0 else "[LOSS]" if realized_pl < 0 else "[FLAT]"
+                
+                print(f"  Realized P/L:         ${realized_pl:+,.2f} ({realized_pl_pct:+.2f}%)")
+                print(f"  Exit Reason:          {exit_reason}")
+                print(f"  Status:               {status}")
+            print()
+    else:
+        print("No trade entries found in logs.")
+        print()
+    
+    # ========================================================================
+    # PART 3: HISTORICAL P/L FROM TRADING LOGS (CLOSED TRADES SUMMARY)
+    # ========================================================================
+    print("=" * 80)
+    print("CLOSED TRADES SUMMARY (Completed Trades with P/L)")
+    print("=" * 80)
     
     # Also get closed trades from position manager file
     closed_trades_from_file = get_closed_positions_from_file(positions_file, filter_symbol, filter_date)
@@ -319,17 +406,47 @@ def analyze_trades(filter_symbol: Optional[str] = None, filter_date: Optional[st
                 total_loss += abs(realized_pl)
                 losing_trades += 1
             
-            print(f"Trade {i}: {symbol} ({side})")
-            print(f"  Entry:              ${entry_price:,.2f}")
-            print(f"  Exit:               ${exit_price:,.2f}")
-            print(f"  Quantity:           {quantity:.6f}")
-            print(f"  Realized P/L:        ${realized_pl:+,.2f} ({realized_pl_pct:+.2f}%)")
-            print(f"  Exit Reason:         {exit_reason}")
-            print(f"  Status:              {status}")
-            if trade.get('entry_time'):
-                print(f"  Entry Time:          {trade['entry_time']}")
-            if trade.get('exit_time'):
-                print(f"  Exit Time:           {trade['exit_time']}")
+            # Format timestamps
+            entry_time_str = trade.get('entry_time', '')
+            exit_time_str = trade.get('exit_time', '')
+            try:
+                if entry_time_str:
+                    dt_entry = datetime.fromisoformat(entry_time_str.replace('Z', '+00:00'))
+                    entry_time_formatted = dt_entry.strftime('%Y-%m-%d %H:%M:%S')
+                else:
+                    entry_time_formatted = entry_time_str
+                
+                if exit_time_str:
+                    dt_exit = datetime.fromisoformat(exit_time_str.replace('Z', '+00:00'))
+                    exit_time_formatted = dt_exit.strftime('%Y-%m-%d %H:%M:%S')
+                else:
+                    exit_time_formatted = exit_time_str
+            except:
+                entry_time_formatted = entry_time_str
+                exit_time_formatted = exit_time_str
+            
+            print(f"Closed Trade {i}: {symbol} ({side})")
+            print(f"  BUY Entry:")
+            print(f"    Price:              ${entry_price:,.2f}")
+            print(f"    Quantity:           {quantity:.6f}")
+            print(f"    Timestamp:          {entry_time_formatted}")
+            print(f"  SELL Exit:")
+            print(f"    Price:              ${exit_price:,.2f}")
+            print(f"    Quantity:           {quantity:.6f}")
+            print(f"    Timestamp:          {exit_time_formatted}")
+            print(f"  Profit/Loss:")
+            print(f"    Realized P/L:        ${realized_pl:+,.2f} ({realized_pl_pct:+.2f}%)")
+            print(f"    Exit Reason:         {exit_reason}")
+            print(f"    Status:              {status}")
+            
+            # Calculate price change
+            if entry_price > 0:
+                price_change = exit_price - entry_price
+                price_change_pct = (price_change / entry_price) * 100
+                if side == 'SHORT':
+                    price_change = -price_change
+                    price_change_pct = -price_change_pct
+                print(f"    Price Change:        ${price_change:+,.2f} ({price_change_pct:+.2f}%)")
             print()
         
         net_profit = total_profit - total_loss

@@ -160,8 +160,8 @@ def main():
     parser.add_argument(
         "--broker",
         default=None,  # Will be auto-determined based on asset_type
-        choices=["alpaca", "dhan"],
-        help="Broker to validate (default: auto-determined - alpaca for crypto, dhan for commodities)",
+        choices=["alpaca", "angelone"],
+        help="Broker to validate (default: auto-determined - alpaca for crypto, angelone for commodities)",
     )
     parser.add_argument(
         "--model-dir",
@@ -199,8 +199,8 @@ def main():
     # Auto-determine broker if not specified
     if args.broker is None:
         if args.asset_type == "commodities":
-            args.broker = "dhan"  # DHAN supports commodities futures
-            print(f"[INFO] Auto-selected broker: DHAN (commodities require futures trading)")
+            args.broker = "angelone"  # Angel One supports commodities futures
+            print(f"[INFO] Auto-selected broker: Angel One (commodities require futures trading)")
         else:
             args.broker = "alpaca"  # Alpaca supports crypto
             print(f"[INFO] Auto-selected broker: Alpaca (crypto trading)")
@@ -232,7 +232,7 @@ def main():
     if args.asset_type == "commodities" and args.broker == "alpaca":
         print(f"[WARNING] Alpaca doesn't support commodity futures directly.")
         print(f"         Current setup uses ETF proxies (GC=F -> GLD).")
-        print(f"         For actual futures trading, use DHAN broker.")
+        print(f"         For actual futures trading, use Angel One broker.")
     print()
     
     is_ready, results = validate_model_for_live_trading(

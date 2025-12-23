@@ -6,28 +6,29 @@ from datetime import datetime
 from typing import List, Dict, Any, Optional
 
 def get_live_positions() -> List[Dict[str, Any]]:
-    """Get live positions from Dhan MCX API."""
+    """Get live positions from Angel One MCX API."""
     try:
-        from trading.dhan_client import DhanClient, DhanConfig
+        from trading.angelone_client import AngelOneClient, AngelOneConfig
         import os
         
         # Get credentials from environment variables
         access_token = os.getenv("DHAN_ACCESS_TOKEN")
         client_id = os.getenv("DHAN_CLIENT_ID")
         
-        if not access_token or not client_id:
-            print("  ⚠️  Could not load DHAN credentials.")
-            print("      Set DHAN_ACCESS_TOKEN and DHAN_CLIENT_ID environment variables.")
-            print("      PowerShell: $env:DHAN_ACCESS_TOKEN=\"your_token\"")
-            print("      PowerShell: $env:DHAN_CLIENT_ID=\"1107954503\"")
+        if not api_key or not client_id or not password:
+            print("  ⚠️  Could not load Angel One credentials.")
+            print("      Set ANGEL_ONE_API_KEY, ANGEL_ONE_CLIENT_ID, and ANGEL_ONE_PASSWORD environment variables.")
+            print("      PowerShell: $env:ANGEL_ONE_API_KEY=\"your_api_key\"")
+            print("      PowerShell: $env:ANGEL_ONE_CLIENT_ID=\"your_client_id\"")
+            print("      PowerShell: $env:ANGEL_ONE_PASSWORD=\"your_password\"")
             return []
         
-        client = DhanClient(access_token=access_token, client_id=client_id)
+        client = AngelOneClient(api_key=api_key, client_id=client_id, password=password, totp_secret=totp_secret)
         positions = client.list_positions()
         
         live_positions = []
         for pos in positions or []:
-            # DhanClient normalizes positions to this format:
+            # AngelOneClient normalizes positions to this format:
             # {"symbol": str, "qty": float, "market_value": float, "avg_entry_price": float, "ltp": float, "unrealized_pl": float}
             qty = float(pos.get("qty", 0) or 0)
             if qty == 0:
@@ -68,7 +69,7 @@ def get_live_positions() -> List[Dict[str, Any]]:
         
         return live_positions
     except Exception as exc:
-        print(f"  ⚠️  Could not fetch live positions from Dhan MCX: {exc}")
+        print(f"  ⚠️  Could not fetch live positions from Angel One MCX: {exc}")
         return []
 
 

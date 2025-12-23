@@ -470,48 +470,62 @@ def validate_broker_credentials(
                 "ALPACA_SECRET_KEY is set",
             ))
     
-    elif broker.lower() == "dhan":
-        api_key = os.getenv("DHAN_API_KEY")
-        secret_key = os.getenv("DHAN_SECRET_KEY")
-        user_id = os.getenv("DHAN_USER_ID")
+    elif broker.lower() == "angelone":
+        api_key = os.getenv("ANGEL_ONE_API_KEY")
+        password = os.getenv("ANGEL_ONE_PASSWORD")
+        client_id = os.getenv("ANGEL_ONE_CLIENT_ID")
+        totp_secret = os.getenv("ANGEL_ONE_TOTP_SECRET")
         
         if not api_key:
             results.append(ValidationResult(
-                "dhan_api_key",
+                "angelone_api_key",
                 False,
-                "DHAN_API_KEY environment variable not set",
+                "ANGEL_ONE_API_KEY environment variable not set",
             ))
         else:
             results.append(ValidationResult(
-                "dhan_api_key",
+                "angelone_api_key",
                 True,
-                "DHAN_API_KEY is set",
+                "ANGEL_ONE_API_KEY is set",
             ))
         
-        if not secret_key:
+        if not password:
             results.append(ValidationResult(
-                "dhan_secret_key",
+                "angelone_password",
                 False,
-                "DHAN_SECRET_KEY environment variable not set",
+                "ANGEL_ONE_PASSWORD environment variable not set",
             ))
         else:
             results.append(ValidationResult(
-                "dhan_secret_key",
+                "angelone_password",
                 True,
-                "DHAN_SECRET_KEY is set",
+                "ANGEL_ONE_PASSWORD is set",
             ))
         
-        if not user_id:
+        if not client_id:
             results.append(ValidationResult(
-                "dhan_user_id",
+                "angelone_client_id",
                 False,
-                "DHAN_USER_ID environment variable not set",
+                "ANGEL_ONE_CLIENT_ID environment variable not set",
             ))
         else:
             results.append(ValidationResult(
-                "dhan_user_id",
+                "angelone_client_id",
                 True,
-                "DHAN_USER_ID is set",
+                "ANGEL_ONE_CLIENT_ID is set",
+            ))
+        
+        if not totp_secret:
+            results.append(ValidationResult(
+                "angelone_totp_secret",
+                False,
+                "ANGEL_ONE_TOTP_SECRET environment variable not set (optional but recommended)",
+            ))
+        else:
+            results.append(ValidationResult(
+                "angelone_totp_secret",
+                True,
+                "ANGEL_ONE_TOTP_SECRET is set",
             ))
     else:
         results.append(ValidationResult(
@@ -548,7 +562,7 @@ def validate_model_for_live_trading(
     # Auto-determine broker if not specified
     if broker is None:
         if asset_type == "commodities":
-            broker = "dhan"  # DHAN supports commodities futures
+            broker = "angelone"  # Angel One supports commodities futures
         else:
             broker = "alpaca"  # Alpaca supports crypto
     

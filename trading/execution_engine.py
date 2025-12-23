@@ -88,7 +88,7 @@ class ExecutionEngine:
     
     IMPORTANT:
     - Crypto: Uses AlpacaClient (default)
-    - Commodities: MUST use DhanClient (MCX exchange) - will raise error if AlpacaClient is used
+    - Commodities: MUST use AngelOneClient (MCX exchange) - will raise error if AlpacaClient is used
     
     The ExecutionEngine is broker-agnostic but enforces broker selection based on asset type.
     """
@@ -102,7 +102,7 @@ class ExecutionEngine:
         position_manager: Optional[PositionManager] = None,
     ):
         # Backward compatible: if no client provided, default to AlpacaClient (for crypto)
-        # NOTE: For commodities, you MUST provide DhanClient explicitly
+        # NOTE: For commodities, you MUST provide AngelOneClient explicitly
         if client is None:
             client = AlpacaClient()
         elif not isinstance(client, BrokerClient):
@@ -195,13 +195,13 @@ class ExecutionEngine:
         is_crypto = getattr(asset, "asset_type", "").lower() == "crypto"
         is_commodities = getattr(asset, "asset_type", "").lower() == "commodities"
         
-        # For commodities, ALWAYS use MCX contract symbol with DHAN (enforced)
+        # For commodities, ALWAYS use MCX contract symbol with Angel One (enforced)
         if is_commodities:
-            if self.client.broker_name != "dhan":
+            if self.client.broker_name != "angelone":
                 raise RuntimeError(
-                    f"Commodities ({asset.data_symbol}) require DHAN broker for MCX trading. "
+                    f"Commodities ({asset.data_symbol}) require Angel One broker for MCX trading. "
                     f"Current broker: {self.client.broker_name}. "
-                    f"Please use DhanClient() instead of AlpacaClient() for commodities."
+                    f"Please use AngelOneClient() instead of AlpacaClient() for commodities."
                 )
             trading_symbol = asset.get_mcx_symbol(effective_horizon).upper()
         else:
@@ -718,7 +718,7 @@ class ExecutionEngine:
             # Now open new position in opposite direction
             if desired_notional > 0:
                 # For MCX commodities, round to lot size
-                if is_commodities and self.client.broker_name == "dhan":
+                if is_commodities and self.client.broker_name == "angelone":
                     raw_qty = max(desired_notional / current_price, 0.0)
                     new_qty = round_to_lot_size(raw_qty, asset.data_symbol)
                     print(f"[MCX] Rounded quantity to lot size: {raw_qty:.2f} -> {new_qty} (lot size: {get_mcx_lot_size(asset.data_symbol)})")
@@ -1026,7 +1026,7 @@ class ExecutionEngine:
                 
                 # For MCX with DHAN, stop-loss is handled via DHAN API
                 # Commodities MUST use DHAN (enforced above), so this is always DHAN
-                if self.client.broker_name == "dhan":
+                if self.client.broker_name == "angelone":
                     # DHAN MCX: stop-loss is submitted as separate order type
                     if not effective_risk.manual_stop_loss:
                         order_kwargs["stop_loss_price"] = stop_loss_price
@@ -1179,13 +1179,13 @@ class ExecutionEngine:
                 print(f"\n[INVESTMENT] YOUR INVESTMENT DETAILS:")
                 print(f"  Initial Investment: ${entry_cost:,.2f}")
                 print(f"    Symbol:            {trading_symbol} ({asset.data_symbol})")
-                if is_commodities and self.client.broker_name == "dhan":
+                if is_commodities and self.client.broker_name == "angelone":
                     print(f"    Exchange:          MCX (Multi Commodity Exchange)")
                     print(f"    Contract:          {trading_symbol} (MCX Futures Contract)")
                 print(f"    Side:              {target_side.upper()}")
                 print(f"    Entry Price:       ${current_price:,.2f}")
                 print(f"    Quantity:          {implied_qty:,.2f}")
-                if is_commodities and self.client.broker_name == "dhan":
+                if is_commodities and self.client.broker_name == "angelone":
                     lot_size = get_mcx_lot_size(asset.data_symbol)
                     print(f"    Lot Size:          {lot_size} (MCX minimum tradable unit)")
                 print(f"    Order ID:          {entry_resp.get('id', 'N/A')}")

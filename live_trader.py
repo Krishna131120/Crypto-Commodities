@@ -309,7 +309,7 @@ def run_trading_cycle(
     }
     
     # Step 1: Update live data for all symbols (if enabled)
-    # PRIMARY: Get live price from Binance (for crypto) or Dhan/Alpaca (for commodities) and update last candle's close price
+    # PRIMARY: Get live price from Binance (for crypto) or Angel One/Alpaca (for commodities) and update last candle's close price
     # This allows intraday trading with fresh prices even when daily candle isn't complete
     if update_data:
         if verbose:
@@ -317,7 +317,6 @@ def run_trading_cycle(
             print(f"[UPDATE] Fetching latest live prices from Binance/Dhan/Alpaca...")
         try:
             from trading.alpaca_client import AlpacaClient
-            from trading.dhan_client import DhanClient
             from trading.symbol_universe import find_by_data_symbol
             from fetchers import load_json_file, save_json_file, get_data_path
             from pathlib import Path
@@ -328,13 +327,13 @@ def run_trading_cycle(
             updated_count = 0
             
             # COMMODITIES-ONLY: Use DhanClient exclusively (no crypto/Alpaca fallbacks)
-            if hasattr(execution_engine, 'client') and execution_engine.client.broker_name == "dhan":
-                client = execution_engine.client  # Use DhanClient for commodities
+            if hasattr(execution_engine, 'client') and execution_engine.client.broker_name == "angelone":
+                client = execution_engine.client  # Use AngelOneClient for commodities
                 if verbose:
-                    print("  [INFO] Using DhanClient for commodities data updates (MCX exchange)")
+                    print("  [INFO] Using AngelOneClient for commodities data updates (MCX exchange)")
             else:
-                # If not DhanClient, this is an error for commodities trading
-                raise RuntimeError("Commodities trading requires DhanClient. AlpacaClient is for crypto only.")
+                # If not AngelOneClient, this is an error for commodities trading
+                raise RuntimeError("Commodities trading requires AngelOneClient. AlpacaClient is for crypto only.")
             
             for symbol in unique_symbols:
                 try:
@@ -353,8 +352,8 @@ def run_trading_cycle(
                     
                     live_price = None
                     
-                    # COMMODITIES-ONLY: Use DhanClient to get last trade price (MCX)
-                    # NO Binance, NO Alpaca - only Dhan for commodities
+                    # COMMODITIES-ONLY: Use AngelOneClient to get last trade price (MCX)
+                    # NO Binance, NO Alpaca - only Angel One for commodities
                     try:
                         # Get MCX symbol for commodities (required for Dhan)
                         if hasattr(asset_mapping, 'get_mcx_symbol'):
@@ -366,17 +365,17 @@ def run_trading_cycle(
                         else:
                             trading_symbol_for_price = asset_mapping.trading_symbol
                         
-                        # Use DhanClient to get MCX last trade price
+                        # Use AngelOneClient to get MCX last trade price
                         last_trade = client.get_last_trade(trading_symbol_for_price, max_retries=3, retry_delay=1.0, force_retry=False)
                         if last_trade:
                             price = last_trade.get("price") or last_trade.get("p") or last_trade.get("ltp")
                             if price:
                                 live_price = float(price)
                                 if verbose:
-                                    print(f"  [OK] {symbol}: Got live price ${live_price:.2f} from Dhan (MCX: {trading_symbol_for_price})")
+                                    print(f"  [OK] {symbol}: Got live price ${live_price:.2f} from Angel One (MCX: {trading_symbol_for_price})")
                     except Exception as trade_exc:
                         if verbose:
-                            print(f"  [WARN] {symbol}: Dhan MCX price fetch failed: {trade_exc}")
+                            print(f"  [WARN] {symbol}: Angel One MCX price fetch failed: {trade_exc}")
                         pass
                     
                     if live_price is None or live_price <= 0:
@@ -447,7 +446,7 @@ def run_trading_cycle(
             
             if verbose:
                 broker_name = execution_engine.client.broker_name if hasattr(execution_engine, 'client') else "Alpaca"
-                print(f"[UPDATE] Live prices updated for {updated_count}/{len(unique_symbols)} commodity symbol(s) via Dhan (MCX exchange)")
+                print(f"[UPDATE] Live prices updated for {updated_count}/{len(unique_symbols)} commodity symbol(s) via Angel One (MCX exchange)")
         except Exception as exc:
             if verbose:
                 print(f"[WARN] Failed to update live prices: {exc}")
@@ -503,11 +502,11 @@ def run_trading_cycle(
             from trading.symbol_universe import find_by_data_symbol
             from ml.horizons import get_horizon_risk_config, normalize_profile
             
-            # COMMODITIES-ONLY: Use DhanClient exclusively
-            if hasattr(execution_engine, 'client') and execution_engine.client.broker_name == "dhan":
-                client = execution_engine.client  # DhanClient for commodities (MCX)
+            # COMMODITIES-ONLY: Use AngelOneClient exclusively
+            if hasattr(execution_engine, 'client') and execution_engine.client.broker_name == "angelone":
+                client = execution_engine.client  # AngelOneClient for commodities (MCX)
             else:
-                raise RuntimeError("Commodities trading requires DhanClient. AlpacaClient is for crypto only.")
+                raise RuntimeError("Commodities trading requires AngelOneClient. AlpacaClient is for crypto only.")
             all_positions = client.list_positions()
             stop_loss_triggered_count = 0
             
@@ -685,11 +684,11 @@ def run_trading_cycle(
         # Manual mode - just show positions without executing stop-losses
         if verbose:
             try:
-                # COMMODITIES-ONLY: Use execution engine's DhanClient
-                if hasattr(execution_engine, 'client') and execution_engine.client.broker_name == "dhan":
+                # COMMODITIES-ONLY: Use execution engine's AngelOneClient
+                if hasattr(execution_engine, 'client') and execution_engine.client.broker_name == "angelone":
                     client = execution_engine.client
                 else:
-                    raise RuntimeError("Commodities trading requires DhanClient.")
+                    raise RuntimeError("Commodities trading requires AngelOneClient.")
                 all_positions = client.list_positions()
                 # COMMODITIES-ONLY: Filter to MCX positions only
                 mcx_positions = [pos for pos in all_positions 
@@ -819,11 +818,11 @@ def run_trading_cycle(
             # This ensures we always exit when prediction changes, even if execution engine fails
             action = consensus.get("consensus_action", "hold")
             try:
-                # COMMODITIES-ONLY: Use DhanClient exclusively
-                if hasattr(execution_engine, 'client') and execution_engine.client.broker_name == "dhan":
-                    client_safety = execution_engine.client  # DhanClient for commodities (MCX)
+                # COMMODITIES-ONLY: Use AngelOneClient exclusively
+                if hasattr(execution_engine, 'client') and execution_engine.client.broker_name == "angelone":
+                    client_safety = execution_engine.client  # AngelOneClient for commodities (MCX)
                 else:
-                    raise RuntimeError("Commodities trading requires DhanClient. AlpacaClient is for crypto only.")
+                    raise RuntimeError("Commodities trading requires AngelOneClient. AlpacaClient is for crypto only.")
                 
                 # COMMODITIES-ONLY: Always use MCX symbol
                 if hasattr(asset, 'get_mcx_symbol'):

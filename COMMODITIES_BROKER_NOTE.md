@@ -19,8 +19,8 @@
 
 ## Recommended Solution
 
-### Use DHAN for Commodities
-✅ **DHAN supports actual commodity futures**
+### Use Angel One for Commodities
+✅ **Angel One supports actual commodity futures**
 - Direct futures trading (GC=F, CL=F, etc.)
 - Proper margin requirements
 - Futures trading hours
@@ -55,11 +55,11 @@ engine = ExecutionEngine(client=AlpacaClient())
 # GC=F trades as GLD ETF
 ```
 
-### Future (Futures on DHAN)
+### Future (Futures on Angel One)
 ```python
 # Ideal for commodities
-from trading.dhan_client import DhanClient
-engine = ExecutionEngine(client=DhanClient())
+from trading.angelone_client import AngelOneClient
+engine = ExecutionEngine(client=AngelOneClient())
 # GC=F trades as actual gold futures
 ```
 
