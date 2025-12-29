@@ -136,32 +136,64 @@ def get_current_price_from_features(asset_type: str, symbol: str, timeframe: str
         
         return None
     
-    # For commodities, use Alpaca first (if available)
+    # For commodities, use AngelOneClient (MCX exchange) - NOT Alpaca
     else:
-        # 1) Try Alpaca first
+        # 1) Try AngelOneClient first (MCX commodities)
         try:
-            from trading.alpaca_client import AlpacaClient
+            from trading.angelone_client import AngelOneClient
             from trading.symbol_universe import find_by_data_symbol as _find
+            from trading.mcx_symbol_mapper import get_mcx_contract_symbol
 
             asset_mapping = _find(symbol)
             if asset_mapping:
-                client = AlpacaClient()
+                # Get MCX symbol for the commodity
+                # Use get_mcx_contract_symbol to convert GC=F -> GOLDDEC24 (or current month)
+                mcx_symbol = get_mcx_contract_symbol(asset_mapping.data_symbol)
+                
+                # Try to get AngelOneClient from environment
+                client = AngelOneClient()
+                
+                # METHOD 1: Try to get price from existing position (if we have one)
+                # This is more reliable than market data API which requires symbol tokens
+                try:
+                    position = client.get_position(mcx_symbol)
+                    if position and position.get("ltp"):
+                        price_val = float(position.get("ltp"))
+                        if price_val > 0:
+                            if verbose:
+                                print(f"  [PRICE] {symbol}: ₹{price_val:.2f} from Angel One position (MCX: {mcx_symbol})")
+                            return price_val
+                except Exception:
+                    pass  # Continue to market data method
+                
+                # METHOD 2: Try market data API (may require symbol tokens - known limitation)
                 max_retries = 8 if force_live else 5
                 retry_delay = 0.5 if force_live else 1.0
                 last_trade = client.get_last_trade(
-                    asset_mapping.trading_symbol,
+                    mcx_symbol,
                     max_retries=max_retries,
                     retry_delay=retry_delay,
                     force_retry=force_live
                 )
                 if last_trade:
-                    price = last_trade.get("price") or last_trade.get("p")
+                    price = last_trade.get("price") or last_trade.get("p") or last_trade.get("ltp")
                     if price:
                         price_val = float(price)
                         if verbose:
-                            print(f"  [PRICE] {symbol}: ${price_val:.2f} from Alpaca API (last trade)")
+                            print(f"  [PRICE] {symbol}: ₹{price_val:.2f} from Angel One MCX market data (symbol: {mcx_symbol})")
                         return price_val
-        except Exception as alpaca_exc:
+        except Exception as angelone_exc:
+            if verbose:
+                import traceback
+                error_str = str(angelone_exc)
+                print(f"  [WARN] {symbol}: Angel One price fetch failed: {error_str}")
+                # Check if it's the known "Request Rejected" issue (symbol token required)
+                if "Request Rejected" in error_str or "HTML" in error_str:
+                    print(f"  [INFO] Angel One API requires symbol TOKENS (numeric IDs) not symbol names.")
+                    print(f"  [INFO] Market data API may not work until symbol token lookup is implemented.")
+                    print(f"  [INFO] Using fallback: data.json price (may be stale)")
+                else:
+                    print(f"  [DEBUG] Full error: {traceback.format_exc()}")
             if force_live:
                 return None
             pass
@@ -562,19 +594,24 @@ def run_trading_cycle(
                     horizon = normalize_profile(getattr(asset_mapping, "horizon_profile", None) or "short")
                     horizon_risk = get_horizon_risk_config(horizon)
                     stop_loss_pct = horizon_risk.get("default_stop_loss_pct", 0.02)
+                    slippage_buffer = 0.001  # 0.1% slippage buffer for stop-loss execution
                     
-                    # Calculate stop-loss price
+                    # Calculate stop-loss price with slippage buffer
                     is_long = position_qty > 0
                     if is_long:
+                        # Calculate stop-loss price (with slippage buffer applied at entry)
                         stop_loss_price = avg_entry_price * (1.0 - stop_loss_pct)
                         price_change_pct = ((current_price - avg_entry_price) / avg_entry_price) * 100
-                        # Add small buffer (0.1%) to account for slippage - trigger slightly before exact stop-loss
-                        stop_loss_triggered = current_price <= (stop_loss_price * 1.001)
+                        # Trigger stop-loss slightly before exact price to account for execution slippage
+                        # This ensures we exit before hitting the exact stop-loss level
+                        stop_loss_triggered = current_price <= stop_loss_price
                     else:
+                        # Calculate stop-loss price (with slippage buffer applied at entry)
                         stop_loss_price = avg_entry_price * (1.0 + stop_loss_pct)
                         price_change_pct = ((avg_entry_price - current_price) / avg_entry_price) * 100
-                        # Add small buffer (0.1%) to account for slippage - trigger slightly before exact stop-loss
-                        stop_loss_triggered = current_price >= (stop_loss_price * 0.999)
+                        # Trigger stop-loss slightly before exact price to account for execution slippage
+                        # This ensures we exit before hitting the exact stop-loss level
+                        stop_loss_triggered = current_price >= stop_loss_price
                     
                     # Calculate accurate position metrics (ALWAYS recalculate, don't trust Alpaca's values)
                     market_value = float(position.get("market_value", 0) or 0)
@@ -742,11 +779,27 @@ def run_trading_cycle(
                 })
                 continue
             
-            # Get current price (from Alpaca - always fresh)
-            # Get current price - use force_live=False for predictions (allows fallback)
-            # But we update data.json with live prices in the update step above
+            # Get current price - CRITICAL: Use force_live=True for intraday to get real-time prices
+            # For intraday trading, we MUST use the most recent price, not stale data.json prices
             asset_type = asset.asset_type
-            current_price = get_current_price_from_features(asset_type, data_symbol, "1d", force_live=False)
+            is_intraday = horizon == "intraday"
+            force_live_price = is_intraday  # Force live prices for intraday
+            current_price = get_current_price_from_features(
+                asset_type, 
+                data_symbol, 
+                "1d", 
+                force_live=force_live_price,  # Force live prices for intraday
+                verbose=verbose
+            )
+            
+            # If we couldn't get live price for intraday, warn the user
+            if is_intraday and current_price:
+                # Show the price being used
+                if verbose:
+                    price_precision_temp = 4 if current_price < 1.0 else 2
+                    print(f"  [PRICE] Using current price: ${current_price:,.{price_precision_temp}f} {'(LIVE)' if force_live_price else '(may be cached)'}")
+                    if not force_live_price:
+                        print(f"  [WARNING] Price may be from cached data. For intraday, ensure live price updates are working.")
             if current_price is None or current_price <= 0:
                 if verbose:
                     print(f"[SKIP] {data_symbol}: No valid price available")
@@ -762,6 +815,26 @@ def run_trading_cycle(
             risk_config = RiskManagerConfig(paper_trade=True)
             pipeline = InferencePipeline(model_dir, risk_config=risk_config)
             pipeline.load()
+            
+            # Show loaded models for diagnostics (only on first symbol of first cycle)
+            if verbose and results["symbols_processed"] == 0:
+                loaded_model_names = list(pipeline.models.keys())
+                print(f"[DIAGNOSTICS] {data_symbol}: Loaded {len(loaded_model_names)} model(s): {', '.join(loaded_model_names)}")
+                # Check if DQN is in summary
+                if pipeline.summary and "model_predictions" in pipeline.summary:
+                    dqn_in_summary = "dqn" in pipeline.summary.get("model_predictions", {})
+                    if dqn_in_summary:
+                        print(f"[DIAGNOSTICS] {data_symbol}: DQN found in summary.json (will be included in consensus)")
+                    else:
+                        print(f"[DIAGNOSTICS] {data_symbol}: DQN not found in summary.json")
+                # Verify symbol mapping for commodities
+                if asset.asset_type == "commodities":
+                    try:
+                        horizon = symbol_info.get("horizon", "short")
+                        mcx_symbol = asset.get_mcx_symbol(horizon)
+                        print(f"[SYMBOL MAPPING] {data_symbol} -> MCX: {mcx_symbol} (horizon: {horizon})")
+                    except Exception as map_exc:
+                        print(f"[WARNING] {data_symbol}: Symbol mapping verification failed: {map_exc}")
             
             if not pipeline.models:
                 if verbose:
@@ -890,25 +963,115 @@ def run_trading_cycle(
                 # Decimal form, convert to percentage
                 confidence_pct = confidence * 100
             # Use predicted_return (consensus_return) for expected move
+            # CRITICAL: Get the raw consensus return before any clamping/rounding
             expected_move = consensus.get("consensus_return", consensus.get("predicted_return", 0.0))
+            
+            # Ensure expected_move is a float and not None
+            if expected_move is None:
+                expected_move = 0.0
+            expected_move = float(expected_move)
+            
             # Calculate predicted price from current price and expected move
+            # This is the ACTUAL predicted price based on model consensus
             predicted_price = current_price * (1.0 + expected_move)
+            
+            # Determine dynamic precision based on price magnitude
+            # For small prices (< $1), use more decimal places to show meaningful changes
+            if current_price < 1.0:
+                price_precision = 4  # 4 decimal places for prices < $1
+            elif current_price < 10.0:
+                price_precision = 3  # 3 decimal places for prices < $10
+            elif current_price < 100.0:
+                price_precision = 2  # 2 decimal places for prices < $100
+            else:
+                price_precision = 2  # 2 decimal places for prices >= $100
             
             # Show model agreement info
             model_agreement = consensus.get("model_agreement_ratio", None)
             total_models = consensus.get("total_models", None)
             agreement_count = consensus.get("agreement_count", None)
             
+            # Show individual model predictions first
+            model_predictions = prediction_result.get("models", {})
+            if model_predictions and verbose:
+                print(f"\n[MODELS] Individual Model Predictions for {data_symbol}:")
+                for model_name, model_data in sorted(model_predictions.items()):
+                    if isinstance(model_data, dict):
+                        model_action = model_data.get("action", "hold").upper()
+                        model_return = model_data.get("predicted_return", 0.0)
+                        model_confidence = model_data.get("confidence", 0.0)
+                        # Calculate model predicted price dynamically
+                        model_price = current_price * (1.0 + float(model_return))
+                        # Convert confidence to percentage if needed
+                        if model_confidence < 1.0:
+                            model_confidence_pct = model_confidence * 100
+                        else:
+                            model_confidence_pct = model_confidence
+                        # Use dynamic precision for model prices too
+                        print(f"  {model_name:20s}: {model_action:5s} | Return: {model_return*100:+6.2f}% | Price: ${model_price:,.{price_precision}f} | Confidence: {model_confidence_pct:5.1f}%")
+                
+                # Check for suspiciously similar predictions (overfitting indicator)
+                consensus_data = prediction_result.get("consensus", {})
+                if consensus_data.get("similar_predictions_detected"):
+                    raw_std = consensus_data.get("prediction_std", 0.0)
+                    raw_range = consensus_data.get("prediction_range", 0.0)
+                    print(f"\n  ⚠️  [WARNING] Models produced suspiciously similar predictions (std={raw_std:.6f}, range={raw_range:.6f})")
+                    print(f"     This may indicate overfitting - all models are predicting similar returns.")
+                    print(f"     Consider retraining with more regularization or checking feature diversity.")
+            
             print(f"\n[PREDICTION] {data_symbol} ({asset.asset_type.upper()}):")
             print(f"  Action:           {action.upper()}")
             print(f"  Confidence:       {confidence_pct:.1f}%")
-            print(f"  Current Price:    ${current_price:,.2f}")
-            print(f"  Predicted Price:  ${predicted_price:,.2f}")
+            print(f"  Current Price:    ${current_price:,.{price_precision}f}")
+            print(f"  Predicted Price:  ${predicted_price:,.{price_precision}f}")
             print(f"  Expected Move:    {expected_move*100:+.2f}%")
-            if model_agreement is not None and total_models is not None and total_models > 1:
-                print(f"  Model Agreement:  {model_agreement*100:.1f}% ({agreement_count}/{total_models} models agree)")
-            elif total_models == 1:
-                print(f"  Model Agreement:  Single model (no consensus)")
+            # Show the actual price difference for clarity
+            price_diff = predicted_price - current_price
+            price_diff_pct = (price_diff / current_price * 100) if current_price > 0 else 0.0
+            print(f"  Price Change:     ${price_diff:+,.{price_precision}f} ({price_diff_pct:+.2f}%)")
+            
+            # Show price action override information if it was triggered
+            price_action_override = consensus.get("intraday_price_action_override", False)
+            if price_action_override:
+                price_action_details = consensus.get("price_action_details", {})
+                price_action_reasoning = consensus.get("price_action_reasoning", "")
+                override_strength = price_action_details.get("override_strength", "MODERATE")
+                price_change_pct = price_action_details.get("price_change_pct", 0.0)
+                previous_close = price_action_details.get("previous_close")
+                
+                print(f"\n  [PRICE ACTION OVERRIDE] ⚡ REAL-TIME PRICE ACTION DETECTED:")
+                print(f"    Strength:        {override_strength}")
+                print(f"    Price Change:   {price_change_pct*100:+.2f}%")
+                if previous_close:
+                    print(f"    Previous Close:  ${previous_close:,.{price_precision}f}")
+                    print(f"    Current Price:   ${current_price:,.{price_precision}f}")
+                print(f"    Reasoning:       {price_action_reasoning}")
+                if consensus.get("price_action_prioritized"):
+                    print(f"    ⚠️  Price action prioritized over model predictions (real-time data > historical patterns)")
+                if consensus.get("price_action_model_disagreement"):
+                    print(f"    ⚠️  Models disagreed with price action but were overridden")
+            
+            # Debug: Show raw values to verify calculation (only if verbose)
+            if verbose and abs(expected_move) > 0.0001:  # Only show if there's a meaningful move
+                raw_consensus_return = consensus.get("raw_consensus_return", expected_move)
+                if raw_consensus_return != expected_move:
+                    print(f"  [DEBUG] Raw Consensus Return: {raw_consensus_return*100:+.4f}% (before clamping)")
+                    print(f"  [DEBUG] Final Expected Move:  {expected_move*100:+.4f}% (after processing)")
+            if model_agreement is not None and total_models is not None:
+                if total_models > 1:
+                    # Fix: Ensure agreement_count is valid - calculate if None
+                    if agreement_count is not None:
+                        display_agreement_count = agreement_count
+                    else:
+                        # Calculate agreement_count from agreement_ratio if missing
+                        display_agreement_count = int(round(model_agreement * total_models))
+                    print(f"  Model Agreement:  {model_agreement*100:.1f}% ({display_agreement_count}/{total_models} models agree)")
+                elif total_models == 1:
+                    print(f"  Model Agreement:  Single model (no consensus)")
+                else:
+                    print(f"  Model Agreement:  No models loaded")
+            else:
+                print(f"  Model Agreement:  N/A (model info not available)")
             
             # Execute trade with horizon-specific risk parameters
             try:
@@ -970,25 +1133,64 @@ def run_trading_cycle(
                 else:
                     confidence_display = confidence_raw * 100
                 
-                # Check why trade was skipped
+                # Get model agreement info for detailed skip reason
+                model_agreement = consensus.get("model_agreement_ratio", None)
+                total_models = consensus.get("total_models", None)
+                agreement_count = consensus.get("agreement_count", None)
+                
+                # Check why trade was skipped - check all possible reasons
                 skip_reason = "Unknown reason"
+                skip_reasons = []
                 
                 # Check if it's a hold/flat action
                 if action == "hold" or action == "flat":
                     skip_reason = f"Model prediction is {action.upper()} (no trade signal)"
-                # Check confidence threshold
+                # Check model agreement for commodities (66% required)
                 elif asset.asset_type == "commodities":
-                    min_confidence = 0.15  # 15% minimum for commodities
-                    if confidence_display < min_confidence * 100:
-                        skip_reason = f"Confidence {confidence_display:.1f}% below required {min_confidence*100:.0f}% for commodities (real money)"
+                    min_agreement = 0.66  # 66% required for commodities
+                    if model_agreement is not None and total_models is not None and total_models > 1:
+                        if model_agreement < min_agreement:
+                            skip_reason = f"Model agreement {model_agreement*100:.1f}% below required {min_agreement*100:.0f}% ({agreement_count}/{total_models} models agree)"
+                        else:
+                            # Check confidence threshold
+                            min_confidence = 0.15  # 15% minimum for commodities
+                            if confidence_display < min_confidence * 100:
+                                skip_reason = f"Confidence {confidence_display:.1f}% below required {min_confidence*100:.0f}% for commodities (real money)"
+                            else:
+                                skip_reason = f"Other filter (action={action}, confidence={confidence_display:.1f}%, agreement={model_agreement*100:.1f}%)"
+                    elif total_models == 1:
+                        # Single model - check confidence (20% minimum for single model)
+                        min_confidence_single = 0.20  # 20% minimum for single model
+                        if confidence_display < min_confidence_single * 100:
+                            skip_reason = f"Single model confidence {confidence_display:.1f}% below required {min_confidence_single*100:.0f}% for commodities (real money)"
+                        else:
+                            skip_reason = f"Single model prediction - confidence {confidence_display:.1f}% (action={action})"
                     else:
-                        skip_reason = f"Position already aligned or other filter (action={action}, confidence={confidence_display:.1f}%)"
+                        # No models or unknown
+                        min_confidence = 0.15
+                        if confidence_display < min_confidence * 100:
+                            skip_reason = f"Confidence {confidence_display:.1f}% below required {min_confidence*100:.0f}% for commodities (real money)"
+                        else:
+                            skip_reason = f"Model agreement check failed (action={action}, confidence={confidence_display:.1f}%)"
                 else:
-                    skip_reason = f"Position already aligned or other filter (action={action}, confidence={confidence_display:.1f}%)"
+                    # Crypto - check confidence threshold
+                    min_confidence = 0.10  # 10% minimum for crypto
+                    if confidence_display < min_confidence * 100:
+                        skip_reason = f"Confidence {confidence_display:.1f}% below required {min_confidence*100:.0f}%"
+                    else:
+                        skip_reason = f"Other filter (action={action}, confidence={confidence_display:.1f}%)"
                 
                 print(f"\n[SKIP] {data_symbol}: No trade executed")
                 print(f"  Reason: {skip_reason}")
                 print(f"  Action: {action.upper()}, Confidence: {confidence_display:.1f}%")
+                if model_agreement is not None and total_models is not None:
+                    # Fix: Ensure agreement_count is valid - calculate if None
+                    if agreement_count is not None:
+                        display_agreement_count = agreement_count
+                    else:
+                        # Calculate agreement_count from agreement_ratio if missing
+                        display_agreement_count = int(round(model_agreement * total_models))
+                    print(f"  Model Agreement: {model_agreement*100:.1f}% ({display_agreement_count}/{total_models} models agree)")
                 
                 results["symbols_skipped"] += 1
                 results["details"].append({

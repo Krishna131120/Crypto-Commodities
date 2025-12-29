@@ -302,22 +302,33 @@ def main():
         traceback.print_exc()
         sys.exit(1)
     
+    # Force flush to ensure training completion message is visible
+    sys.stdout.flush()
+    
     # ------------------------------------------------------------------
     # Stage 4: Live trading cycle(s)
     # ------------------------------------------------------------------
     print("\n" + "=" * 80)
     print("[4/4] PREPARING LIVE TRADING")
     print("=" * 80)
+    sys.stdout.flush()
     
     # Discover which of the requested symbols actually have trained models.
     # CRITICAL: Pass the trained horizon as override_horizon so discover_tradable_symbols
     # finds the correct models (e.g., short models instead of default)
+    print(f"    [DEBUG] Discovering tradable symbols for commodities with horizon: {horizon}")
     try:
         all_tradable = discover_tradable_symbols(
             asset_type="commodities",
             timeframe=timeframe,
             override_horizon=horizon  # Override asset's default horizon_profile with the trained horizon
         )
+        print(f"    [DEBUG] Discovered {len(all_tradable)} total tradable commodity symbols")
+        if all_tradable:
+            print(f"    [DEBUG] Tradable symbols found:")
+            for info in all_tradable:
+                asset = info["asset"]
+                print(f"      - {asset.data_symbol} (horizon: {info['horizon']}, model_dir: {info['model_dir']})")
     except Exception as disc_exc:
         print(f"    ✗ Failed to discover tradable symbols: {disc_exc}")
         import traceback
@@ -326,6 +337,7 @@ def main():
     
     # Restrict to the user-selected symbols only.
     requested_set = {s.upper() for s in commodities_symbols}
+    print(f"    [DEBUG] Filtering for requested symbols: {requested_set}")
     tradable = [
         info
         for info in all_tradable
@@ -336,6 +348,15 @@ def main():
         print("    ✗ No tradable symbols found after training. Exiting.")
         print("      Make sure models trained successfully for the requested symbols.")
         print(f"      Discovered {len(all_tradable)} total tradable symbols, but none matched requested: {requested_set}")
+        if all_tradable:
+            print(f"      Available symbols: {[info['asset'].data_symbol for info in all_tradable]}")
+        # Check if models exist for requested symbols
+        from core.model_paths import horizon_dir
+        print(f"\n      [DEBUG] Checking model directories for requested symbols:")
+        for symbol in requested_set:
+            model_path = horizon_dir("commodities", symbol, timeframe, horizon)
+            summary_path = model_path / "summary.json"
+            print(f"        {symbol}: model_dir={model_path}, summary exists={summary_path.exists()}")
         sys.exit(1)
     
     print(f"    ✓ Found {len(tradable)} tradable symbol(s):")
@@ -343,6 +364,7 @@ def main():
         asset = info["asset"]
         mcx_symbol = asset.get_mcx_symbol(horizon) if hasattr(asset, 'get_mcx_symbol') else asset.trading_symbol
         print(f"      - {asset.data_symbol} -> MCX: {mcx_symbol} (horizon: {info['horizon']})")
+    sys.stdout.flush()
     
     # Initialize execution engine and position manager
     try:
@@ -351,6 +373,9 @@ def main():
             user_stop_loss_pct=args.stop_loss_pct,  # User override if provided
             profit_target_pct=args.profit_target_pct,
             allow_short=True,  # MCX supports shorting
+            max_total_equity_pct=0.50,  # Maximum 50% of equity deployed across all positions (ENFORCED)
+            max_daily_loss_pct=0.05,  # Maximum 5% daily loss before trading halt (circuit breaker)
+            slippage_buffer_pct=0.001,  # 0.1% slippage buffer for stop-loss execution
         )
         position_manager = PositionManager()
         execution_engine = ExecutionEngine(
@@ -360,8 +385,11 @@ def main():
             log_path=Path("logs") / "trading" / "commodities_trades.jsonl",
         )
         print("    ✓ Execution engine and position manager initialized")
+        sys.stdout.flush()
     except Exception as exc:
         print(f"    ✗ Failed to initialize ExecutionEngine: {exc}")
+        import traceback
+        traceback.print_exc()
         sys.exit(1)
     
     # LIQUIDATE ONLY MCX COMMODITIES POSITIONS (if not dry-run)
@@ -433,36 +461,64 @@ def main():
         print("=" * 80)
         print()
     
+    # Final confirmation before starting cycles
     print()
     print("=" * 80)
-    print("STARTING LIVE TRADING CYCLES")
+    print("✅ ALL SETUP COMPLETE - READY TO START TRADING")
+    print("=" * 80)
+    print(f"  Tradable Symbols: {len(tradable)}")
+    print(f"  Execution Engine: {'DRY RUN' if args.dry_run else 'LIVE TRADING'}")
+    print(f"  Profit Target: {args.profit_target_pct:.2f}%")
+    print("=" * 80)
+    sys.stdout.flush()
+    time.sleep(2)  # Brief pause to let user see the confirmation
+    
+    print()
+    print("=" * 80)
+    print("🚀 STARTING LIVE TRADING CYCLES 🚀")
     print("=" * 80)
     print(f"Interval: {args.interval} seconds between cycles")
+    print(f"Mode: {'DRY RUN (no real orders)' if args.dry_run else 'LIVE TRADING (REAL MONEY)'}")
+    print(f"Symbols: {', '.join([info['asset'].data_symbol for info in tradable])}")
     print(f"Press Ctrl+C to stop")
     print("=" * 80)
     print()
+    sys.stdout.flush()
     
     # Run trading cycles
     cycle_count = 0
     try:
+        print("⏳ Waiting for first cycle to start...")
+        sys.stdout.flush()
+        
         while True:
             cycle_count += 1
             now = datetime.utcnow().isoformat() + "Z"
             print(f"\n{'='*80}")
-            print(f"[CYCLE {cycle_count}] {now}")
+            print(f"🔄 [CYCLE {cycle_count}] {now}")
             print(f"{'='*80}")
+            sys.stdout.flush()
             
             # Run trading cycle with user stop-loss parameter
-            cycle_results = run_trading_cycle(
-                execution_engine=execution_engine,
-                tradable_symbols=tradable,
-                dry_run=args.dry_run,
-                verbose=True,  # Always verbose to see what's happening
-                update_data=True,  # Fetch latest live data each cycle
-                regenerate_features_flag=True,  # Regenerate features after updating data
-                profit_target_pct=args.profit_target_pct,
-                user_stop_loss_pct=args.stop_loss_pct,
-            )
+            try:
+                cycle_results = run_trading_cycle(
+                    execution_engine=execution_engine,
+                    tradable_symbols=tradable,
+                    dry_run=args.dry_run,
+                    verbose=True,  # Always verbose to see what's happening
+                    update_data=True,  # Fetch latest live data each cycle
+                    regenerate_features_flag=True,  # Regenerate features after updating data
+                    profit_target_pct=args.profit_target_pct,
+                    user_stop_loss_pct=args.stop_loss_pct,
+                )
+            except Exception as cycle_exc:
+                print(f"\n[ERROR] Trading cycle {cycle_count} failed: {cycle_exc}")
+                import traceback
+                traceback.print_exc()
+                print(f"[ERROR] Continuing to next cycle in {args.interval} seconds...")
+                sys.stdout.flush()
+                time.sleep(args.interval)
+                continue
             
             # Show comprehensive cycle summary
             print(f"\n{'='*80}")
@@ -530,14 +586,18 @@ def main():
                     print(f"    ... and {len(cycle_results['errors']) - 5} more errors")
             
             print(f"{'='*80}")
+            sys.stdout.flush()
             
             # Wait for next cycle
             if cycle_count < 1000:  # Prevent infinite loops in case of issues
                 print(f"\n[WAIT] Waiting {args.interval} seconds before next cycle...")
                 print(f"  Press Ctrl+C to stop")
+                print(f"  Next cycle will be: [CYCLE {cycle_count + 1}]")
+                sys.stdout.flush()
                 time.sleep(args.interval)
             else:
                 print("\n[WARNING] Maximum cycles reached. Stopping.")
+                sys.stdout.flush()
                 break
             
     except KeyboardInterrupt:
@@ -605,17 +665,36 @@ def main():
         import traceback
         traceback.print_exc()
         
-        # Try to liquidate ONLY MCX positions on error (leave others untouched)
+        # EMERGENCY EXIT: Try to liquidate ONLY MCX positions on error (leave others untouched)
+        # This is a safety mechanism to prevent unlimited losses if the system fails
         if not args.dry_run:
+            print("\n" + "=" * 80)
+            print("[EMERGENCY EXIT] System error detected - attempting to close MCX positions")
+            print("=" * 80)
+            print("⚠️  SAFETY: Only MCX (commodities) positions will be closed.")
+            print("   All other positions (stocks, other exchanges) will be LEFT UNTOUCHED.")
+            print("=" * 80)
             try:
                 all_positions = angelone_client.list_positions()
                 if all_positions:
                     # STRICT FILTERING: Only process MCX positions
-                    mcx_positions = [pos for pos in all_positions 
-                                   if pos.get("exchange_segment", pos.get("_raw_exchange", "")).upper() == "MCX"]
+                    mcx_positions = []
+                    other_positions = []
+                    for pos in all_positions:
+                        exchange_seg = pos.get("exchange_segment", pos.get("_raw_exchange", "")).upper()
+                        if exchange_seg == "MCX":
+                            mcx_positions.append(pos)
+                        else:
+                            other_positions.append(pos)
+                    
+                    # Report protected positions
+                    if other_positions:
+                        print(f"\n[PROTECTED] Leaving {len(other_positions)} non-MCX position(s) untouched")
                     
                     if mcx_positions:
-                        print(f"\n[EMERGENCY] Attempting to close {len(mcx_positions)} MCX commodity position(s) only...")
+                        print(f"\n[EMERGENCY] Attempting to close {len(mcx_positions)} MCX commodity position(s)...")
+                        closed_count = 0
+                        failed_count = 0
                         for pos in mcx_positions:
                             symbol = pos.get("symbol", "")
                             qty = float(pos.get("qty", 0) or 0)
@@ -629,13 +708,25 @@ def main():
                                         order_type="market",
                                         time_in_force="gtc",
                                     )
-                                    print(f"  ✅ Closed MCX {symbol}")
-                                except Exception:
-                                    print(f"  ❌ Failed to close MCX {symbol}")
+                                    print(f"  ✅ Closed MCX {symbol}: {abs(qty)} {close_side.upper()}")
+                                    closed_count += 1
+                                except Exception as close_exc:
+                                    print(f"  ❌ Failed to close MCX {symbol}: {close_exc}")
+                                    failed_count += 1
+                        
+                        print(f"\n[EMERGENCY] Emergency exit complete: {closed_count} closed, {failed_count} failed")
+                        if failed_count > 0:
+                            print(f"  ⚠️  WARNING: {failed_count} position(s) could not be closed automatically")
+                            print(f"     Please close these manually to prevent further losses")
                     else:
                         print(f"\n[EMERGENCY] No MCX positions to close (other positions left untouched)")
-            except Exception:
-                pass
+                else:
+                    print(f"\n[EMERGENCY] No open positions found")
+            except Exception as emergency_exc:
+                print(f"\n[EMERGENCY] Failed to execute emergency exit: {emergency_exc}")
+                print(f"  ⚠️  CRITICAL: Unable to close positions automatically")
+                print(f"     Please check your positions manually immediately")
+            print("=" * 80)
         
         sys.exit(1)
 

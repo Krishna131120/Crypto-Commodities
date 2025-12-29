@@ -573,6 +573,31 @@ class InferencePipeline:
                 # Silently skip stacked blend if prediction fails
                 # This is expected when models are missing
                 pass
+        
+        # Load DQN from summary.json (DQN is saved as JSON, not a model file)
+        if self.summary and "model_predictions" in self.summary:
+            dqn_data = self.summary["model_predictions"].get("dqn", {})
+            if dqn_data and isinstance(dqn_data, dict):
+                # Extract DQN prediction from summary
+                dqn_return_pct = dqn_data.get("predicted_return_pct", 0.0)
+                dqn_return = float(dqn_return_pct) / 100.0 if dqn_return_pct else 0.0
+                dqn_action = dqn_data.get("action", "hold")
+                dqn_confidence = dqn_data.get("confidence", 50.0)
+                # Convert confidence from percentage to 0-1 range if needed
+                if dqn_confidence > 1.0:
+                    dqn_confidence = dqn_confidence / 100.0
+                
+                # Apply clamping to DQN return
+                clamped_dqn_return = _clamp(dqn_return, horizon_profile=self.horizon_profile)
+                
+                # Add DQN to model_outputs for consensus calculation
+                model_outputs["dqn"] = {
+                    "predicted_return": clamped_dqn_return,
+                    "action": dqn_action.lower() if isinstance(dqn_action, str) else "hold",
+                    "confidence": float(dqn_confidence),
+                }
+                # Also add to base_model_outputs for stacked blend compatibility (if needed)
+                base_model_outputs["dqn"] = clamped_dqn_return
 
         # ========================================================================
         # STEP 3: DETECT SIMILAR MODEL OUTPUTS - Warn when models produce identical predictions
@@ -620,8 +645,11 @@ class InferencePipeline:
                         f"Models may be overfitting to same pattern or features lack diversity.",
                         UserWarning
                     )
-                    print(f"[WARNING] Models produced very similar predictions (std={raw_std:.6f})")
+                    print(f"[WARNING] Models produced very similar predictions (std={raw_std:.6f}, range={raw_range:.6f})")
                     prediction_detection_results["similar_predictions_detected"] = True
+                    prediction_detection_results["raw_predictions"] = raw_predictions
+                    prediction_detection_results["raw_std"] = raw_std
+                    prediction_detection_results["raw_range"] = raw_range
                     prediction_detection_results["prediction_std"] = float(raw_std)
                     prediction_detection_results["prediction_range"] = float(raw_range)
                     prediction_detection_results["raw_predictions"] = raw_predictions
@@ -710,53 +738,98 @@ class InferencePipeline:
                 is_green_candle = current_price > previous_close
                 is_red_candle = current_price < previous_close
                 
-                # For intraday, use price action ONLY if movement is SIGNIFICANT (>0.1%)
-                # This prevents overriding model predictions with tiny price movements
-                # Models should handle small movements, price action override is for STRONG signals only
-                SIGNIFICANT_MOVE_THRESHOLD = 0.001  # 0.1% minimum for override
+                # For intraday, use price action to override model predictions
+                # CRITICAL: Strong price movements (>1%) should override model predictions
+                # Models are trained on historical patterns, but current price action is REAL-TIME
+                SIGNIFICANT_MOVE_THRESHOLD = 0.001  # 0.1% minimum for any override
+                STRONG_MOVE_THRESHOLD = 0.01  # 1% for strong override (70% weight)
+                VERY_STRONG_MOVE_THRESHOLD = 0.03  # 3% for very strong override (90% weight)
+                
+                abs_price_change = abs(price_change_pct)
                 
                 if is_green_candle and price_change_pct > SIGNIFICANT_MOVE_THRESHOLD:
-                    # Strong green candle - price going UP significantly
-                    # Only override if movement is meaningful (>0.1%)
-                    price_action_confidence = min(0.75 + abs(price_change_pct) * 5, 0.90)  # 0.75-0.90 range (reduced from 0.85-0.95)
+                    # Green candle - price going UP
+                    # Determine override strength based on magnitude
+                    if abs_price_change >= VERY_STRONG_MOVE_THRESHOLD:
+                        # VERY STRONG upward move (>3%) - override models strongly (90% price action)
+                        price_action_weight = 0.90
+                        price_action_confidence = min(0.85 + abs(price_change_pct) * 2, 0.95)
+                        override_strength = "VERY STRONG"
+                    elif abs_price_change >= STRONG_MOVE_THRESHOLD:
+                        # STRONG upward move (>1%) - override models (70% price action)
+                        price_action_weight = 0.70
+                        price_action_confidence = min(0.80 + abs(price_change_pct) * 3, 0.92)
+                        override_strength = "STRONG"
+                    else:
+                        # Moderate upward move (0.1-1%) - blend with models (50% price action)
+                        price_action_weight = 0.50
+                        price_action_confidence = min(0.75 + abs(price_change_pct) * 5, 0.90)
+                        override_strength = "MODERATE"
+                    
                     typical_vol = get_typical_volatility(self.asset_type)
+                    # Use actual price change as return (don't scale down for strong moves)
+                    price_action_return = min(price_change_pct * 1.1, typical_vol) if abs_price_change < STRONG_MOVE_THRESHOLD else price_change_pct
+                    
                     intraday_price_action_override = {
                         "action": "long",
-                        "return": min(price_change_pct * 1.2, typical_vol),  # Reduced scaling (1.2x instead of 1.5x)
+                        "return": price_action_return,
                         "confidence": price_action_confidence,
-                        "reasoning": f"Real-time price action: STRONG GREEN candle (+{price_change_pct*100:.2f}%). Price moving UP from ${previous_close:.2f} to ${current_price:.2f}",
+                        "weight": price_action_weight,  # How much to weight price action vs models
+                        "reasoning": f"Real-time price action: {override_strength} GREEN candle (+{price_change_pct*100:.2f}%). Price moving UP from ${previous_close:.4f} to ${current_price:.4f}. Overriding model predictions with {price_action_weight*100:.0f}% weight.",
                         "price_action_detected": True,
                         "previous_close": previous_close,
                         "current_price": current_price,
                         "price_change_pct": price_change_pct,
+                        "override_strength": override_strength,
                     }
                 elif is_red_candle and price_change_pct < -SIGNIFICANT_MOVE_THRESHOLD:
-                    # Strong red candle - price going DOWN significantly
-                    # Only override if movement is meaningful (>0.1%)
-                    price_action_confidence = min(0.75 + abs(price_change_pct) * 5, 0.90)  # 0.75-0.90 range
+                    # Red candle - price going DOWN
+                    # Determine override strength based on magnitude
+                    if abs_price_change >= VERY_STRONG_MOVE_THRESHOLD:
+                        # VERY STRONG downward move (>3%) - override models strongly (90% price action)
+                        price_action_weight = 0.90
+                        price_action_confidence = min(0.85 + abs(price_change_pct) * 2, 0.95)
+                        override_strength = "VERY STRONG"
+                    elif abs_price_change >= STRONG_MOVE_THRESHOLD:
+                        # STRONG downward move (>1%) - override models (70% price action)
+                        price_action_weight = 0.70
+                        price_action_confidence = min(0.80 + abs(price_change_pct) * 3, 0.92)
+                        override_strength = "STRONG"
+                    else:
+                        # Moderate downward move (0.1-1%) - blend with models (50% price action)
+                        price_action_weight = 0.50
+                        price_action_confidence = min(0.75 + abs(price_change_pct) * 5, 0.90)
+                        override_strength = "MODERATE"
+                    
                     typical_vol = get_typical_volatility(self.asset_type)
+                    # Use actual price change as return (don't scale down for strong moves)
+                    price_action_return = max(price_change_pct * 1.1, -typical_vol) if abs_price_change < STRONG_MOVE_THRESHOLD else price_change_pct
+                    
                     intraday_price_action_override = {
                         "action": "short",
-                        "return": max(price_change_pct * 1.2, -typical_vol),  # Reduced scaling
+                        "return": price_action_return,
                         "confidence": price_action_confidence,
-                        "reasoning": f"Real-time price action: STRONG RED candle ({price_change_pct*100:.2f}%). Price moving DOWN from ${previous_close:.2f} to ${current_price:.2f}",
+                        "weight": price_action_weight,  # How much to weight price action vs models
+                        "reasoning": f"Real-time price action: {override_strength} RED candle ({price_change_pct*100:.2f}%). Price moving DOWN from ${previous_close:.4f} to ${current_price:.4f}. Overriding model predictions with {price_action_weight*100:.0f}% weight.",
                         "price_action_detected": True,
                         "previous_close": previous_close,
                         "current_price": current_price,
                         "price_change_pct": price_change_pct,
+                        "override_strength": override_strength,
                     }
                 else:
                     # Price movement is too small (<0.1%) - let models decide (don't override)
-                    # This allows models to predict SHORT/FLAT even if price is slightly up
                     intraday_price_action_override = {
-                        "action": None,  # Let models decide - don't force LONG
+                        "action": None,  # Let models decide
                         "return": None,
                         "confidence": None,
-                        "reasoning": f"Real-time price action: MINOR movement ({price_change_pct*100:.3f}% < 0.1% threshold). Using model predictions (may be SHORT/FLAT).",
+                        "weight": 0.0,
+                        "reasoning": f"Real-time price action: MINOR movement ({price_change_pct*100:.3f}% < 0.1% threshold). Using model predictions.",
                         "price_action_detected": False,
                         "previous_close": previous_close,
                         "current_price": current_price,
                         "price_change_pct": price_change_pct,
+                        "override_strength": "NONE",
                     }
         
         # Extract feature-based mean reversion signals
@@ -771,30 +844,46 @@ class InferencePipeline:
         )
         
         # Apply intraday price action override if detected AND significant
-        # IMPORTANT: Only override if price action is STRONG (>0.1%) to allow models to predict SHORT/FLAT
+        # CRITICAL: For strong price movements, prioritize real-time price action over historical model patterns
         if intraday_price_action_override and intraday_price_action_override.get("price_action_detected"):
             # Override consensus with real-time price action for intraday
             override_action = intraday_price_action_override.get("action")
             override_return = intraday_price_action_override.get("return")
             override_confidence = intraday_price_action_override.get("confidence")
+            price_action_weight = intraday_price_action_override.get("weight", 0.50)  # Default 50% if not set
+            override_strength = intraday_price_action_override.get("override_strength", "MODERATE")
             
             if override_action and override_return is not None:
-                # Blend 50% price action + 50% model prediction (reduced from 70/30)
-                # This gives models more weight so they can still predict SHORT/FLAT
                 model_return = consensus.get("consensus_return", 0.0)
                 model_action = consensus.get("consensus_action", "hold")
                 
-                # If model strongly disagrees (e.g., model says SHORT but price action says LONG),
-                # reduce the override weight further
+                # Use dynamic weight based on price action strength
+                # For VERY STRONG moves (>3%), use 90% price action
+                # For STRONG moves (>1%), use 70% price action
+                # For MODERATE moves (0.1-1%), use 50% price action
+                model_weight = 1.0 - price_action_weight
+                
+                # If model strongly disagrees with STRONG/VERY STRONG price action, still prioritize price action
+                # (Real-time price action is more reliable than historical patterns for intraday)
                 if (override_action == "long" and model_action == "short") or (override_action == "short" and model_action == "long"):
-                    # Strong disagreement - use 30% price action, 70% model
-                    blended_return = override_return * 0.3 + model_return * 0.7
-                    blended_confidence = override_confidence * 0.3 + consensus.get("consensus_confidence", 0.0) * 0.7
-                    consensus["price_action_model_disagreement"] = True
+                    if override_strength in ["VERY STRONG", "STRONG"]:
+                        # For strong moves, prioritize price action even if models disagree
+                        # Real-time price action is more reliable than historical patterns
+                        blended_return = override_return * price_action_weight + model_return * model_weight
+                        blended_confidence = override_confidence * price_action_weight + consensus.get("consensus_confidence", 0.0) * model_weight
+                        consensus["price_action_model_disagreement"] = True
+                        consensus["price_action_prioritized"] = True  # Flag that we prioritized price action
+                    else:
+                        # For moderate moves, reduce weight if models strongly disagree
+                        reduced_weight = price_action_weight * 0.6  # Reduce by 40%
+                        reduced_model_weight = 1.0 - reduced_weight
+                        blended_return = override_return * reduced_weight + model_return * reduced_model_weight
+                        blended_confidence = override_confidence * reduced_weight + consensus.get("consensus_confidence", 0.0) * reduced_model_weight
+                        consensus["price_action_model_disagreement"] = True
                 else:
-                    # Agreement or neutral - use 50/50 blend
-                    blended_return = override_return * 0.5 + model_return * 0.5
-                    blended_confidence = override_confidence * 0.5 + consensus.get("consensus_confidence", 0.0) * 0.5
+                    # Agreement or neutral - use dynamic weight
+                    blended_return = override_return * price_action_weight + model_return * model_weight
+                    blended_confidence = override_confidence * price_action_weight + consensus.get("consensus_confidence", 0.0) * model_weight
                 # Cap blended confidence using dynamic cap
                 # Calculate dynamic cap for intraday price action override
                 # Use number of models from self.models if available, otherwise estimate
@@ -821,6 +910,7 @@ class InferencePipeline:
                     "override_return": override_return,
                     "model_return": model_return,
                     "blended_return": blended_return,
+                    "override_strength": override_strength,  # Store override strength for display
                 }
         
         # Merge prediction detection results into consensus (now that consensus exists)
@@ -1258,6 +1348,7 @@ class InferencePipeline:
         neutral_threshold = max(self.dynamic_threshold, MIN_THRESHOLD) * CONSENSUS_NEUTRAL_MULTIPLIER
         raw_consensus_return = consensus_return
         neutral_guard_triggered = False
+        original_best_action = best_action  # Store original action before neutral guard
         if abs(consensus_return) < neutral_threshold and best_action != "hold":
             # Neutral guard: if the expected move is smaller than the noise band,
             # we should not recommend a directional trade. Regardless of how
@@ -1266,6 +1357,14 @@ class InferencePipeline:
             # consistent across all symbols/horizons.
             neutral_guard_triggered = True
             best_action = "hold"
+            # Recalculate agreement_ratio for hold action when neutral guard triggers
+            # This ensures agreement_count matches agreement_ratio
+            if total_count > 0:
+                # For hold, count models that are close to neutral (neither strongly positive nor negative)
+                neutral_count = total_count - positive_count - negative_count
+                agreement_ratio = neutral_count / total_count if total_count > 0 else 0.0
+            else:
+                agreement_ratio = 0.0
             # When neutral guard triggers, preserve some confidence since models did make predictions
             # The predictions were just too small to act on, but models are still functioning
             # Use the original confidence (before neutral guard) but cap it reasonably
@@ -1285,14 +1384,34 @@ class InferencePipeline:
         confidence = min(dynamic_cap, confidence)  # Ensure never exceeds dynamic cap
         
         # Calculate agreement count (how many models agree with best action)
+        # CRITICAL: Count models that actually agree with best_action, not just positive/negative
+        # This ensures accurate agreement_count even when best_action is determined by weighted voting
         agreement_count = 0
         if best_action == "long":
-            agreement_count = positive_count
+            # Count models that predict positive (above threshold)
+            for name, data in outputs.items():
+                pred_return = data["predicted_return"]
+                if pred_return > self.dynamic_threshold:
+                    agreement_count += 1
         elif best_action == "short":
-            agreement_count = negative_count
+            # Count models that predict negative (below negative threshold)
+            for name, data in outputs.items():
+                pred_return = data["predicted_return"]
+                if pred_return < -self.dynamic_threshold:
+                    agreement_count += 1
         else:  # hold
-            # For hold, count models that are close to neutral
-            agreement_count = total_count - positive_count - negative_count
+            # For hold, count models that are close to neutral (within threshold)
+            for name, data in outputs.items():
+                pred_return = data["predicted_return"]
+                if abs(pred_return) <= self.dynamic_threshold:
+                    agreement_count += 1
+        
+        # Ensure agreement_ratio matches agreement_count
+        if total_count > 0:
+            calculated_agreement_ratio = agreement_count / total_count
+            # If there's a mismatch, use the calculated ratio (more accurate)
+            if abs(calculated_agreement_ratio - agreement_ratio) > 0.1:
+                agreement_ratio = calculated_agreement_ratio
         
         # Note: horizon_profile is passed via self.horizon_profile in predict() method
         # We'll clamp in predict() method after consensus is computed

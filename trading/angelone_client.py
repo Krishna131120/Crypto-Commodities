@@ -384,7 +384,23 @@ class AngelOneClient(BrokerClient):
         if self._token_expiry and time.time() >= self._token_expiry:
             self._authenticate()
 
+        # Check if response is HTML (error page) before parsing JSON
         resp = self._session.request(method, url, params=params, json=json_body, timeout=15)
+        
+        # Check for HTML error pages (API gateway rejection)
+        if resp.headers.get("content-type", "").startswith("text/html"):
+            html_content = resp.text
+            if "Request Rejected" in html_content or "<html>" in html_content.lower():
+                # Extract support ID if available
+                import re
+                support_id_match = re.search(r"support ID is: (\d+)", html_content)
+                support_id = support_id_match.group(1) if support_id_match else "N/A"
+                raise RuntimeError(
+                    f"Angel One API gateway rejected request (Support ID: {support_id}). "
+                    f"This usually means: (1) IP not whitelisted in SmartAPI settings, "
+                    f"(2) Wrong endpoint format, or (3) Symbol token required instead of symbol name. "
+                    f"Check your SmartAPI app settings and whitelist your IP address."
+                )
 
         if resp.status_code == 401:
             # Try to reload credentials and re-authenticate
@@ -591,6 +607,256 @@ class AngelOneClient(BrokerClient):
             "order_id": order_id,
             "status": cancel_data.get("status") or "cancelled",
         }
+    
+    def submit_stop_order(
+        self,
+        *,
+        symbol: str,
+        qty: float,
+        stop_price: float,
+        side: str = "sell",  # "sell" for long positions, "buy" for short positions
+        time_in_force: str = "gtc",
+        client_order_id: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        """
+        Submit a standalone stop-loss order for MCX commodity positions.
+        
+        This creates a broker-level stop-loss order that will execute even if the system is down.
+        Critical for real money trading.
+        
+        Args:
+            symbol: Trading symbol (e.g., "GOLDDEC24")
+            qty: Quantity to sell/buy when stop is triggered (must be integer for MCX)
+            stop_price: Price at which to trigger the stop order
+            side: "sell" for long positions (stop-loss), "buy" for short positions (stop-loss)
+            time_in_force: Order time in force (default: "gtc" - good till cancelled)
+            client_order_id: Optional client order ID for tracking
+        """
+        # MCX requires integer quantities (lot-based)
+        qty_int = int(qty)
+        if qty_int <= 0:
+            raise ValueError(f"Quantity must be positive integer for MCX, got: {qty}")
+        
+        side = side.lower()
+        if side not in {"buy", "sell"}:
+            raise ValueError(f"side must be 'buy' or 'sell', got: {side}")
+        
+        # Angel One stop-loss order format
+        body: Dict[str, Any] = {
+            "variety": "STOPLOSS",
+            "tradingsymbol": symbol.upper(),
+            "symboltoken": "",  # May need to fetch from symbol master
+            "transactiontype": "SELL" if side == "sell" else "BUY",
+            "exchange": MCX_EXCHANGE_CODE,
+            "ordertype": "STOPLOSS_MARKET",  # Stop-loss market order
+            "producttype": "INTRADAY",  # INTRADAY, MARGIN, or DELIVERY
+            "duration": "DAY" if time_in_force.lower() == "day" else "IOC",
+            "price": "0",  # Market order after stop is triggered
+            "triggerprice": str(stop_price),  # Stop trigger price
+            "quantity": str(qty_int),
+        }
+        
+        if client_order_id:
+            body["uniqueorderid"] = client_order_id
+        
+        response = self._request("POST", "/rest/secure/order/placeOrder", json_body=body)
+        
+        if isinstance(response, dict):
+            order_data = response.get("data", response)
+        else:
+            order_data = response
+        
+        return {
+            "id": order_data.get("orderid") or order_data.get("orderId"),
+            "status": order_data.get("status") or "pending",
+            "symbol": symbol.upper(),
+            "qty": qty_int,
+            "side": side.upper(),
+            "stop_price": stop_price,
+            "order_type": "stop_loss",
+        }
+    
+    def submit_take_profit_order(
+        self,
+        *,
+        symbol: str,
+        qty: float,
+        limit_price: float,
+        side: str = "sell",  # "sell" for long positions, "buy" for short positions
+        time_in_force: str = "gtc",
+        client_order_id: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        """
+        Submit a standalone take-profit limit order for MCX commodity positions.
+        
+        This creates a broker-level take-profit order that will execute at the limit price.
+        
+        Args:
+            symbol: Trading symbol (e.g., "GOLDDEC24")
+            qty: Quantity to sell/buy (must be integer for MCX)
+            limit_price: Limit price at which to execute the order
+            side: "sell" for long positions, "buy" for short positions
+            time_in_force: Order time in force (default: "gtc" - good till cancelled)
+            client_order_id: Optional client order ID for tracking
+        """
+        # MCX requires integer quantities (lot-based)
+        qty_int = int(qty)
+        if qty_int <= 0:
+            raise ValueError(f"Quantity must be positive integer for MCX, got: {qty}")
+        
+        side = side.lower()
+        if side not in {"buy", "sell"}:
+            raise ValueError(f"side must be 'buy' or 'sell', got: {side}")
+        
+        # Angel One limit order format
+        body: Dict[str, Any] = {
+            "variety": "NORMAL",
+            "tradingsymbol": symbol.upper(),
+            "symboltoken": "",  # May need to fetch from symbol master
+            "transactiontype": "SELL" if side == "sell" else "BUY",
+            "exchange": MCX_EXCHANGE_CODE,
+            "ordertype": "LIMIT",
+            "producttype": "INTRADAY",  # INTRADAY, MARGIN, or DELIVERY
+            "duration": "DAY" if time_in_force.lower() == "day" else "IOC",
+            "price": str(limit_price),  # Limit price
+            "quantity": str(qty_int),
+        }
+        
+        if client_order_id:
+            body["uniqueorderid"] = client_order_id
+        
+        response = self._request("POST", "/rest/secure/order/placeOrder", json_body=body)
+        
+        if isinstance(response, dict):
+            order_data = response.get("data", response)
+        else:
+            order_data = response
+        
+        return {
+            "id": order_data.get("orderid") or order_data.get("orderId"),
+            "status": order_data.get("status") or "pending",
+            "symbol": symbol.upper(),
+            "qty": qty_int,
+            "side": side.upper(),
+            "limit_price": limit_price,
+            "order_type": "take_profit",
+        }
+
+    def _load_scrip_master(self) -> Optional[list]:
+        """
+        Load Angel One scrip master JSON file (cached).
+        
+        The scrip master contains all instruments with their tokens.
+        URL: https://margincalculator.angelone.in/OpenAPI_File/files/OpenAPIScripMaster.json
+        
+        Returns:
+            List of instrument dictionaries or None if failed
+        """
+        import json
+        from pathlib import Path
+        
+        # Cache file location
+        cache_dir = Path("data/cache")
+        cache_dir.mkdir(parents=True, exist_ok=True)
+        cache_file = cache_dir / "angelone_scrip_master.json"
+        
+        # Check if cache exists and is recent (refresh daily)
+        if cache_file.exists():
+            import time
+            cache_age = time.time() - cache_file.stat().st_mtime
+            if cache_age < 86400:  # 24 hours
+                try:
+                    with open(cache_file, "r", encoding="utf-8") as f:
+                        return json.load(f)
+                except Exception:
+                    pass  # Cache corrupted, re-download
+        
+        # Download fresh scrip master
+        try:
+            scrip_master_url = "https://margincalculator.angelone.in/OpenAPI_File/files/OpenAPIScripMaster.json"
+            response = requests.get(scrip_master_url, timeout=30)
+            response.raise_for_status()
+            data = response.json()
+            
+            # Save to cache
+            with open(cache_file, "w", encoding="utf-8") as f:
+                json.dump(data, f, indent=2)
+            
+            return data
+        except Exception as e:
+            import warnings
+            warnings.warn(f"Failed to load Angel One scrip master: {e}. Using API fallback.", UserWarning)
+            return None
+
+    def _get_symbol_token(self, symbol: str, exchange: str = MCX_EXCHANGE_CODE) -> Optional[str]:
+        """
+        Get symbol token (numeric ID) from symbol name using Angel One scrip master.
+        
+        Angel One SmartAPI requires symbol tokens (numeric IDs) for market data queries.
+        This method looks up the token from Angel One's scrip master JSON file.
+        
+        Args:
+            symbol: Symbol name (e.g., "GOLDDEC25")
+            exchange: Exchange code (default: MCX)
+            
+        Returns:
+            Symbol token (numeric string) or None if not found
+        """
+        # Method 1: Use scrip master JSON (most reliable)
+        try:
+            scrip_master = self._load_scrip_master()
+            if scrip_master and isinstance(scrip_master, list):
+                # Search for symbol in scrip master
+                symbol_upper = symbol.upper()
+                for inst in scrip_master:
+                    if isinstance(inst, dict):
+                        # Check multiple fields for symbol match
+                        trading_symbol = inst.get("tradingsymbol", inst.get("symbol", "")).upper()
+                        name = inst.get("name", "").upper()
+                        exch_seg = inst.get("exch_seg", inst.get("exchange", "")).upper()
+                        
+                        # Match symbol and exchange
+                        if (trading_symbol == symbol_upper or name == symbol_upper) and exch_seg == exchange.upper():
+                            token = inst.get("token", inst.get("symboltoken", ""))
+                            if token:
+                                return str(token)
+        except Exception as e:
+            import warnings
+            warnings.warn(f"Scrip master lookup failed for {symbol}: {e}", UserWarning)
+        
+        # Method 2: Try API endpoints (fallback)
+        try:
+            # Try instruments endpoint
+            response = self._request("GET", "/rest/secure/marketData/instruments", params={"exchange": exchange})
+            if isinstance(response, dict):
+                instruments = response.get("data", [])
+                if isinstance(instruments, list):
+                    for inst in instruments:
+                        if isinstance(inst, dict):
+                            trading_symbol = inst.get("tradingsymbol", inst.get("symbol", "")).upper()
+                            if trading_symbol == symbol.upper():
+                                token = inst.get("token", inst.get("symboltoken", ""))
+                                if token:
+                                    return str(token)
+        except Exception:
+            pass
+        
+        # Method 3: Try master data endpoint
+        try:
+            response = self._request("GET", "/rest/secure/marketData/master", params={"exchange": exchange})
+            if isinstance(response, dict):
+                data = response.get("data", [])
+                if isinstance(data, list):
+                    for item in data:
+                        if isinstance(item, dict):
+                            if item.get("tradingsymbol", "").upper() == symbol.upper():
+                                token = item.get("token", "")
+                                if token:
+                                    return str(token)
+        except Exception:
+            pass
+        
+        return None
 
     def get_last_trade(
         self,
@@ -603,6 +869,9 @@ class AngelOneClient(BrokerClient):
         Get last trade price for MCX symbol with improved error handling.
         
         This is critical for real money trading - accurate prices are essential.
+        
+        NOTE: Angel One may require symbol TOKEN (numeric) instead of symbol NAME.
+        If this fails, you may need to implement symbol token lookup from master data.
         """
         # Increase retries if force_retry is True
         if force_retry:
@@ -612,37 +881,152 @@ class AngelOneClient(BrokerClient):
         for attempt in range(max_retries):
             try:
                 # Angel One SmartAPI market data endpoint for LTP
-                # Format: {"mode": "LTP", "exchangeTokens": {"MCX": ["symbol_token"]}}
-                # For MCX, we need symbol token, but for now try with symbol name
-                body = {
-                    "mode": "LTP",
-                    "exchangeTokens": {
-                        MCX_EXCHANGE_CODE: [symbol.upper()]
+                # CRITICAL: Angel One requires symbol TOKEN (numeric ID) not symbol NAME
+                
+                # Step 1: Try to get symbol token from master data
+                symbol_token = self._get_symbol_token(symbol, MCX_EXCHANGE_CODE)
+                
+                # Step 2: Use token if available, otherwise try symbol name
+                symbol_to_use = symbol_token if symbol_token else symbol.upper()
+                
+                # Angel One SmartAPI market data quote format
+                # Try multiple endpoint formats:
+                
+                # Angel One SmartAPI market data quote format
+                # CRITICAL: Must use symbol TOKEN (numeric) not symbol NAME
+                # Format: {"mode": "LTP", "exchangeTokens": {"MCX": ["token"]}}
+                
+                # If we have a token, use it; otherwise try symbol name (may fail)
+                if symbol_token:
+                    # Use token - this is the correct format
+                    body = {
+                        "mode": "LTP",
+                        "exchangeTokens": {
+                            MCX_EXCHANGE_CODE: [symbol_token]
+                        }
                     }
-                }
+                else:
+                    # Fallback: try with symbol name (may not work)
+                    import warnings
+                    warnings.warn(
+                        f"Symbol token not found for {symbol}. Trying with symbol name (may fail). "
+                        f"Please ensure scrip master JSON is downloaded and IP is whitelisted.",
+                        UserWarning,
+                    )
+                    body = {
+                        "mode": "LTP",
+                        "exchangeTokens": {
+                            MCX_EXCHANGE_CODE: [symbol.upper()]
+                        }
+                    }
 
-                response = self._request("POST", "/rest/secure/marketData/quote", json_body=body)
+                # Try the quote endpoint
+                try:
+                    response = self._request("POST", "/rest/secure/marketData/quote", json_body=body)
+                except RuntimeError as api_err:
+                    # If this fails, check if it's an IP whitelisting issue
+                    error_str = str(api_err)
+                    if "Request Rejected" in error_str or "HTML" in error_str:
+                        # This is likely an IP whitelisting issue
+                        import warnings
+                        warnings.warn(
+                            f"Angel One API rejected request for {symbol}. "
+                            f"This usually means: (1) IP not whitelisted, or (2) Symbol token lookup failed. "
+                            f"Please whitelist your IP in SmartAPI settings and ensure scrip master is downloaded.",
+                            UserWarning,
+                        )
+                        # Don't try alternative endpoint if it's an IP issue
+                        raise RuntimeError(
+                            f"Angel One API gateway rejected request. "
+                            f"Please whitelist your IP address in SmartAPI settings. "
+                            f"Symbol: {symbol}, Token: {symbol_token or 'NOT FOUND'}"
+                        )
+                    else:
+                        # Other error - try alternative endpoint
+                        try:
+                            # Alternative endpoint format
+                            response = self._request("POST", "/rest/secure/marketData/quote/v1", json_body=body)
+                        except Exception:
+                            # If both fail, re-raise original error
+                            raise api_err
+
+                # Check if response is HTML (error page)
+                if isinstance(response, str) and "<html>" in response.lower():
+                    # API returned HTML error page - endpoint or format is wrong
+                    if attempt < max_retries - 1:
+                        time.sleep(retry_delay)
+                        continue
+                    else:
+                        raise RuntimeError(
+                            f"Angel One API returned HTML error page. "
+                            f"This usually means the endpoint format is incorrect or symbol token is required. "
+                            f"Symbol: {symbol}. "
+                            f"Note: Angel One may require numeric symbol tokens instead of symbol names. "
+                            f"Check Angel One SmartAPI documentation for correct format."
+                        )
 
                 # Handle Angel One response format (verify structure)
                 if isinstance(response, dict):
+                    # Check for error first
+                    if response.get("status") == False or "error" in response:
+                        error_msg = response.get("message", response.get("error", "Unknown error"))
+                        if attempt < max_retries - 1:
+                            time.sleep(retry_delay)
+                            continue
+                        else:
+                            raise RuntimeError(f"Angel One API error: {error_msg}")
+                    
                     data = response.get("data", response)
                     if isinstance(data, list) and len(data) > 0:
                         data = data[0]
+                    elif not isinstance(data, dict):
+                        # Data is not a dict - log it
+                        if attempt == max_retries - 1:
+                            raise RuntimeError(f"Unexpected response format: {type(data)} - {data}")
+                elif isinstance(response, str):
+                    # Response is a string (not JSON) - likely an error
+                    if attempt == max_retries - 1:
+                        raise RuntimeError(f"Angel One API returned string instead of JSON: {response[:200]}")
+                    time.sleep(retry_delay)
+                    continue
                 else:
                     data = response
 
+                # Ensure data is a dict before calling .get()
+                if not isinstance(data, dict):
+                    if attempt == max_retries - 1:
+                        raise RuntimeError(f"Response data is not a dict: {type(data)} - {data}")
+                    time.sleep(retry_delay)
+                    continue
+
                 # Extract LTP (Last Traded Price) from response
-                price = data.get("ltp", data.get("lastPrice", data.get("price", 0)))
+                # Try multiple field names
+                price = (
+                    data.get("ltp") or 
+                    data.get("lastPrice") or 
+                    data.get("price") or 
+                    data.get("lastTradedPrice") or
+                    data.get("LTP") or
+                    0
+                )
+                
                 if price and float(price) > 0:
                     price_float = float(price)
                     # Sanity check
                     if price_float > 0 and price_float < 1e10:
-                        return {"price": price_float}
+                        return {"price": price_float, "ltp": price_float, "p": price_float}
                     else:
                         if attempt < max_retries - 1:
                             time.sleep(retry_delay)
                             continue
                 else:
+                    # Log what we got for debugging
+                    if attempt == max_retries - 1:
+                        import warnings
+                        warnings.warn(
+                            f"Angel One get_last_trade: No valid price in response for {symbol}. Response: {data}",
+                            UserWarning,
+                        )
                     if attempt < max_retries - 1:
                         time.sleep(retry_delay)
                         continue
@@ -652,12 +1036,41 @@ class AngelOneClient(BrokerClient):
                     time.sleep(retry_delay)
                     continue
                 else:
-                    # On last attempt, log the error
+                    # On last attempt, log the full error
                     import warnings
+                    import traceback
+                    error_details = f"{str(e)}\n{traceback.format_exc()}"
                     warnings.warn(
-                        f"Angel One get_last_trade failed after {max_retries} attempts for {symbol}: {e}",
+                        f"Angel One get_last_trade failed after {max_retries} attempts for {symbol}: {error_details}",
                         UserWarning,
                     )
+                    
+                    # FALLBACK: Try to get price from open positions
+                    try:
+                        positions = self.list_positions()
+                        if positions:
+                            # Search for matching symbol in positions
+                            for pos in positions:
+                                pos_symbol = pos.get("symbol", "").upper()
+                                if pos_symbol == symbol.upper():
+                                    # Get LTP from position
+                                    ltp = pos.get("ltp", 0)
+                                    if ltp and float(ltp) > 0:
+                                        price_float = float(ltp)
+                                        import warnings
+                                        warnings.warn(
+                                            f"Using position-based LTP for {symbol}: ₹{price_float:.2f} (market data API failed)",
+                                            UserWarning,
+                                        )
+                                        return {"price": price_float, "ltp": price_float, "p": price_float}
+                    except Exception as pos_err:
+                        # Position fallback also failed - log but don't raise
+                        import warnings
+                        warnings.warn(
+                            f"Position-based price fallback also failed for {symbol}: {pos_err}",
+                            UserWarning,
+                        )
+                    
                     return None
 
         return None
