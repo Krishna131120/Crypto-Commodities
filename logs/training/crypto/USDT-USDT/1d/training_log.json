@@ -1,0 +1,18 @@
+{
+  "log_file": "logs\\training\\crypto\\USDT-USDT\\1d\\training_log.json",
+  "total_events": 1,
+  "events": [
+    {
+      "timestamp": "2026-01-05T12:05:17.298414Z",
+      "level": "ERROR",
+      "message": "Training skipped: crypto/USDT-USDT (intraday): No data.json found for crypto/USDT-USDT/1d",
+      "category": "TRAIN",
+      "symbol": "USDT-USDT",
+      "asset_type": "crypto",
+      "data": {
+        "error": "No data.json found for crypto/USDT-USDT/1d",
+        "horizon": "intraday"
+      }
+    }
+  ]
+}

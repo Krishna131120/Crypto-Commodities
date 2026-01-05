@@ -1,0 +1,7826 @@
+[
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2024-09-04T00:00:00Z",
+    "open": 118.78,
+    "high": 593.9,
+    "low": 118.78,
+    "close": 135.1,
+    "volume": 2092.166,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2024-09-05T00:00:00Z",
+    "open": 135.0,
+    "high": 137.14,
+    "low": 127.81,
+    "close": 128.65,
+    "volume": 1711.953,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2024-09-06T00:00:00Z",
+    "open": 128.12,
+    "high": 130.99,
+    "low": 119.53,
+    "close": 127.0,
+    "volume": 1927.837,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2024-09-07T00:00:00Z",
+    "open": 125.71,
+    "high": 130.79,
+    "low": 124.05,
+    "close": 124.92,
+    "volume": 1005.651,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2024-09-08T00:00:00Z",
+    "open": 124.75,
+    "high": 130.22,
+    "low": 123.79,
+    "close": 126.15,
+    "volume": 861.844,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2024-09-09T00:00:00Z",
+    "open": 126.07,
+    "high": 142.22,
+    "low": 124.67,
+    "close": 140.55,
+    "volume": 1928.004,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2024-09-10T00:00:00Z",
+    "open": 140.12,
+    "high": 153.18,
+    "low": 136.35,
+    "close": 150.79,
+    "volume": 3075.212,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2024-09-11T00:00:00Z",
+    "open": 150.41,
+    "high": 160.05,
+    "low": 145.34,
+    "close": 149.56,
+    "volume": 5343.397,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2024-09-12T00:00:00Z",
+    "open": 149.58,
+    "high": 155.02,
+    "low": 141.78,
+    "close": 145.4,
+    "volume": 3621.779,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2024-09-13T00:00:00Z",
+    "open": 145.02,
+    "high": 146.36,
+    "low": 138.88,
+    "close": 144.26,
+    "volume": 2640.653,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2024-09-14T00:00:00Z",
+    "open": 144.4,
+    "high": 144.4,
+    "low": 136.9,
+    "close": 140.27,
+    "volume": 1663.459,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2024-09-15T00:00:00Z",
+    "open": 140.23,
+    "high": 149.84,
+    "low": 140.19,
+    "close": 143.57,
+    "volume": 2315.308,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2024-09-16T00:00:00Z",
+    "open": 143.23,
+    "high": 143.66,
+    "low": 137.22,
+    "close": 141.01,
+    "volume": 1631.208,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2024-09-17T00:00:00Z",
+    "open": 140.25,
+    "high": 147.85,
+    "low": 136.78,
+    "close": 140.57,
+    "volume": 2098.994,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2024-09-18T00:00:00Z",
+    "open": 140.56,
+    "high": 141.81,
+    "low": 134.21,
+    "close": 141.54,
+    "volume": 2141.897,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2024-09-19T00:00:00Z",
+    "open": 141.81,
+    "high": 152.77,
+    "low": 141.61,
+    "close": 150.14,
+    "volume": 2145.385,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2024-09-20T00:00:00Z",
+    "open": 150.2,
+    "high": 157.57,
+    "low": 147.7,
+    "close": 153.14,
+    "volume": 1416.355,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2024-09-21T00:00:00Z",
+    "open": 153.32,
+    "high": 154.65,
+    "low": 145.0,
+    "close": 153.99,
+    "volume": 974.622,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2024-09-22T00:00:00Z",
+    "open": 154.72,
+    "high": 162.52,
+    "low": 154.42,
+    "close": 162.4,
+    "volume": 1709.008,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2024-09-23T00:00:00Z",
+    "open": 161.82,
+    "high": 180.13,
+    "low": 159.13,
+    "close": 172.06,
+    "volume": 3499.866,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2024-09-24T00:00:00Z",
+    "open": 172.82,
+    "high": 173.28,
+    "low": 163.51,
+    "close": 166.85,
+    "volume": 2332.102,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2024-09-25T00:00:00Z",
+    "open": 165.98,
+    "high": 173.72,
+    "low": 163.9,
+    "close": 165.21,
+    "volume": 2141.828,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2024-09-26T00:00:00Z",
+    "open": 165.2,
+    "high": 170.9,
+    "low": 160.5,
+    "close": 165.26,
+    "volume": 2853.432,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2024-09-27T00:00:00Z",
+    "open": 165.23,
+    "high": 173.95,
+    "low": 163.64,
+    "close": 171.35,
+    "volume": 2440.052,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2024-09-28T00:00:00Z",
+    "open": 170.19,
+    "high": 171.14,
+    "low": 161.56,
+    "close": 164.04,
+    "volume": 1697.093,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2024-09-29T00:00:00Z",
+    "open": 163.91,
+    "high": 164.98,
+    "low": 156.03,
+    "close": 160.54,
+    "volume": 1756.893,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2024-09-30T00:00:00Z",
+    "open": 161.42,
+    "high": 161.47,
+    "low": 154.8,
+    "close": 156.61,
+    "volume": 2161.484,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2024-10-01T00:00:00Z",
+    "open": 156.25,
+    "high": 164.51,
+    "low": 138.0,
+    "close": 144.92,
+    "volume": 3561.863,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2024-10-02T00:00:00Z",
+    "open": 144.69,
+    "high": 150.0,
+    "low": 137.0,
+    "close": 139.29,
+    "volume": 2662.369,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2024-10-03T00:00:00Z",
+    "open": 139.31,
+    "high": 146.37,
+    "low": 134.29,
+    "close": 143.74,
+    "volume": 2931.666,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2024-10-04T00:00:00Z",
+    "open": 143.54,
+    "high": 153.6,
+    "low": 141.67,
+    "close": 151.09,
+    "volume": 2749.316,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2024-10-05T00:00:00Z",
+    "open": 151.67,
+    "high": 151.77,
+    "low": 146.16,
+    "close": 148.77,
+    "volume": 983.046,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2024-10-06T00:00:00Z",
+    "open": 148.32,
+    "high": 150.55,
+    "low": 146.25,
+    "close": 149.99,
+    "volume": 1193.387,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2024-10-07T00:00:00Z",
+    "open": 149.99,
+    "high": 154.76,
+    "low": 145.45,
+    "close": 146.69,
+    "volume": 1373.478,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2024-10-08T00:00:00Z",
+    "open": 147.3,
+    "high": 147.49,
+    "low": 141.57,
+    "close": 143.08,
+    "volume": 1217.949,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2024-10-09T00:00:00Z",
+    "open": 142.98,
+    "high": 143.95,
+    "low": 138.43,
+    "close": 139.42,
+    "volume": 1245.409,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2024-10-10T00:00:00Z",
+    "open": 139.36,
+    "high": 145.1,
+    "low": 135.0,
+    "close": 140.61,
+    "volume": 2863.857,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2024-10-11T00:00:00Z",
+    "open": 140.6,
+    "high": 145.71,
+    "low": 140.32,
+    "close": 143.89,
+    "volume": 1906.64,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2024-10-12T00:00:00Z",
+    "open": 143.84,
+    "high": 156.95,
+    "low": 143.31,
+    "close": 154.71,
+    "volume": 5781.696,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2024-10-13T00:00:00Z",
+    "open": 154.81,
+    "high": 155.75,
+    "low": 150.62,
+    "close": 154.88,
+    "volume": 4243.054,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2024-10-14T00:00:00Z",
+    "open": 154.77,
+    "high": 165.29,
+    "low": 153.04,
+    "close": 162.96,
+    "volume": 6103.904,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2024-10-15T00:00:00Z",
+    "open": 162.96,
+    "high": 166.01,
+    "low": 152.67,
+    "close": 156.76,
+    "volume": 3559.558,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2024-10-16T00:00:00Z",
+    "open": 156.81,
+    "high": 159.83,
+    "low": 153.66,
+    "close": 155.79,
+    "volume": 2310.009,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2024-10-17T00:00:00Z",
+    "open": 155.83,
+    "high": 157.61,
+    "low": 150.21,
+    "close": 153.0,
+    "volume": 1548.445,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2024-10-18T00:00:00Z",
+    "open": 152.94,
+    "high": 159.04,
+    "low": 152.24,
+    "close": 158.98,
+    "volume": 1793.063,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2024-10-19T00:00:00Z",
+    "open": 159.06,
+    "high": 159.83,
+    "low": 155.82,
+    "close": 158.14,
+    "volume": 1315.861,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2024-10-20T00:00:00Z",
+    "open": 158.37,
+    "high": 160.53,
+    "low": 156.08,
+    "close": 158.94,
+    "volume": 1153.786,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2024-10-21T00:00:00Z",
+    "open": 158.92,
+    "high": 159.76,
+    "low": 151.46,
+    "close": 153.27,
+    "volume": 1757.097,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2024-10-22T00:00:00Z",
+    "open": 153.59,
+    "high": 155.1,
+    "low": 149.0,
+    "close": 152.61,
+    "volume": 1242.162,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2024-10-23T00:00:00Z",
+    "open": 152.78,
+    "high": 152.78,
+    "low": 143.88,
+    "close": 149.55,
+    "volume": 2379.514,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2024-10-24T00:00:00Z",
+    "open": 149.55,
+    "high": 153.01,
+    "low": 145.84,
+    "close": 147.46,
+    "volume": 3463.81,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2024-10-25T00:00:00Z",
+    "open": 147.54,
+    "high": 149.4,
+    "low": 131.59,
+    "close": 137.86,
+    "volume": 2334.004,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2024-10-26T00:00:00Z",
+    "open": 137.86,
+    "high": 143.5,
+    "low": 136.43,
+    "close": 142.59,
+    "volume": 2753.27,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2024-10-27T00:00:00Z",
+    "open": 142.58,
+    "high": 148.37,
+    "low": 141.69,
+    "close": 147.72,
+    "volume": 1137.661,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2024-10-28T00:00:00Z",
+    "open": 147.84,
+    "high": 154.21,
+    "low": 145.3,
+    "close": 151.67,
+    "volume": 5924.972,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2024-10-29T00:00:00Z",
+    "open": 151.47,
+    "high": 155.24,
+    "low": 149.0,
+    "close": 151.84,
+    "volume": 7497.759,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2024-10-30T00:00:00Z",
+    "open": 151.19,
+    "high": 158.22,
+    "low": 148.73,
+    "close": 156.06,
+    "volume": 9722.636,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2024-10-31T00:00:00Z",
+    "open": 156.15,
+    "high": 157.55,
+    "low": 140.76,
+    "close": 143.32,
+    "volume": 3471.09,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2024-11-01T00:00:00Z",
+    "open": 143.22,
+    "high": 146.93,
+    "low": 139.57,
+    "close": 141.4,
+    "volume": 2055.727,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2024-11-02T00:00:00Z",
+    "open": 141.85,
+    "high": 143.67,
+    "low": 136.97,
+    "close": 138.34,
+    "volume": 1223.449,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2024-11-03T00:00:00Z",
+    "open": 138.07,
+    "high": 138.13,
+    "low": 128.2,
+    "close": 132.9,
+    "volume": 3606.549,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2024-11-04T00:00:00Z",
+    "open": 132.77,
+    "high": 134.82,
+    "low": 125.76,
+    "close": 128.13,
+    "volume": 4352.987,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2024-11-05T00:00:00Z",
+    "open": 128.24,
+    "high": 136.63,
+    "low": 127.87,
+    "close": 135.66,
+    "volume": 4482.258,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2024-11-06T00:00:00Z",
+    "open": 135.81,
+    "high": 176.34,
+    "low": 135.81,
+    "close": 173.66,
+    "volume": 42402.486,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2024-11-07T00:00:00Z",
+    "open": 173.78,
+    "high": 190.76,
+    "low": 173.48,
+    "close": 183.63,
+    "volume": 40862.763,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2024-11-08T00:00:00Z",
+    "open": 183.7,
+    "high": 185.05,
+    "low": 175.0,
+    "close": 182.1,
+    "volume": 12026.707,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2024-11-09T00:00:00Z",
+    "open": 182.13,
+    "high": 199.46,
+    "low": 181.25,
+    "close": 195.45,
+    "volume": 26900.235,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2024-11-10T00:00:00Z",
+    "open": 195.41,
+    "high": 198.57,
+    "low": 181.23,
+    "close": 190.22,
+    "volume": 25386.941,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2024-11-11T00:00:00Z",
+    "open": 189.77,
+    "high": 195.36,
+    "low": 182.5,
+    "close": 193.6,
+    "volume": 21341.621,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2024-11-12T00:00:00Z",
+    "open": 193.57,
+    "high": 196.93,
+    "low": 172.63,
+    "close": 179.87,
+    "volume": 25527.731,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2024-11-13T00:00:00Z",
+    "open": 179.44,
+    "high": 188.02,
+    "low": 167.51,
+    "close": 173.44,
+    "volume": 24028.044,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2024-11-14T00:00:00Z",
+    "open": 173.3,
+    "high": 176.92,
+    "low": 155.68,
+    "close": 158.08,
+    "volume": 10501.377,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2024-11-15T00:00:00Z",
+    "open": 157.97,
+    "high": 166.43,
+    "low": 147.88,
+    "close": 164.47,
+    "volume": 13419.818,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2024-11-16T00:00:00Z",
+    "open": 164.27,
+    "high": 175.94,
+    "low": 161.95,
+    "close": 169.07,
+    "volume": 8401.017,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2024-11-17T00:00:00Z",
+    "open": 169.08,
+    "high": 172.36,
+    "low": 159.43,
+    "close": 162.1,
+    "volume": 6021.791,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2024-11-18T00:00:00Z",
+    "open": 161.95,
+    "high": 172.91,
+    "low": 161.23,
+    "close": 170.19,
+    "volume": 8110.362,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2024-11-19T00:00:00Z",
+    "open": 171.1,
+    "high": 173.48,
+    "low": 158.53,
+    "close": 162.2,
+    "volume": 10627.089,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2024-11-20T00:00:00Z",
+    "open": 162.12,
+    "high": 168.13,
+    "low": 153.46,
+    "close": 156.87,
+    "volume": 6225.049,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2024-11-21T00:00:00Z",
+    "open": 156.91,
+    "high": 170.97,
+    "low": 152.06,
+    "close": 169.39,
+    "volume": 8321.051,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2024-11-22T00:00:00Z",
+    "open": 169.42,
+    "high": 173.74,
+    "low": 160.47,
+    "close": 173.74,
+    "volume": 9863.014,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2024-11-23T00:00:00Z",
+    "open": 173.65,
+    "high": 184.28,
+    "low": 170.07,
+    "close": 174.48,
+    "volume": 12672.621,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2024-11-24T00:00:00Z",
+    "open": 174.63,
+    "high": 183.63,
+    "low": 161.22,
+    "close": 171.32,
+    "volume": 10513.991,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2024-11-25T00:00:00Z",
+    "open": 171.16,
+    "high": 189.42,
+    "low": 166.18,
+    "close": 181.37,
+    "volume": 11038.735,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2024-11-26T00:00:00Z",
+    "open": 181.14,
+    "high": 184.1,
+    "low": 164.65,
+    "close": 181.73,
+    "volume": 9702.354,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2024-11-27T00:00:00Z",
+    "open": 181.55,
+    "high": 211.65,
+    "low": 180.61,
+    "close": 210.34,
+    "volume": 26204.661,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2024-11-28T00:00:00Z",
+    "open": 210.84,
+    "high": 211.44,
+    "low": 197.73,
+    "close": 200.23,
+    "volume": 9704.72,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2024-11-29T00:00:00Z",
+    "open": 200.36,
+    "high": 202.38,
+    "low": 194.79,
+    "close": 198.89,
+    "volume": 6034.961,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2024-11-30T00:00:00Z",
+    "open": 199.05,
+    "high": 212.77,
+    "low": 197.76,
+    "close": 211.88,
+    "volume": 9462.087,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2024-12-01T00:00:00Z",
+    "open": 212.07,
+    "high": 214.81,
+    "low": 201.32,
+    "close": 209.15,
+    "volume": 7026.904,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2024-12-02T00:00:00Z",
+    "open": 209.35,
+    "high": 241.42,
+    "low": 204.03,
+    "close": 235.31,
+    "volume": 23217.343,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2024-12-03T00:00:00Z",
+    "open": 235.55,
+    "high": 249.4,
+    "low": 221.65,
+    "close": 240.59,
+    "volume": 17372.735,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2024-12-04T00:00:00Z",
+    "open": 240.74,
+    "high": 273.59,
+    "low": 236.27,
+    "close": 256.76,
+    "volume": 17227.171,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2024-12-05T00:00:00Z",
+    "open": 256.81,
+    "high": 267.0,
+    "low": 238.13,
+    "close": 247.99,
+    "volume": 13769.396,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2024-12-06T00:00:00Z",
+    "open": 247.68,
+    "high": 291.41,
+    "low": 246.87,
+    "close": 282.25,
+    "volume": 16767.326,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2024-12-07T00:00:00Z",
+    "open": 282.1,
+    "high": 297.6,
+    "low": 278.54,
+    "close": 282.51,
+    "volume": 7835.555,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2024-12-08T00:00:00Z",
+    "open": 282.35,
+    "high": 285.25,
+    "low": 273.94,
+    "close": 282.89,
+    "volume": 6880.328,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2024-12-09T00:00:00Z",
+    "open": 282.93,
+    "high": 284.14,
+    "low": 222.56,
+    "close": 260.84,
+    "volume": 13674.747,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2024-12-10T00:00:00Z",
+    "open": 260.1,
+    "high": 288.14,
+    "low": 246.09,
+    "close": 276.76,
+    "volume": 21961.286,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2024-12-11T00:00:00Z",
+    "open": 276.52,
+    "high": 307.77,
+    "low": 260.11,
+    "close": 302.98,
+    "volume": 16223.597,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2024-12-12T00:00:00Z",
+    "open": 301.52,
+    "high": 388.0,
+    "low": 295.13,
+    "close": 367.07,
+    "volume": 31970.44,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2024-12-13T00:00:00Z",
+    "open": 367.04,
+    "high": 391.18,
+    "low": 350.64,
+    "close": 377.51,
+    "volume": 13052.318,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2024-12-14T00:00:00Z",
+    "open": 377.71,
+    "high": 396.0,
+    "low": 359.52,
+    "close": 365.81,
+    "volume": 13359.86,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2024-12-15T00:00:00Z",
+    "open": 365.67,
+    "high": 381.3,
+    "low": 355.0,
+    "close": 368.4,
+    "volume": 10918.206,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2024-12-16T00:00:00Z",
+    "open": 368.85,
+    "high": 399.88,
+    "low": 361.52,
+    "close": 379.22,
+    "volume": 23474.715,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2024-12-17T00:00:00Z",
+    "open": 379.02,
+    "high": 388.54,
+    "low": 356.77,
+    "close": 361.17,
+    "volume": 12416.09,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2024-12-18T00:00:00Z",
+    "open": 362.0,
+    "high": 380.21,
+    "low": 335.57,
+    "close": 339.91,
+    "volume": 15404.282,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2024-12-19T00:00:00Z",
+    "open": 339.37,
+    "high": 350.31,
+    "low": 297.66,
+    "close": 314.99,
+    "volume": 25533.461,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2024-12-20T00:00:00Z",
+    "open": 315.39,
+    "high": 340.7,
+    "low": 270.07,
+    "close": 329.18,
+    "volume": 36671.913,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2024-12-21T00:00:00Z",
+    "open": 329.35,
+    "high": 343.87,
+    "low": 294.71,
+    "close": 298.73,
+    "volume": 22274.289,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2024-12-22T00:00:00Z",
+    "open": 299.15,
+    "high": 323.32,
+    "low": 291.03,
+    "close": 318.73,
+    "volume": 14953.82,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2024-12-23T00:00:00Z",
+    "open": 318.71,
+    "high": 388.42,
+    "low": 308.47,
+    "close": 382.97,
+    "volume": 20812.743,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2024-12-24T00:00:00Z",
+    "open": 382.76,
+    "high": 389.53,
+    "low": 365.0,
+    "close": 375.07,
+    "volume": 9165.394,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2024-12-25T00:00:00Z",
+    "open": 375.15,
+    "high": 385.67,
+    "low": 364.38,
+    "close": 369.75,
+    "volume": 7163.132,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2024-12-26T00:00:00Z",
+    "open": 371.0,
+    "high": 371.49,
+    "low": 330.31,
+    "close": 337.52,
+    "volume": 7806.091,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2024-12-27T00:00:00Z",
+    "open": 337.54,
+    "high": 352.88,
+    "low": 319.94,
+    "close": 323.56,
+    "volume": 9981.088,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2024-12-28T00:00:00Z",
+    "open": 324.13,
+    "high": 361.52,
+    "low": 318.88,
+    "close": 353.94,
+    "volume": 9634.449,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2024-12-29T00:00:00Z",
+    "open": 354.26,
+    "high": 355.09,
+    "low": 325.55,
+    "close": 331.82,
+    "volume": 7763.546,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2024-12-30T00:00:00Z",
+    "open": 332.1,
+    "high": 344.09,
+    "low": 318.0,
+    "close": 321.44,
+    "volume": 14571.732,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2024-12-31T00:00:00Z",
+    "open": 321.45,
+    "high": 327.9,
+    "low": 305.6,
+    "close": 308.02,
+    "volume": 10521.505,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-01-01T00:00:00Z",
+    "open": 308.5,
+    "high": 322.0,
+    "low": 306.2,
+    "close": 319.23,
+    "volume": 8203.211,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-01-02T00:00:00Z",
+    "open": 319.34,
+    "high": 339.58,
+    "low": 318.25,
+    "close": 333.38,
+    "volume": 7175.474,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-01-03T00:00:00Z",
+    "open": 334.14,
+    "high": 355.93,
+    "low": 317.17,
+    "close": 350.55,
+    "volume": 9849.945,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-01-04T00:00:00Z",
+    "open": 350.89,
+    "high": 362.34,
+    "low": 337.14,
+    "close": 351.41,
+    "volume": 15694.659,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-01-05T00:00:00Z",
+    "open": 351.51,
+    "high": 352.4,
+    "low": 339.24,
+    "close": 341.41,
+    "volume": 4212.336,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-01-06T00:00:00Z",
+    "open": 341.71,
+    "high": 355.94,
+    "low": 335.27,
+    "close": 341.02,
+    "volume": 7984.329,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-01-07T00:00:00Z",
+    "open": 341.66,
+    "high": 343.27,
+    "low": 305.54,
+    "close": 306.81,
+    "volume": 10381.839,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-01-08T00:00:00Z",
+    "open": 306.88,
+    "high": 312.39,
+    "low": 275.66,
+    "close": 293.39,
+    "volume": 17405.295,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-01-09T00:00:00Z",
+    "open": 293.5,
+    "high": 299.72,
+    "low": 273.44,
+    "close": 281.14,
+    "volume": 10140.821,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-01-10T00:00:00Z",
+    "open": 281.35,
+    "high": 300.74,
+    "low": 277.18,
+    "close": 285.89,
+    "volume": 10678.681,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-01-11T00:00:00Z",
+    "open": 286.5,
+    "high": 293.84,
+    "low": 280.23,
+    "close": 286.95,
+    "volume": 3424.632,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-01-12T00:00:00Z",
+    "open": 287.38,
+    "high": 295.49,
+    "low": 284.68,
+    "close": 288.01,
+    "volume": 3846.121,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-01-13T00:00:00Z",
+    "open": 287.61,
+    "high": 296.53,
+    "low": 256.0,
+    "close": 289.26,
+    "volume": 20216.608,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-01-14T00:00:00Z",
+    "open": 289.62,
+    "high": 301.74,
+    "low": 285.49,
+    "close": 295.5,
+    "volume": 9784.492,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-01-15T00:00:00Z",
+    "open": 295.43,
+    "high": 324.08,
+    "low": 285.91,
+    "close": 319.93,
+    "volume": 11292.97,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-01-16T00:00:00Z",
+    "open": 320.55,
+    "high": 321.32,
+    "low": 305.06,
+    "close": 311.12,
+    "volume": 7010.321,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-01-17T00:00:00Z",
+    "open": 311.21,
+    "high": 336.64,
+    "low": 311.02,
+    "close": 335.14,
+    "volume": 9463.976,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-01-18T00:00:00Z",
+    "open": 335.21,
+    "high": 342.0,
+    "low": 306.03,
+    "close": 315.08,
+    "volume": 10436.79,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-01-19T00:00:00Z",
+    "open": 314.55,
+    "high": 347.79,
+    "low": 292.15,
+    "close": 308.83,
+    "volume": 30704.857,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-01-20T00:00:00Z",
+    "open": 308.64,
+    "high": 364.78,
+    "low": 296.01,
+    "close": 337.07,
+    "volume": 52206.479,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-01-21T00:00:00Z",
+    "open": 336.7,
+    "high": 378.7,
+    "low": 327.19,
+    "close": 370.7,
+    "volume": 27760.478,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-01-22T00:00:00Z",
+    "open": 370.76,
+    "high": 372.36,
+    "low": 345.36,
+    "close": 346.45,
+    "volume": 11519.584,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-01-23T00:00:00Z",
+    "open": 346.34,
+    "high": 350.32,
+    "low": 324.45,
+    "close": 337.63,
+    "volume": 13415.318,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-01-24T00:00:00Z",
+    "open": 337.57,
+    "high": 357.49,
+    "low": 327.97,
+    "close": 334.88,
+    "volume": 10197.715,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-01-25T00:00:00Z",
+    "open": 334.66,
+    "high": 338.41,
+    "low": 326.06,
+    "close": 326.37,
+    "volume": 4407.484,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-01-26T00:00:00Z",
+    "open": 327.2,
+    "high": 336.0,
+    "low": 315.02,
+    "close": 316.44,
+    "volume": 5336.601,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-01-27T00:00:00Z",
+    "open": 316.33,
+    "high": 320.58,
+    "low": 288.0,
+    "close": 305.0,
+    "volume": 20378.092,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-01-28T00:00:00Z",
+    "open": 304.86,
+    "high": 307.64,
+    "low": 280.52,
+    "close": 284.11,
+    "volume": 9883.408,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-01-29T00:00:00Z",
+    "open": 283.98,
+    "high": 301.8,
+    "low": 282.41,
+    "close": 290.66,
+    "volume": 11641.291,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-01-30T00:00:00Z",
+    "open": 290.56,
+    "high": 322.46,
+    "low": 287.0,
+    "close": 315.49,
+    "volume": 12412.303,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-01-31T00:00:00Z",
+    "open": 315.63,
+    "high": 349.0,
+    "low": 312.32,
+    "close": 332.49,
+    "volume": 21538.84,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-02-01T00:00:00Z",
+    "open": 333.24,
+    "high": 333.3,
+    "low": 295.01,
+    "close": 296.08,
+    "volume": 16501.62,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-02-02T00:00:00Z",
+    "open": 295.99,
+    "high": 304.7,
+    "low": 245.51,
+    "close": 258.45,
+    "volume": 25298.396,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-02-03T00:00:00Z",
+    "open": 258.45,
+    "high": 299.0,
+    "low": 192.51,
+    "close": 276.73,
+    "volume": 62043.954,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-02-04T00:00:00Z",
+    "open": 276.93,
+    "high": 278.51,
+    "low": 249.54,
+    "close": 272.34,
+    "volume": 18598.009,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-02-05T00:00:00Z",
+    "open": 272.55,
+    "high": 283.34,
+    "low": 256.06,
+    "close": 259.76,
+    "volume": 14832.779,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-02-06T00:00:00Z",
+    "open": 259.67,
+    "high": 266.86,
+    "low": 239.3,
+    "close": 241.37,
+    "volume": 9990.592,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-02-07T00:00:00Z",
+    "open": 241.49,
+    "high": 262.24,
+    "low": 231.1,
+    "close": 238.0,
+    "volume": 13963.996,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-02-08T00:00:00Z",
+    "open": 238.07,
+    "high": 241.85,
+    "low": 231.17,
+    "close": 238.79,
+    "volume": 4952.972,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-02-09T00:00:00Z",
+    "open": 239.03,
+    "high": 252.61,
+    "low": 229.47,
+    "close": 241.39,
+    "volume": 8084.755,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-02-10T00:00:00Z",
+    "open": 241.63,
+    "high": 258.0,
+    "low": 234.61,
+    "close": 252.53,
+    "volume": 13155.942,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-02-11T00:00:00Z",
+    "open": 253.11,
+    "high": 262.58,
+    "low": 242.0,
+    "close": 243.76,
+    "volume": 12340.669,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-02-12T00:00:00Z",
+    "open": 243.37,
+    "high": 261.0,
+    "low": 231.83,
+    "close": 252.89,
+    "volume": 11901.931,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-02-13T00:00:00Z",
+    "open": 252.95,
+    "high": 258.12,
+    "low": 246.75,
+    "close": 256.47,
+    "volume": 8841.374,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-02-14T00:00:00Z",
+    "open": 256.35,
+    "high": 270.28,
+    "low": 253.2,
+    "close": 262.56,
+    "volume": 9792.677,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-02-15T00:00:00Z",
+    "open": 262.45,
+    "high": 263.59,
+    "low": 249.79,
+    "close": 253.31,
+    "volume": 3579.275,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-02-16T00:00:00Z",
+    "open": 253.29,
+    "high": 258.98,
+    "low": 250.07,
+    "close": 253.6,
+    "volume": 3144.717,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-02-17T00:00:00Z",
+    "open": 253.93,
+    "high": 278.63,
+    "low": 249.7,
+    "close": 264.42,
+    "volume": 13508.539,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-02-18T00:00:00Z",
+    "open": 264.4,
+    "high": 266.06,
+    "low": 240.77,
+    "close": 249.49,
+    "volume": 9603.444,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-02-19T00:00:00Z",
+    "open": 249.16,
+    "high": 258.26,
+    "low": 246.88,
+    "close": 252.69,
+    "volume": 6430.047,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-02-20T00:00:00Z",
+    "open": 252.82,
+    "high": 263.7,
+    "low": 251.25,
+    "close": 261.19,
+    "volume": 6722.006,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-02-21T00:00:00Z",
+    "open": 261.49,
+    "high": 269.08,
+    "low": 238.61,
+    "close": 242.89,
+    "volume": 11190.913,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-02-22T00:00:00Z",
+    "open": 242.78,
+    "high": 251.7,
+    "low": 239.18,
+    "close": 247.16,
+    "volume": 6967.855,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-02-23T00:00:00Z",
+    "open": 247.27,
+    "high": 254.06,
+    "low": 243.41,
+    "close": 247.65,
+    "volume": 4487.825,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-02-24T00:00:00Z",
+    "open": 247.88,
+    "high": 249.29,
+    "low": 205.35,
+    "close": 210.84,
+    "volume": 12076.192,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-02-25T00:00:00Z",
+    "open": 210.78,
+    "high": 213.43,
+    "low": 189.46,
+    "close": 204.97,
+    "volume": 24552.17,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-02-26T00:00:00Z",
+    "open": 204.96,
+    "high": 211.55,
+    "low": 192.0,
+    "close": 202.52,
+    "volume": 17184.47,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-02-27T00:00:00Z",
+    "open": 202.43,
+    "high": 209.7,
+    "low": 196.3,
+    "close": 203.84,
+    "volume": 6312.676,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-02-28T00:00:00Z",
+    "open": 204.08,
+    "high": 204.22,
+    "low": 178.2,
+    "close": 192.07,
+    "volume": 16977.316,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-03-01T00:00:00Z",
+    "open": 192.09,
+    "high": 196.9,
+    "low": 183.6,
+    "close": 195.15,
+    "volume": 6292.986,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-03-02T00:00:00Z",
+    "open": 194.72,
+    "high": 226.99,
+    "low": 190.0,
+    "close": 223.28,
+    "volume": 17248.906,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-03-03T00:00:00Z",
+    "open": 224.0,
+    "high": 224.41,
+    "low": 177.48,
+    "close": 180.83,
+    "volume": 13021.453,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-03-04T00:00:00Z",
+    "open": 180.75,
+    "high": 216.91,
+    "low": 167.26,
+    "close": 206.65,
+    "volume": 41719.523,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-03-05T00:00:00Z",
+    "open": 206.57,
+    "high": 226.51,
+    "low": 204.33,
+    "close": 220.72,
+    "volume": 22035.726,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-03-06T00:00:00Z",
+    "open": 220.92,
+    "high": 239.97,
+    "low": 208.27,
+    "close": 208.38,
+    "volume": 21114.985,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-03-07T00:00:00Z",
+    "open": 208.41,
+    "high": 212.12,
+    "low": 195.28,
+    "close": 196.64,
+    "volume": 24015.682,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-03-08T00:00:00Z",
+    "open": 196.65,
+    "high": 199.28,
+    "low": 185.19,
+    "close": 195.65,
+    "volume": 12949.498,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-03-09T00:00:00Z",
+    "open": 195.67,
+    "high": 198.11,
+    "low": 176.18,
+    "close": 178.18,
+    "volume": 16652.708,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-03-10T00:00:00Z",
+    "open": 178.67,
+    "high": 201.92,
+    "low": 175.29,
+    "close": 180.25,
+    "volume": 26531.74,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-03-11T00:00:00Z",
+    "open": 180.34,
+    "high": 186.0,
+    "low": 166.89,
+    "close": 181.95,
+    "volume": 30092.758,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-03-12T00:00:00Z",
+    "open": 182.04,
+    "high": 184.31,
+    "low": 163.84,
+    "close": 174.79,
+    "volume": 26202.491,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-03-13T00:00:00Z",
+    "open": 174.92,
+    "high": 176.15,
+    "low": 160.01,
+    "close": 162.8,
+    "volume": 23747.356,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-03-14T00:00:00Z",
+    "open": 162.8,
+    "high": 177.16,
+    "low": 162.02,
+    "close": 172.97,
+    "volume": 16790.477,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-03-15T00:00:00Z",
+    "open": 173.13,
+    "high": 177.32,
+    "low": 171.81,
+    "close": 172.89,
+    "volume": 7003.242,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-03-16T00:00:00Z",
+    "open": 173.01,
+    "high": 173.99,
+    "low": 163.34,
+    "close": 164.79,
+    "volume": 10452.253,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-03-17T00:00:00Z",
+    "open": 164.73,
+    "high": 177.19,
+    "low": 164.56,
+    "close": 174.71,
+    "volume": 14204.004,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-03-18T00:00:00Z",
+    "open": 174.72,
+    "high": 175.3,
+    "low": 164.88,
+    "close": 170.06,
+    "volume": 14298.398,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-03-19T00:00:00Z",
+    "open": 170.22,
+    "high": 184.65,
+    "low": 169.71,
+    "close": 182.5,
+    "volume": 24694.438,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-03-20T00:00:00Z",
+    "open": 182.5,
+    "high": 183.07,
+    "low": 171.54,
+    "close": 178.66,
+    "volume": 28614.506,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-03-21T00:00:00Z",
+    "open": 178.66,
+    "high": 183.06,
+    "low": 174.03,
+    "close": 178.18,
+    "volume": 13032.594,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-03-22T00:00:00Z",
+    "open": 178.46,
+    "high": 183.68,
+    "low": 178.25,
+    "close": 179.78,
+    "volume": 10258.37,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-03-23T00:00:00Z",
+    "open": 179.72,
+    "high": 186.49,
+    "low": 179.48,
+    "close": 185.0,
+    "volume": 23422.072,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-03-24T00:00:00Z",
+    "open": 185.0,
+    "high": 194.67,
+    "low": 181.44,
+    "close": 190.82,
+    "volume": 25169.201,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-03-25T00:00:00Z",
+    "open": 190.8,
+    "high": 192.56,
+    "low": 185.42,
+    "close": 186.75,
+    "volume": 13841.515,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-03-26T00:00:00Z",
+    "open": 186.77,
+    "high": 190.32,
+    "low": 175.15,
+    "close": 177.49,
+    "volume": 25433.03,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-03-27T00:00:00Z",
+    "open": 177.47,
+    "high": 186.19,
+    "low": 177.2,
+    "close": 184.66,
+    "volume": 15599.785,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-03-28T00:00:00Z",
+    "open": 184.76,
+    "high": 186.91,
+    "low": 168.41,
+    "close": 175.77,
+    "volume": 19032.365,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-03-29T00:00:00Z",
+    "open": 175.72,
+    "high": 180.52,
+    "low": 165.68,
+    "close": 168.07,
+    "volume": 18946.866,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-03-30T00:00:00Z",
+    "open": 168.01,
+    "high": 169.54,
+    "low": 161.33,
+    "close": 163.54,
+    "volume": 15765.575,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-03-31T00:00:00Z",
+    "open": 163.73,
+    "high": 164.58,
+    "low": 151.83,
+    "close": 159.52,
+    "volume": 23703.788,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-04-01T00:00:00Z",
+    "open": 159.48,
+    "high": 171.38,
+    "low": 159.11,
+    "close": 166.11,
+    "volume": 17339.137,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-04-02T00:00:00Z",
+    "open": 166.11,
+    "high": 168.92,
+    "low": 149.52,
+    "close": 150.2,
+    "volume": 33348.374,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-04-03T00:00:00Z",
+    "open": 150.19,
+    "high": 157.23,
+    "low": 146.24,
+    "close": 151.06,
+    "volume": 24940.747,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-04-04T00:00:00Z",
+    "open": 151.14,
+    "high": 154.0,
+    "low": 144.31,
+    "close": 151.94,
+    "volume": 23852.256,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-04-05T00:00:00Z",
+    "open": 151.93,
+    "high": 155.45,
+    "low": 149.48,
+    "close": 152.6,
+    "volume": 13181.876,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-04-06T00:00:00Z",
+    "open": 152.44,
+    "high": 152.5,
+    "low": 126.25,
+    "close": 128.92,
+    "volume": 32911.983,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-04-07T00:00:00Z",
+    "open": 128.98,
+    "high": 136.18,
+    "low": 113.94,
+    "close": 131.92,
+    "volume": 94746.3,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-04-08T00:00:00Z",
+    "open": 131.97,
+    "high": 136.08,
+    "low": 123.18,
+    "close": 125.18,
+    "volume": 36931.312,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-04-09T00:00:00Z",
+    "open": 125.2,
+    "high": 145.12,
+    "low": 119.79,
+    "close": 143.11,
+    "volume": 41809.161,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-04-10T00:00:00Z",
+    "open": 142.99,
+    "high": 143.33,
+    "low": 128.15,
+    "close": 131.85,
+    "volume": 31660.311,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-04-11T00:00:00Z",
+    "open": 131.83,
+    "high": 139.46,
+    "low": 131.23,
+    "close": 136.43,
+    "volume": 29565.417,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-04-12T00:00:00Z",
+    "open": 136.46,
+    "high": 150.12,
+    "low": 133.73,
+    "close": 148.04,
+    "volume": 25905.888,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-04-13T00:00:00Z",
+    "open": 148.1,
+    "high": 148.34,
+    "low": 136.6,
+    "close": 139.06,
+    "volume": 23177.61,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-04-14T00:00:00Z",
+    "open": 139.15,
+    "high": 147.18,
+    "low": 136.88,
+    "close": 137.53,
+    "volume": 26031.402,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-04-15T00:00:00Z",
+    "open": 137.68,
+    "high": 142.09,
+    "low": 133.54,
+    "close": 134.21,
+    "volume": 22150.002,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-04-16T00:00:00Z",
+    "open": 134.17,
+    "high": 137.44,
+    "low": 129.66,
+    "close": 133.92,
+    "volume": 25676.451,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-04-17T00:00:00Z",
+    "open": 133.93,
+    "high": 141.55,
+    "low": 133.87,
+    "close": 138.85,
+    "volume": 23459.253,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-04-18T00:00:00Z",
+    "open": 138.95,
+    "high": 141.17,
+    "low": 137.24,
+    "close": 138.43,
+    "volume": 13132.53,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-04-19T00:00:00Z",
+    "open": 138.43,
+    "high": 142.94,
+    "low": 137.94,
+    "close": 141.94,
+    "volume": 9867.14,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-04-20T00:00:00Z",
+    "open": 142.0,
+    "high": 143.5,
+    "low": 136.77,
+    "close": 140.98,
+    "volume": 14217.415,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-04-21T00:00:00Z",
+    "open": 140.95,
+    "high": 146.08,
+    "low": 139.13,
+    "close": 142.83,
+    "volume": 17230.901,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-04-22T00:00:00Z",
+    "open": 142.88,
+    "high": 159.06,
+    "low": 139.75,
+    "close": 158.16,
+    "volume": 28480.644,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-04-23T00:00:00Z",
+    "open": 158.76,
+    "high": 168.88,
+    "low": 157.87,
+    "close": 168.18,
+    "volume": 29463.383,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-04-24T00:00:00Z",
+    "open": 168.15,
+    "high": 170.68,
+    "low": 158.38,
+    "close": 168.05,
+    "volume": 24605.549,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-04-25T00:00:00Z",
+    "open": 168.05,
+    "high": 170.84,
+    "low": 163.04,
+    "close": 166.56,
+    "volume": 24274.572,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-04-26T00:00:00Z",
+    "open": 166.58,
+    "high": 173.25,
+    "low": 164.53,
+    "close": 172.96,
+    "volume": 14266.279,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-04-27T00:00:00Z",
+    "open": 173.05,
+    "high": 179.74,
+    "low": 165.55,
+    "close": 166.66,
+    "volume": 16549.931,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-04-28T00:00:00Z",
+    "open": 166.66,
+    "high": 174.96,
+    "low": 161.82,
+    "close": 166.22,
+    "volume": 25144.259,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-04-29T00:00:00Z",
+    "open": 166.36,
+    "high": 171.3,
+    "low": 163.38,
+    "close": 165.75,
+    "volume": 15727.924,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-04-30T00:00:00Z",
+    "open": 165.64,
+    "high": 167.01,
+    "low": 155.4,
+    "close": 164.26,
+    "volume": 20576.117,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-05-01T00:00:00Z",
+    "open": 164.22,
+    "high": 179.41,
+    "low": 164.22,
+    "close": 173.06,
+    "volume": 28327.418,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-05-02T00:00:00Z",
+    "open": 172.98,
+    "high": 179.35,
+    "low": 171.99,
+    "close": 174.68,
+    "volume": 15913.242,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-05-03T00:00:00Z",
+    "open": 174.59,
+    "high": 181.1,
+    "low": 169.63,
+    "close": 178.12,
+    "volume": 21594.458,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-05-04T00:00:00Z",
+    "open": 178.04,
+    "high": 178.98,
+    "low": 170.92,
+    "close": 171.25,
+    "volume": 20076.157,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-05-05T00:00:00Z",
+    "open": 171.07,
+    "high": 180.89,
+    "low": 169.54,
+    "close": 176.92,
+    "volume": 25791.559,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-05-06T00:00:00Z",
+    "open": 176.97,
+    "high": 179.0,
+    "low": 163.24,
+    "close": 177.82,
+    "volume": 34227.854,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-05-07T00:00:00Z",
+    "open": 177.79,
+    "high": 180.06,
+    "low": 167.48,
+    "close": 172.27,
+    "volume": 22982.059,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-05-08T00:00:00Z",
+    "open": 172.13,
+    "high": 208.34,
+    "low": 172.13,
+    "close": 206.28,
+    "volume": 54834.161,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-05-09T00:00:00Z",
+    "open": 206.16,
+    "high": 220.76,
+    "low": 202.5,
+    "close": 211.38,
+    "volume": 36679.12,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-05-10T00:00:00Z",
+    "open": 211.14,
+    "high": 230.37,
+    "low": 208.87,
+    "close": 228.75,
+    "volume": 29901.832,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-05-11T00:00:00Z",
+    "open": 228.63,
+    "high": 230.49,
+    "low": 213.99,
+    "close": 221.27,
+    "volume": 24219.735,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-05-12T00:00:00Z",
+    "open": 221.23,
+    "high": 229.92,
+    "low": 211.96,
+    "close": 221.81,
+    "volume": 28783.028,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-05-13T00:00:00Z",
+    "open": 221.91,
+    "high": 238.43,
+    "low": 210.39,
+    "close": 236.44,
+    "volume": 26890.142,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-05-14T00:00:00Z",
+    "open": 236.36,
+    "high": 239.28,
+    "low": 223.98,
+    "close": 229.44,
+    "volume": 19815.638,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-05-15T00:00:00Z",
+    "open": 229.66,
+    "high": 235.38,
+    "low": 216.83,
+    "close": 223.94,
+    "volume": 28411.061,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-05-16T00:00:00Z",
+    "open": 223.98,
+    "high": 245.22,
+    "low": 221.59,
+    "close": 231.11,
+    "volume": 37641.612,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-05-17T00:00:00Z",
+    "open": 231.1,
+    "high": 232.11,
+    "low": 219.87,
+    "close": 222.17,
+    "volume": 19114.06,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-05-18T00:00:00Z",
+    "open": 222.3,
+    "high": 244.1,
+    "low": 219.1,
+    "close": 232.47,
+    "volume": 28935.188,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-05-19T00:00:00Z",
+    "open": 232.39,
+    "high": 249.9,
+    "low": 212.04,
+    "close": 247.87,
+    "volume": 41642.188,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-05-20T00:00:00Z",
+    "open": 247.72,
+    "high": 270.44,
+    "low": 246.56,
+    "close": 259.49,
+    "volume": 50204.679,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-05-21T00:00:00Z",
+    "open": 259.59,
+    "high": 262.15,
+    "low": 243.39,
+    "close": 247.56,
+    "volume": 33082.592,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-05-22T00:00:00Z",
+    "open": 247.82,
+    "high": 260.03,
+    "low": 246.8,
+    "close": 257.07,
+    "volume": 30605.647,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-05-23T00:00:00Z",
+    "open": 256.91,
+    "high": 264.19,
+    "low": 239.05,
+    "close": 256.13,
+    "volume": 47011.962,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-05-24T00:00:00Z",
+    "open": 256.23,
+    "high": 276.98,
+    "low": 250.83,
+    "close": 261.88,
+    "volume": 34680.224,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-05-25T00:00:00Z",
+    "open": 262.01,
+    "high": 270.89,
+    "low": 256.56,
+    "close": 269.4,
+    "volume": 27989.434,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-05-26T00:00:00Z",
+    "open": 269.45,
+    "high": 276.38,
+    "low": 259.26,
+    "close": 267.55,
+    "volume": 30330.881,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-05-27T00:00:00Z",
+    "open": 267.61,
+    "high": 282.99,
+    "low": 263.19,
+    "close": 271.56,
+    "volume": 29062.871,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-05-28T00:00:00Z",
+    "open": 271.67,
+    "high": 274.81,
+    "low": 260.05,
+    "close": 265.09,
+    "volume": 30625.427,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-05-29T00:00:00Z",
+    "open": 265.09,
+    "high": 274.44,
+    "low": 249.01,
+    "close": 250.04,
+    "volume": 35594.487,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-05-30T00:00:00Z",
+    "open": 250.06,
+    "high": 256.4,
+    "low": 240.01,
+    "close": 251.13,
+    "volume": 34050.516,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-05-31T00:00:00Z",
+    "open": 251.08,
+    "high": 254.58,
+    "low": 242.3,
+    "close": 247.04,
+    "volume": 23290.05,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-06-01T00:00:00Z",
+    "open": 247.14,
+    "high": 254.6,
+    "low": 237.78,
+    "close": 246.26,
+    "volume": 23154.301,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-06-02T00:00:00Z",
+    "open": 246.35,
+    "high": 258.31,
+    "low": 239.31,
+    "close": 257.93,
+    "volume": 22096.577,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-06-03T00:00:00Z",
+    "open": 257.99,
+    "high": 273.16,
+    "low": 254.37,
+    "close": 266.66,
+    "volume": 24347.242,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-06-04T00:00:00Z",
+    "open": 266.64,
+    "high": 276.0,
+    "low": 262.85,
+    "close": 264.33,
+    "volume": 23361.03,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-06-05T00:00:00Z",
+    "open": 264.2,
+    "high": 267.16,
+    "low": 240.16,
+    "close": 241.85,
+    "volume": 30201.064,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-06-06T00:00:00Z",
+    "open": 241.8,
+    "high": 255.41,
+    "low": 239.88,
+    "close": 251.08,
+    "volume": 23129.548,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-06-07T00:00:00Z",
+    "open": 251.15,
+    "high": 260.65,
+    "low": 249.56,
+    "close": 257.59,
+    "volume": 9893.842,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-06-08T00:00:00Z",
+    "open": 257.66,
+    "high": 257.67,
+    "low": 252.34,
+    "close": 253.99,
+    "volume": 9257.374,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-06-09T00:00:00Z",
+    "open": 253.91,
+    "high": 285.73,
+    "low": 250.47,
+    "close": 283.29,
+    "volume": 21168.961,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-06-10T00:00:00Z",
+    "open": 283.41,
+    "high": 317.77,
+    "low": 282.8,
+    "close": 308.43,
+    "volume": 79938.053,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-06-11T00:00:00Z",
+    "open": 308.4,
+    "high": 325.38,
+    "low": 300.42,
+    "close": 303.84,
+    "volume": 39535.371,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-06-12T00:00:00Z",
+    "open": 303.84,
+    "high": 309.89,
+    "low": 287.61,
+    "close": 294.05,
+    "volume": 26729.435,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-06-13T00:00:00Z",
+    "open": 294.05,
+    "high": 294.25,
+    "low": 262.69,
+    "close": 291.14,
+    "volume": 74269.134,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-06-14T00:00:00Z",
+    "open": 291.28,
+    "high": 291.28,
+    "low": 268.27,
+    "close": 275.19,
+    "volume": 30970.161,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-06-15T00:00:00Z",
+    "open": 275.29,
+    "high": 278.97,
+    "low": 266.5,
+    "close": 275.0,
+    "volume": 17688.321,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-06-16T00:00:00Z",
+    "open": 274.88,
+    "high": 294.04,
+    "low": 271.88,
+    "close": 275.08,
+    "volume": 30452.246,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-06-17T00:00:00Z",
+    "open": 275.26,
+    "high": 283.87,
+    "low": 262.1,
+    "close": 266.58,
+    "volume": 34589.538,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-06-18T00:00:00Z",
+    "open": 266.68,
+    "high": 270.22,
+    "low": 255.21,
+    "close": 259.15,
+    "volume": 25225.824,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-06-19T00:00:00Z",
+    "open": 259.14,
+    "high": 266.5,
+    "low": 249.05,
+    "close": 255.67,
+    "volume": 28529.328,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-06-20T00:00:00Z",
+    "open": 255.71,
+    "high": 264.54,
+    "low": 242.06,
+    "close": 247.42,
+    "volume": 35174.25,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-06-21T00:00:00Z",
+    "open": 247.38,
+    "high": 250.13,
+    "low": 227.08,
+    "close": 234.9,
+    "volume": 24343.475,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-06-22T00:00:00Z",
+    "open": 234.84,
+    "high": 239.01,
+    "low": 213.1,
+    "close": 227.91,
+    "volume": 48322.559,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-06-23T00:00:00Z",
+    "open": 227.97,
+    "high": 258.49,
+    "low": 221.71,
+    "close": 257.21,
+    "volume": 68989.369,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-06-24T00:00:00Z",
+    "open": 257.23,
+    "high": 269.88,
+    "low": 253.23,
+    "close": 264.24,
+    "volume": 55674.066,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-06-25T00:00:00Z",
+    "open": 264.33,
+    "high": 271.2,
+    "low": 254.46,
+    "close": 256.1,
+    "volume": 42991.678,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-06-26T00:00:00Z",
+    "open": 256.02,
+    "high": 265.73,
+    "low": 249.26,
+    "close": 250.4,
+    "volume": 40774.898,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-06-27T00:00:00Z",
+    "open": 250.26,
+    "high": 267.12,
+    "low": 248.76,
+    "close": 259.39,
+    "volume": 35104.106,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-06-28T00:00:00Z",
+    "open": 259.39,
+    "high": 262.02,
+    "low": 253.25,
+    "close": 259.94,
+    "volume": 17210.879,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-06-29T00:00:00Z",
+    "open": 260.08,
+    "high": 280.8,
+    "low": 256.56,
+    "close": 278.62,
+    "volume": 34719.664,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-06-30T00:00:00Z",
+    "open": 278.63,
+    "high": 284.94,
+    "low": 268.58,
+    "close": 274.57,
+    "volume": 32177.001,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-07-01T00:00:00Z",
+    "open": 274.64,
+    "high": 277.55,
+    "low": 259.62,
+    "close": 260.01,
+    "volume": 21029.704,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-07-02T00:00:00Z",
+    "open": 259.96,
+    "high": 283.49,
+    "low": 257.42,
+    "close": 276.23,
+    "volume": 27986.149,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-07-03T00:00:00Z",
+    "open": 276.24,
+    "high": 285.61,
+    "low": 272.91,
+    "close": 279.44,
+    "volume": 29867.872,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-07-04T00:00:00Z",
+    "open": 279.46,
+    "high": 283.0,
+    "low": 258.73,
+    "close": 266.04,
+    "volume": 19912.292,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-07-05T00:00:00Z",
+    "open": 266.0,
+    "high": 276.79,
+    "low": 264.89,
+    "close": 273.54,
+    "volume": 18673.835,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-07-06T00:00:00Z",
+    "open": 273.54,
+    "high": 291.66,
+    "low": 269.77,
+    "close": 287.48,
+    "volume": 26588.704,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-07-07T00:00:00Z",
+    "open": 287.44,
+    "high": 290.94,
+    "low": 277.63,
+    "close": 283.26,
+    "volume": 23094.195,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-07-08T00:00:00Z",
+    "open": 283.26,
+    "high": 295.0,
+    "low": 277.47,
+    "close": 292.97,
+    "volume": 21741.048,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-07-09T00:00:00Z",
+    "open": 293.11,
+    "high": 307.0,
+    "low": 290.25,
+    "close": 301.74,
+    "volume": 40923.858,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-07-10T00:00:00Z",
+    "open": 301.86,
+    "high": 316.04,
+    "low": 292.5,
+    "close": 308.68,
+    "volume": 38876.644,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-07-11T00:00:00Z",
+    "open": 308.74,
+    "high": 318.28,
+    "low": 294.24,
+    "close": 297.5,
+    "volume": 39382.872,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-07-12T00:00:00Z",
+    "open": 297.51,
+    "high": 306.93,
+    "low": 293.01,
+    "close": 302.24,
+    "volume": 23627.209,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-07-13T00:00:00Z",
+    "open": 302.29,
+    "high": 317.73,
+    "low": 300.03,
+    "close": 305.91,
+    "volume": 28906.071,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-07-14T00:00:00Z",
+    "open": 305.95,
+    "high": 331.73,
+    "low": 305.38,
+    "close": 315.33,
+    "volume": 38559.766,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-07-15T00:00:00Z",
+    "open": 315.29,
+    "high": 331.39,
+    "low": 305.66,
+    "close": 327.59,
+    "volume": 39737.577,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-07-16T00:00:00Z",
+    "open": 327.57,
+    "high": 335.0,
+    "low": 321.18,
+    "close": 323.48,
+    "volume": 44371.395,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-07-17T00:00:00Z",
+    "open": 323.5,
+    "high": 331.93,
+    "low": 312.5,
+    "close": 321.92,
+    "volume": 44986.565,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-07-18T00:00:00Z",
+    "open": 322.0,
+    "high": 338.17,
+    "low": 311.62,
+    "close": 324.6,
+    "volume": 49596.644,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-07-19T00:00:00Z",
+    "open": 324.67,
+    "high": 326.03,
+    "low": 312.01,
+    "close": 319.29,
+    "volume": 22475.992,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-07-20T00:00:00Z",
+    "open": 319.44,
+    "high": 335.41,
+    "low": 317.47,
+    "close": 324.61,
+    "volume": 25718.228,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-07-21T00:00:00Z",
+    "open": 324.46,
+    "high": 334.83,
+    "low": 318.0,
+    "close": 322.29,
+    "volume": 25667.685,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-07-22T00:00:00Z",
+    "open": 322.3,
+    "high": 324.52,
+    "low": 300.37,
+    "close": 310.71,
+    "volume": 42874.702,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-07-23T00:00:00Z",
+    "open": 310.71,
+    "high": 311.93,
+    "low": 282.47,
+    "close": 290.55,
+    "volume": 41750.087,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-07-24T00:00:00Z",
+    "open": 290.46,
+    "high": 295.77,
+    "low": 276.32,
+    "close": 286.32,
+    "volume": 35891.051,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-07-25T00:00:00Z",
+    "open": 286.34,
+    "high": 295.27,
+    "low": 280.25,
+    "close": 294.24,
+    "volume": 32811.961,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-07-26T00:00:00Z",
+    "open": 294.35,
+    "high": 299.88,
+    "low": 292.33,
+    "close": 295.0,
+    "volume": 10989.401,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-07-27T00:00:00Z",
+    "open": 295.18,
+    "high": 305.77,
+    "low": 294.09,
+    "close": 304.97,
+    "volume": 12872.655,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-07-28T00:00:00Z",
+    "open": 305.02,
+    "high": 309.1,
+    "low": 285.8,
+    "close": 289.02,
+    "volume": 19631.031,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-07-29T00:00:00Z",
+    "open": 288.93,
+    "high": 295.58,
+    "low": 279.24,
+    "close": 282.29,
+    "volume": 19874.538,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-07-30T00:00:00Z",
+    "open": 282.12,
+    "high": 284.76,
+    "low": 263.81,
+    "close": 274.55,
+    "volume": 25070.52,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-07-31T00:00:00Z",
+    "open": 274.64,
+    "high": 280.25,
+    "low": 259.92,
+    "close": 260.98,
+    "volume": 19887.396,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-08-01T00:00:00Z",
+    "open": 260.98,
+    "high": 262.83,
+    "low": 249.0,
+    "close": 255.24,
+    "volume": 30597.641,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-08-02T00:00:00Z",
+    "open": 255.27,
+    "high": 258.01,
+    "low": 245.0,
+    "close": 249.46,
+    "volume": 26662.49,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-08-03T00:00:00Z",
+    "open": 249.33,
+    "high": 261.1,
+    "low": 246.66,
+    "close": 260.19,
+    "volume": 16924.774,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-08-04T00:00:00Z",
+    "open": 260.14,
+    "high": 271.3,
+    "low": 259.65,
+    "close": 267.85,
+    "volume": 30776.787,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-08-05T00:00:00Z",
+    "open": 268.0,
+    "high": 268.36,
+    "low": 250.39,
+    "close": 255.38,
+    "volume": 27452.859,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-08-06T00:00:00Z",
+    "open": 255.28,
+    "high": 264.65,
+    "low": 251.24,
+    "close": 263.61,
+    "volume": 20584.103,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-08-07T00:00:00Z",
+    "open": 263.51,
+    "high": 286.54,
+    "low": 262.53,
+    "close": 285.17,
+    "volume": 33698.886,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-08-08T00:00:00Z",
+    "open": 285.16,
+    "high": 295.1,
+    "low": 279.47,
+    "close": 291.03,
+    "volume": 33294.571,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-08-09T00:00:00Z",
+    "open": 291.06,
+    "high": 311.5,
+    "low": 290.21,
+    "close": 307.92,
+    "volume": 28815.643,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-08-10T00:00:00Z",
+    "open": 307.99,
+    "high": 311.52,
+    "low": 298.0,
+    "close": 306.35,
+    "volume": 20183.009,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-08-11T00:00:00Z",
+    "open": 306.32,
+    "high": 312.94,
+    "low": 291.16,
+    "close": 293.2,
+    "volume": 26071.06,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-08-12T00:00:00Z",
+    "open": 293.17,
+    "high": 324.15,
+    "low": 292.34,
+    "close": 322.28,
+    "volume": 43022.293,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-08-13T00:00:00Z",
+    "open": 322.04,
+    "high": 335.67,
+    "low": 316.9,
+    "close": 332.27,
+    "volume": 49194.256,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-08-14T00:00:00Z",
+    "open": 332.27,
+    "high": 340.47,
+    "low": 303.95,
+    "close": 312.87,
+    "volume": 57413.707,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-08-15T00:00:00Z",
+    "open": 312.87,
+    "high": 318.1,
+    "low": 293.85,
+    "close": 300.14,
+    "volume": 34987.511,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-08-16T00:00:00Z",
+    "open": 300.09,
+    "high": 303.84,
+    "low": 290.44,
+    "close": 295.86,
+    "volume": 21671.169,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-08-17T00:00:00Z",
+    "open": 295.86,
+    "high": 310.93,
+    "low": 294.22,
+    "close": 303.41,
+    "volume": 26770.929,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-08-18T00:00:00Z",
+    "open": 303.28,
+    "high": 304.57,
+    "low": 284.32,
+    "close": 288.73,
+    "volume": 40076.962,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-08-19T00:00:00Z",
+    "open": 288.83,
+    "high": 292.88,
+    "low": 275.71,
+    "close": 277.29,
+    "volume": 25749.527,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-08-20T00:00:00Z",
+    "open": 277.43,
+    "high": 299.62,
+    "low": 276.84,
+    "close": 299.3,
+    "volume": 28356.189,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-08-21T00:00:00Z",
+    "open": 299.29,
+    "high": 305.23,
+    "low": 293.8,
+    "close": 300.03,
+    "volume": 25767.449,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-08-22T00:00:00Z",
+    "open": 300.01,
+    "high": 346.58,
+    "low": 294.16,
+    "close": 345.55,
+    "volume": 92214.661,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-08-23T00:00:00Z",
+    "open": 345.56,
+    "high": 385.79,
+    "low": 339.79,
+    "close": 357.69,
+    "volume": 97524.932,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-08-24T00:00:00Z",
+    "open": 357.64,
+    "high": 360.49,
+    "low": 343.42,
+    "close": 348.77,
+    "volume": 50028.486,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-08-25T00:00:00Z",
+    "open": 348.66,
+    "high": 350.54,
+    "low": 310.28,
+    "close": 318.58,
+    "volume": 33030.403,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-08-26T00:00:00Z",
+    "open": 318.61,
+    "high": 339.15,
+    "low": 314.24,
+    "close": 335.85,
+    "volume": 44285.804,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-08-27T00:00:00Z",
+    "open": 336.04,
+    "high": 336.57,
+    "low": 319.37,
+    "close": 320.67,
+    "volume": 43979.284,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-08-28T00:00:00Z",
+    "open": 320.6,
+    "high": 329.09,
+    "low": 312.88,
+    "close": 317.62,
+    "volume": 29541.336,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-08-29T00:00:00Z",
+    "open": 317.63,
+    "high": 321.74,
+    "low": 304.14,
+    "close": 319.19,
+    "volume": 36885.814,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-08-30T00:00:00Z",
+    "open": 319.28,
+    "high": 319.82,
+    "low": 310.27,
+    "close": 319.35,
+    "volume": 17000.051,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-08-31T00:00:00Z",
+    "open": 319.42,
+    "high": 325.23,
+    "low": 315.27,
+    "close": 315.83,
+    "volume": 22272.831,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-09-01T00:00:00Z",
+    "open": 315.75,
+    "high": 319.62,
+    "low": 299.18,
+    "close": 304.88,
+    "volume": 31971.015,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-09-02T00:00:00Z",
+    "open": 304.89,
+    "high": 318.28,
+    "low": 303.86,
+    "close": 315.73,
+    "volume": 42113.567,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-09-03T00:00:00Z",
+    "open": 315.74,
+    "high": 329.35,
+    "low": 312.75,
+    "close": 328.02,
+    "volume": 22092.456,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-09-04T00:00:00Z",
+    "open": 328.07,
+    "high": 332.0,
+    "low": 305.9,
+    "close": 306.54,
+    "volume": 38278.889,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-09-05T00:00:00Z",
+    "open": 306.41,
+    "high": 313.67,
+    "low": 298.3,
+    "close": 302.3,
+    "volume": 37909.612,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-09-06T00:00:00Z",
+    "open": 302.3,
+    "high": 304.67,
+    "low": 296.52,
+    "close": 298.41,
+    "volume": 9913.891,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-09-07T00:00:00Z",
+    "open": 298.4,
+    "high": 304.15,
+    "low": 298.03,
+    "close": 301.58,
+    "volume": 11535.777,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-09-08T00:00:00Z",
+    "open": 301.5,
+    "high": 308.12,
+    "low": 298.39,
+    "close": 303.05,
+    "volume": 29186.194,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-09-09T00:00:00Z",
+    "open": 303.0,
+    "high": 310.08,
+    "low": 294.41,
+    "close": 297.93,
+    "volume": 31381.414,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-09-10T00:00:00Z",
+    "open": 298.06,
+    "high": 306.7,
+    "low": 295.81,
+    "close": 300.23,
+    "volume": 36008.126,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-09-11T00:00:00Z",
+    "open": 300.28,
+    "high": 310.43,
+    "low": 299.48,
+    "close": 309.82,
+    "volume": 27354.948,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-09-12T00:00:00Z",
+    "open": 309.67,
+    "high": 321.93,
+    "low": 308.16,
+    "close": 321.78,
+    "volume": 22304.322,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-09-13T00:00:00Z",
+    "open": 321.65,
+    "high": 321.91,
+    "low": 309.7,
+    "close": 315.2,
+    "volume": 27605.979,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-09-14T00:00:00Z",
+    "open": 315.19,
+    "high": 315.67,
+    "low": 302.45,
+    "close": 306.66,
+    "volume": 24318.864,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-09-15T00:00:00Z",
+    "open": 306.55,
+    "high": 310.35,
+    "low": 295.37,
+    "close": 299.44,
+    "volume": 19894.566,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-09-16T00:00:00Z",
+    "open": 299.41,
+    "high": 302.0,
+    "low": 289.53,
+    "close": 299.03,
+    "volume": 29470.29,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-09-17T00:00:00Z",
+    "open": 299.09,
+    "high": 308.68,
+    "low": 290.81,
+    "close": 306.18,
+    "volume": 28757.775,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-09-18T00:00:00Z",
+    "open": 306.15,
+    "high": 313.15,
+    "low": 302.7,
+    "close": 309.44,
+    "volume": 19937.488,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-09-19T00:00:00Z",
+    "open": 309.41,
+    "high": 312.15,
+    "low": 296.85,
+    "close": 298.83,
+    "volume": 23411.349,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-09-20T00:00:00Z",
+    "open": 298.73,
+    "high": 301.19,
+    "low": 294.95,
+    "close": 297.03,
+    "volume": 13817.353,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-09-21T00:00:00Z",
+    "open": 297.0,
+    "high": 299.41,
+    "low": 293.0,
+    "close": 294.11,
+    "volume": 11832.349,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-09-22T00:00:00Z",
+    "open": 294.16,
+    "high": 295.73,
+    "low": 248.85,
+    "close": 270.54,
+    "volume": 69379.463,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-09-23T00:00:00Z",
+    "open": 270.57,
+    "high": 280.68,
+    "low": 263.36,
+    "close": 274.7,
+    "volume": 35044.305,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-09-24T00:00:00Z",
+    "open": 274.71,
+    "high": 281.42,
+    "low": 268.54,
+    "close": 278.36,
+    "volume": 28280.069,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-09-25T00:00:00Z",
+    "open": 278.4,
+    "high": 279.53,
+    "low": 255.83,
+    "close": 260.37,
+    "volume": 63706.24,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-09-26T00:00:00Z",
+    "open": 260.41,
+    "high": 272.94,
+    "low": 256.45,
+    "close": 270.92,
+    "volume": 38959.765,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-09-27T00:00:00Z",
+    "open": 270.94,
+    "high": 272.49,
+    "low": 265.67,
+    "close": 266.55,
+    "volume": 13340.222,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-09-28T00:00:00Z",
+    "open": 266.57,
+    "high": 277.19,
+    "low": 261.21,
+    "close": 275.28,
+    "volume": 18153.774,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-09-29T00:00:00Z",
+    "open": 275.28,
+    "high": 280.55,
+    "low": 268.88,
+    "close": 277.23,
+    "volume": 18596.221,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-09-30T00:00:00Z",
+    "open": 277.25,
+    "high": 279.21,
+    "low": 266.24,
+    "close": 274.48,
+    "volume": 18704.568,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-10-01T00:00:00Z",
+    "open": 274.55,
+    "high": 288.3,
+    "low": 270.0,
+    "close": 286.89,
+    "volume": 18211.738,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-10-02T00:00:00Z",
+    "open": 287.04,
+    "high": 294.62,
+    "low": 279.02,
+    "close": 289.13,
+    "volume": 19186.578,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-10-03T00:00:00Z",
+    "open": 289.11,
+    "high": 303.3,
+    "low": 284.15,
+    "close": 290.74,
+    "volume": 25909.317,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-10-04T00:00:00Z",
+    "open": 290.84,
+    "high": 292.18,
+    "low": 280.22,
+    "close": 283.3,
+    "volume": 9688.229,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-10-05T00:00:00Z",
+    "open": 283.33,
+    "high": 296.19,
+    "low": 281.22,
+    "close": 285.76,
+    "volume": 14899.861,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-10-06T00:00:00Z",
+    "open": 285.77,
+    "high": 301.96,
+    "low": 283.09,
+    "close": 297.35,
+    "volume": 20192.066,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-10-07T00:00:00Z",
+    "open": 297.42,
+    "high": 298.45,
+    "low": 275.66,
+    "close": 276.35,
+    "volume": 26412.371,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-10-08T00:00:00Z",
+    "open": 276.31,
+    "high": 287.32,
+    "low": 274.74,
+    "close": 285.53,
+    "volume": 16603.49,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-10-09T00:00:00Z",
+    "open": 285.59,
+    "high": 286.74,
+    "low": 268.56,
+    "close": 273.81,
+    "volume": 19284.623,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-10-10T00:00:00Z",
+    "open": 273.95,
+    "high": 279.74,
+    "low": 80.41,
+    "close": 224.8,
+    "volume": 90083.992,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-10-11T00:00:00Z",
+    "open": 225.6,
+    "high": 245.31,
+    "low": 217.58,
+    "close": 234.62,
+    "volume": 41164.109,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-10-12T00:00:00Z",
+    "open": 234.62,
+    "high": 256.5,
+    "low": 225.44,
+    "close": 251.28,
+    "volume": 36966.14,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-10-13T00:00:00Z",
+    "open": 251.24,
+    "high": 263.29,
+    "low": 244.35,
+    "close": 261.36,
+    "volume": 41013.723,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-10-14T00:00:00Z",
+    "open": 261.4,
+    "high": 264.0,
+    "low": 238.33,
+    "close": 255.45,
+    "volume": 49142.17,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-10-15T00:00:00Z",
+    "open": 255.43,
+    "high": 262.72,
+    "low": 236.82,
+    "close": 242.38,
+    "volume": 34581.162,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-10-16T00:00:00Z",
+    "open": 242.4,
+    "high": 246.46,
+    "low": 222.54,
+    "close": 223.23,
+    "volume": 38223.304,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-10-17T00:00:00Z",
+    "open": 223.19,
+    "high": 227.5,
+    "low": 200.22,
+    "close": 206.66,
+    "volume": 85124.444,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-10-18T00:00:00Z",
+    "open": 206.66,
+    "high": 217.05,
+    "low": 205.48,
+    "close": 214.95,
+    "volume": 28154.243,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-10-19T00:00:00Z",
+    "open": 214.95,
+    "high": 226.55,
+    "low": 211.66,
+    "close": 222.59,
+    "volume": 33781.07,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-10-20T00:00:00Z",
+    "open": 222.51,
+    "high": 235.95,
+    "low": 217.9,
+    "close": 228.94,
+    "volume": 33257.665,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-10-21T00:00:00Z",
+    "open": 229.02,
+    "high": 237.05,
+    "low": 218.13,
+    "close": 218.83,
+    "volume": 40733.217,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-10-22T00:00:00Z",
+    "open": 218.81,
+    "high": 225.6,
+    "low": 207.18,
+    "close": 216.49,
+    "volume": 54980.243,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-10-23T00:00:00Z",
+    "open": 216.4,
+    "high": 228.46,
+    "low": 215.95,
+    "close": 224.57,
+    "volume": 18405.097,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-10-24T00:00:00Z",
+    "open": 224.6,
+    "high": 235.16,
+    "low": 223.4,
+    "close": 229.02,
+    "volume": 22481.267,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-10-25T00:00:00Z",
+    "open": 228.96,
+    "high": 229.1,
+    "low": 224.77,
+    "close": 226.33,
+    "volume": 9653.854,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-10-26T00:00:00Z",
+    "open": 226.32,
+    "high": 242.41,
+    "low": 223.52,
+    "close": 240.87,
+    "volume": 17429.962,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-10-27T00:00:00Z",
+    "open": 240.83,
+    "high": 249.09,
+    "low": 233.19,
+    "close": 235.17,
+    "volume": 19574.26,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-10-28T00:00:00Z",
+    "open": 235.08,
+    "high": 239.15,
+    "low": 224.63,
+    "close": 228.4,
+    "volume": 20158.744,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-10-29T00:00:00Z",
+    "open": 228.38,
+    "high": 235.4,
+    "low": 221.89,
+    "close": 227.67,
+    "volume": 25038.475,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-10-30T00:00:00Z",
+    "open": 227.53,
+    "high": 231.27,
+    "low": 207.38,
+    "close": 215.19,
+    "volume": 28891.242,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-10-31T00:00:00Z",
+    "open": 215.15,
+    "high": 235.6,
+    "low": 212.3,
+    "close": 228.32,
+    "volume": 27941.341,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-11-01T00:00:00Z",
+    "open": 228.55,
+    "high": 229.21,
+    "low": 221.32,
+    "close": 222.87,
+    "volume": 13302.586,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-11-02T00:00:00Z",
+    "open": 222.88,
+    "high": 237.1,
+    "low": 218.39,
+    "close": 231.25,
+    "volume": 24901.3,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-11-03T00:00:00Z",
+    "open": 231.32,
+    "high": 232.98,
+    "low": 194.3,
+    "close": 199.64,
+    "volume": 47572.025,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-11-04T00:00:00Z",
+    "open": 199.64,
+    "high": 206.03,
+    "low": 176.63,
+    "close": 188.08,
+    "volume": 65125.645,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-11-05T00:00:00Z",
+    "open": 188.08,
+    "high": 205.63,
+    "low": 180.66,
+    "close": 202.01,
+    "volume": 36622.883,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-11-06T00:00:00Z",
+    "open": 202.0,
+    "high": 206.01,
+    "low": 192.72,
+    "close": 197.12,
+    "volume": 21252.583,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-11-07T00:00:00Z",
+    "open": 197.2,
+    "high": 212.63,
+    "low": 189.78,
+    "close": 207.95,
+    "volume": 30693.729,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-11-08T00:00:00Z",
+    "open": 208.1,
+    "high": 211.88,
+    "low": 198.41,
+    "close": 202.73,
+    "volume": 37255.703,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-11-09T00:00:00Z",
+    "open": 202.75,
+    "high": 215.08,
+    "low": 196.57,
+    "close": 212.31,
+    "volume": 26493.977,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-11-10T00:00:00Z",
+    "open": 212.24,
+    "high": 229.4,
+    "low": 210.6,
+    "close": 228.27,
+    "volume": 30883.17,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-11-11T00:00:00Z",
+    "open": 228.33,
+    "high": 232.54,
+    "low": 207.03,
+    "close": 207.52,
+    "volume": 30184.434,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-11-12T00:00:00Z",
+    "open": 207.73,
+    "high": 219.69,
+    "low": 202.92,
+    "close": 205.15,
+    "volume": 23818.975,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-11-13T00:00:00Z",
+    "open": 205.12,
+    "high": 216.79,
+    "low": 190.64,
+    "close": 198.72,
+    "volume": 23687.885,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-11-14T00:00:00Z",
+    "open": 198.64,
+    "high": 199.83,
+    "low": 172.83,
+    "close": 173.82,
+    "volume": 52442.386,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-11-15T00:00:00Z",
+    "open": 173.86,
+    "high": 182.66,
+    "low": 173.77,
+    "close": 178.43,
+    "volume": 18113.313,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-11-16T00:00:00Z",
+    "open": 178.46,
+    "high": 182.16,
+    "low": 167.67,
+    "close": 172.79,
+    "volume": 40310.229,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-11-17T00:00:00Z",
+    "open": 172.81,
+    "high": 182.56,
+    "low": 164.74,
+    "close": 169.01,
+    "volume": 40834.539,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-11-18T00:00:00Z",
+    "open": 169.05,
+    "high": 179.63,
+    "low": 165.11,
+    "close": 178.23,
+    "volume": 33887.708,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-11-19T00:00:00Z",
+    "open": 178.23,
+    "high": 178.99,
+    "low": 163.62,
+    "close": 174.36,
+    "volume": 34102.637,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-11-20T00:00:00Z",
+    "open": 174.31,
+    "high": 179.5,
+    "low": 159.35,
+    "close": 164.55,
+    "volume": 36213.795,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-11-21T00:00:00Z",
+    "open": 164.56,
+    "high": 167.8,
+    "low": 146.15,
+    "close": 157.72,
+    "volume": 45399.316,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-11-22T00:00:00Z",
+    "open": 157.78,
+    "high": 163.5,
+    "low": 155.18,
+    "close": 161.17,
+    "volume": 18579.271,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-11-23T00:00:00Z",
+    "open": 161.14,
+    "high": 171.59,
+    "low": 160.37,
+    "close": 167.41,
+    "volume": 21971.05,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-11-24T00:00:00Z",
+    "open": 167.42,
+    "high": 180.2,
+    "low": 165.49,
+    "close": 178.49,
+    "volume": 44532.096,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-11-25T00:00:00Z",
+    "open": 178.42,
+    "high": 181.31,
+    "low": 174.2,
+    "close": 179.1,
+    "volume": 28943.396,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-11-26T00:00:00Z",
+    "open": 179.03,
+    "high": 188.86,
+    "low": 174.82,
+    "close": 185.86,
+    "volume": 28844.68,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-11-27T00:00:00Z",
+    "open": 185.84,
+    "high": 188.0,
+    "low": 175.5,
+    "close": 185.99,
+    "volume": 16053.149,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-11-28T00:00:00Z",
+    "open": 186.01,
+    "high": 189.34,
+    "low": 182.33,
+    "close": 185.35,
+    "volume": 19210.283,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-11-29T00:00:00Z",
+    "open": 185.43,
+    "high": 186.71,
+    "low": 180.94,
+    "close": 182.16,
+    "volume": 13671.653,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-11-30T00:00:00Z",
+    "open": 182.13,
+    "high": 190.74,
+    "low": 176.57,
+    "close": 177.58,
+    "volume": 24972.867,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-12-01T00:00:00Z",
+    "open": 177.56,
+    "high": 178.13,
+    "low": 162.22,
+    "close": 171.34,
+    "volume": 33081.128,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-12-02T00:00:00Z",
+    "open": 171.32,
+    "high": 190.88,
+    "low": 167.28,
+    "close": 189.92,
+    "volume": 25405.11,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-12-03T00:00:00Z",
+    "open": 189.87,
+    "high": 200.6,
+    "low": 189.46,
+    "close": 197.9,
+    "volume": 30245.619,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-12-04T00:00:00Z",
+    "open": 197.89,
+    "high": 199.52,
+    "low": 187.44,
+    "close": 190.64,
+    "volume": 17395.844,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-12-05T00:00:00Z",
+    "open": 190.63,
+    "high": 193.55,
+    "low": 181.55,
+    "close": 183.49,
+    "volume": 19151.307,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-12-06T00:00:00Z",
+    "open": 183.61,
+    "high": 191.56,
+    "low": 182.2,
+    "close": 187.53,
+    "volume": 10160.758,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-12-07T00:00:00Z",
+    "open": 187.51,
+    "high": 195.03,
+    "low": 182.06,
+    "close": 187.56,
+    "volume": 25122.057,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-12-08T00:00:00Z",
+    "open": 187.59,
+    "high": 200.07,
+    "low": 185.9,
+    "close": 191.55,
+    "volume": 27983.489,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-12-09T00:00:00Z",
+    "open": 191.57,
+    "high": 206.34,
+    "low": 187.29,
+    "close": 202.54,
+    "volume": 38990.462,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-12-10T00:00:00Z",
+    "open": 202.47,
+    "high": 207.28,
+    "low": 196.37,
+    "close": 197.02,
+    "volume": 30844.243,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-12-11T00:00:00Z",
+    "open": 196.99,
+    "high": 203.3,
+    "low": 187.08,
+    "close": 202.59,
+    "volume": 31877.368,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-12-12T00:00:00Z",
+    "open": 202.51,
+    "high": 206.86,
+    "low": 189.51,
+    "close": 191.39,
+    "volume": 28506.777,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-12-13T00:00:00Z",
+    "open": 191.41,
+    "high": 202.67,
+    "low": 191.32,
+    "close": 197.59,
+    "volume": 14132.543,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-12-14T00:00:00Z",
+    "open": 197.54,
+    "high": 198.15,
+    "low": 185.88,
+    "close": 188.53,
+    "volume": 17544.262,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-12-15T00:00:00Z",
+    "open": 188.61,
+    "high": 196.8,
+    "low": 178.98,
+    "close": 192.93,
+    "volume": 50689.175,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-12-16T00:00:00Z",
+    "open": 192.95,
+    "high": 193.27,
+    "low": 183.36,
+    "close": 186.11,
+    "volume": 33132.29,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-12-17T00:00:00Z",
+    "open": 186.23,
+    "high": 192.88,
+    "low": 176.75,
+    "close": 180.0,
+    "volume": 30299.381,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-12-18T00:00:00Z",
+    "open": 179.93,
+    "high": 185.15,
+    "low": 169.39,
+    "close": 173.55,
+    "volume": 32772.108,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-12-19T00:00:00Z",
+    "open": 173.53,
+    "high": 187.46,
+    "low": 171.73,
+    "close": 181.48,
+    "volume": 26807.617,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-12-20T00:00:00Z",
+    "open": 181.47,
+    "high": 183.28,
+    "low": 179.7,
+    "close": 179.84,
+    "volume": 11074.7,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-12-21T00:00:00Z",
+    "open": 179.92,
+    "high": 180.13,
+    "low": 156.17,
+    "close": 165.13,
+    "volume": 45331.109,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-12-22T00:00:00Z",
+    "open": 165.11,
+    "high": 166.58,
+    "low": 148.1,
+    "close": 150.51,
+    "volume": 69972.607,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-12-23T00:00:00Z",
+    "open": 150.53,
+    "high": 155.56,
+    "low": 147.6,
+    "close": 150.8,
+    "volume": 32547.495,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-12-24T00:00:00Z",
+    "open": 150.8,
+    "high": 151.84,
+    "low": 146.41,
+    "close": 148.66,
+    "volume": 16726.516,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-12-25T00:00:00Z",
+    "open": 148.64,
+    "high": 154.49,
+    "low": 148.03,
+    "close": 149.06,
+    "volume": 13342.669,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-12-26T00:00:00Z",
+    "open": 148.96,
+    "high": 157.86,
+    "low": 148.48,
+    "close": 154.23,
+    "volume": 17648.095,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-12-27T00:00:00Z",
+    "open": 154.25,
+    "high": 157.52,
+    "low": 153.79,
+    "close": 156.99,
+    "volume": 9987.308,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-12-28T00:00:00Z",
+    "open": 157.01,
+    "high": 157.29,
+    "low": 152.56,
+    "close": 153.52,
+    "volume": 9759.942,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-12-29T00:00:00Z",
+    "open": 153.52,
+    "high": 159.12,
+    "low": 148.52,
+    "close": 149.37,
+    "volume": 19644.695,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-12-30T00:00:00Z",
+    "open": 149.36,
+    "high": 152.43,
+    "low": 148.88,
+    "close": 149.38,
+    "volume": 10126.94,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2025-12-31T00:00:00Z",
+    "open": 149.34,
+    "high": 150.79,
+    "low": 143.45,
+    "close": 145.87,
+    "volume": 13605.094,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2026-01-01T00:00:00Z",
+    "open": 145.88,
+    "high": 149.43,
+    "low": 144.93,
+    "close": 148.81,
+    "volume": 7309.503,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2026-01-02T00:00:00Z",
+    "open": 148.8,
+    "high": 165.96,
+    "low": 147.79,
+    "close": 165.19,
+    "volume": 32036.289,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2026-01-03T00:00:00Z",
+    "open": 165.18,
+    "high": 167.79,
+    "low": 157.83,
+    "close": 163.08,
+    "volume": 22823.401,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2026-01-04T00:00:00Z",
+    "open": 163.14,
+    "high": 166.17,
+    "low": 160.7,
+    "close": 164.16,
+    "volume": 17963.607,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AAVE-USDC",
+    "timeframe": "1d",
+    "timestamp": "2026-01-05T00:00:00Z",
+    "open": 164.15,
+    "high": 167.79,
+    "low": 161.76,
+    "close": 166.1,
+    "volume": 10995.316,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  }
+]

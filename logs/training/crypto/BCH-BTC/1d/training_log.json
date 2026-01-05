@@ -1,0 +1,18 @@
+{
+  "log_file": "logs\\training\\crypto\\BCH-BTC\\1d\\training_log.json",
+  "total_events": 1,
+  "events": [
+    {
+      "timestamp": "2026-01-05T07:31:29.282472Z",
+      "level": "ERROR",
+      "message": "Training skipped: crypto/BCH-BTC (intraday): No data.json found for crypto/BCH-BTC/1d",
+      "category": "TRAIN",
+      "symbol": "BCH-BTC",
+      "asset_type": "crypto",
+      "data": {
+        "error": "No data.json found for crypto/BCH-BTC/1d",
+        "horizon": "intraday"
+      }
+    }
+  ]
+}

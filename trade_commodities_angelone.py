@@ -40,7 +40,7 @@ from train_models import train_symbols
 from trading.angelone_client import AngelOneClient
 from trading.execution_engine import ExecutionEngine, TradingRiskConfig
 from trading.position_manager import PositionManager
-from trading.symbol_universe import find_by_data_symbol
+from trading.symbol_universe import find_by_data_symbol, by_asset_type
 from live_trader import discover_tradable_symbols, run_trading_cycle
 from ml.horizons import print_horizon_summary
 
@@ -68,8 +68,7 @@ def main():
     parser.add_argument(
         "--commodities-symbols",
         nargs="+",
-        required=True,
-        help="Commodity symbols (e.g., GC=F CL=F SI=F)",
+        help="Commodity symbols (e.g., GC=F CL=F SI=F). If not provided, will auto-discover all enabled commodities from symbol universe.",
     )
     parser.add_argument(
         "--timeframe",
@@ -129,6 +128,23 @@ def main():
     
     args = parser.parse_args()
     
+    # CRITICAL VALIDATION: Profit target is REQUIRED and must be valid
+    if args.profit_target_pct is None:
+        print("❌ ERROR: --profit-target-pct is REQUIRED and cannot be omitted.")
+        print("   You must specify a profit target before trading (e.g., --profit-target-pct 5.0)")
+        sys.exit(1)
+    
+    if args.profit_target_pct <= 0:
+        print(f"❌ ERROR: Profit target must be positive. Got: {args.profit_target_pct}")
+        print("   Example: --profit-target-pct 5.0 (for 5% profit target)")
+        sys.exit(1)
+    
+    if args.profit_target_pct > 1000:
+        print(f"❌ ERROR: Profit target seems unreasonably high: {args.profit_target_pct}%")
+        print("   Please verify your profit target. Maximum allowed: 1000%")
+        print("   Example: --profit-target-pct 5.0 (for 5% profit target)")
+        sys.exit(1)
+    
     # Get Angel One credentials
     # Priority: Command line args > .env file > Environment variables
     # User preference: Use .env file only (as requested)
@@ -148,8 +164,14 @@ def main():
                     if "=" not in line:
                         continue
                     key, val = line.split("=", 1)
+                    
+                    # Remove inline comments (anything after #)
+                    if "#" in val:
+                        val = val.split("#", 1)[0]
+                        
                     key = key.strip()
                     val = val.strip()
+                    
                     # Remove quotes if present
                     if val.startswith('"') and val.endswith('"'):
                         val = val[1:-1]
@@ -195,7 +217,27 @@ def main():
         print("=" * 80)
         sys.exit(1)
     
-    commodities_symbols = [s.upper() for s in args.commodities_symbols]
+    # Auto-discover commodities symbols if not provided
+    if args.commodities_symbols:
+        # User provided symbols explicitly
+        commodities_symbols = [s.upper() for s in args.commodities_symbols]
+        print(f"\n[CONFIG] Using user-specified commodities: {', '.join(commodities_symbols)}")
+    else:
+        # Auto-discover enabled commodities from symbol_universe.py
+        print("\n[AUTO-DISCOVERY] No symbols specified, discovering enabled commodities...")
+        enabled_commodities = by_asset_type("commodities")
+        if not enabled_commodities:
+            print("[ERROR] No enabled commodities found in symbol_universe.py!")
+            print("        Please enable at least one commodity in trading/symbol_universe.py")
+            print("        Set enabled=True for the commodities you want to trade.")
+            sys.exit(1)
+        
+        commodities_symbols = [asset.data_symbol.upper() for asset in enabled_commodities]
+        print(f"[AUTO-DISCOVERY] Found {len(commodities_symbols)} enabled commodity(ies):")
+        for asset in enabled_commodities:
+            mcx_symbol = asset.get_mcx_symbol(args.commodities_horizon) if hasattr(asset, 'get_mcx_symbol') else asset.trading_symbol
+            print(f"  ✓ {asset.logical_name}: {asset.data_symbol} → MCX: {mcx_symbol}")
+        print()
     timeframe = args.timeframe
     horizon = args.commodities_horizon
     years = max(args.years, 0.5)
@@ -372,12 +414,14 @@ def main():
             default_stop_loss_pct=0.020,  # 2.0% for commodities (real money)
             user_stop_loss_pct=args.stop_loss_pct,  # User override if provided
             profit_target_pct=args.profit_target_pct,
-            allow_short=True,  # MCX supports shorting
+            allow_short=False,  # SHORTING DISABLED for commodities (will be enabled later)
             max_total_equity_pct=0.50,  # Maximum 50% of equity deployed across all positions (ENFORCED)
             max_daily_loss_pct=0.05,  # Maximum 5% daily loss before trading halt (circuit breaker)
             slippage_buffer_pct=0.001,  # 0.1% slippage buffer for stop-loss execution
         )
         position_manager = PositionManager()
+        # Ensure Path is available (re-import to avoid any shadowing issues)
+        from pathlib import Path
         execution_engine = ExecutionEngine(
             client=angelone_client,
             risk_config=risk_config,
@@ -487,6 +531,7 @@ def main():
     
     # Run trading cycles
     cycle_count = 0
+    excluded_symbols = set()  # Track symbols that were manually closed - stop trading them
     try:
         print("⏳ Waiting for first cycle to start...")
         sys.stdout.flush()
@@ -510,7 +555,14 @@ def main():
                     regenerate_features_flag=True,  # Regenerate features after updating data
                     profit_target_pct=args.profit_target_pct,
                     user_stop_loss_pct=args.stop_loss_pct,
+                    excluded_symbols=excluded_symbols,  # Pass excluded symbols
                 )
+                
+                # Update excluded symbols from cycle results (manually closed positions)
+                if cycle_results.get("symbols_stopped"):
+                    for symbol in cycle_results["symbols_stopped"]:
+                        excluded_symbols.add(symbol)
+                        print(f"\n[TRACKING] Added {symbol} to excluded list (manually closed)")
             except Exception as cycle_exc:
                 print(f"\n[ERROR] Trading cycle {cycle_count} failed: {cycle_exc}")
                 import traceback

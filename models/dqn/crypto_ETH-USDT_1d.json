@@ -2,8 +2,8 @@
   "asset_type": "crypto",
   "symbol": "ETH-USDT",
   "timeframe": "1d",
-  "training_samples": 2142,
-  "validation_samples": 356,
+  "training_samples": 2147,
+  "validation_samples": 357,
   "feature_count": 88,
   "feature_sample": [
     "target_quantile_bin",
@@ -11,7 +11,7 @@
     "target_direction",
     "Log_Returns",
     "Force_Index",
-    "Normalized_Returns",
+    "ZScore_returns_30",
     "Intraday_Range",
     "DI_plus",
     "MFI",
@@ -21,14 +21,14 @@
     "Stochastic_%D",
     "Bollinger_%b",
     "RSI_7",
-    "Williams_%R",
+    "Stochastic_%K",
     "RSI_14",
     "TSI",
-    "Session_VWAP",
+    "VWAP",
     "Gap_Open",
     "Rolling_Sharpe_30",
-    "DI_minus",
     "Volume_Surge_Flag",
+    "DI_minus",
     "Rolling_Skew",
     "RSI_21"
   ],
@@ -55,23 +55,23 @@
     "recall": null,
     "f1": null,
     "roc_auc": null,
-    "action": "hold",
+    "action": "long",
     "action_reason": "Action selected directly by DQN policy on latest state; reward history tracked separately.",
     "validation_policy_metrics": {
-      "total_return": 7.707145202249656,
-      "avg_return": 0.021710268175351145,
-      "sharpe": 14.136284337617793,
-      "hit_rate": 0.856338028169014,
-      "max_drawdown": -0.020897192251103647
+      "total_return": 7.9496042460992165,
+      "avg_return": 0.022330349005896675,
+      "sharpe": 14.17224003311618,
+      "hit_rate": 0.8764044943820225,
+      "max_drawdown": -0.019693956102749155
     },
     "test_policy_metrics": {
-      "total_return": 9.131896645228636,
-      "avg_return": 0.025723652521770807,
-      "sharpe": 14.068840863946678,
-      "hit_rate": 0.8647887323943662,
-      "max_drawdown": -0.017607694286891906
+      "total_return": 9.083652039412815,
+      "avg_return": 0.025515876515204535,
+      "sharpe": 13.777737062033266,
+      "hit_rate": 0.8707865168539326,
+      "max_drawdown": -0.021423772674114883
     },
-    "predicted_return": 0.0,
-    "predicted_price": 2965.42
+    "predicted_return": 0.025515876515204535,
+    "predicted_price": 3247.8190360824183
   }
 }

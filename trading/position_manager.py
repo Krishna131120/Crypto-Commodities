@@ -42,6 +42,7 @@ class Position:
     total_cost_basis: Optional[float] = None  # Total cost of all purchases
     stop_loss_order_id: Optional[str] = None  # Alpaca order ID for stop-loss (broker-level protection)
     take_profit_order_id: Optional[str] = None  # Alpaca order ID for take-profit (broker-level protection)
+    short_prediction_cycles: int = 0  # Track cycles with SHORT prediction while holding LONG (for commodities when shorting disabled)
 
 
 class PositionManager:
@@ -376,10 +377,10 @@ class PositionManager:
         # Recalculate profit target and stop-loss prices based on current entry price
         if position.side == "long":
             profit_target_price = position.entry_price * (1.0 + new_profit_target_pct / 100.0)
-            stop_loss_price = position.entry_price * (1.0 - stop_loss_pct)
+            stop_loss_price = position.entry_price * (1.0 - stop_loss_pct / 100.0)
         else:  # short
             profit_target_price = position.entry_price * (1.0 - new_profit_target_pct / 100.0)
-            stop_loss_price = position.entry_price * (1.0 + stop_loss_pct)
+            stop_loss_price = position.entry_price * (1.0 + stop_loss_pct / 100.0)
         
         # Update position
         position.profit_target_pct = new_profit_target_pct

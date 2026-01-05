@@ -139,14 +139,14 @@ def show_prediction(
         dqn_action = None
         dqn_return = None
         # Try to load DQN from summary (always, not just when models disagree)
-            dqn_data = summary.get("models", {}).get("dqn", {})
-            if not dqn_data:
-                dqn_data = summary.get("model_predictions", {}).get("dqn", {})
-            if dqn_data:
-                dqn_action = dqn_data.get("action", "hold").upper()
-                dqn_return_pct = dqn_data.get("predicted_return_pct")
-                if dqn_return_pct is not None:
-                    dqn_return = dqn_return_pct
+        dqn_data = summary.get("models", {}).get("dqn", {})
+        if not dqn_data:
+            dqn_data = summary.get("model_predictions", {}).get("dqn", {})
+        if dqn_data:
+            dqn_action = dqn_data.get("action", "hold").upper()
+            dqn_return_pct = dqn_data.get("predicted_return_pct")
+            if dqn_return_pct is not None:
+                dqn_return = dqn_return_pct
         
         if verbose:
             print(f"\n{'='*80}")
@@ -275,16 +275,16 @@ def show_prediction(
                 # Always show DQN decision in live predictions section
                 print()
                 if dqn_action:
-                dqn_price = current_price * (1.0 + dqn_return / 100.0) if dqn_return else None
-                dqn_emoji = "🟢" if dqn_action == "LONG" else "🔴" if dqn_action == "SHORT" else "⚪"
+                    dqn_price = current_price * (1.0 + dqn_return / 100.0) if dqn_return else None
+                    dqn_emoji = "🟢" if dqn_action == "LONG" else "🔴" if dqn_action == "SHORT" else "⚪"
                     if models_disagree:
                         print(f"  🤖 DQN DECISION (Models Disagree - DQN Recommendation):")
                     else:
                         print(f"  🤖 DQN DECISION (Policy-Based Recommendation):")
-                if dqn_price:
+                    if dqn_price:
                         print(f"     {dqn_emoji} Action: {dqn_action:5s} | "
-                          f"Price: ${dqn_price:,.2f} ({dqn_return:+.2f}%)")
-                else:
+                              f"Price: ${dqn_price:,.2f} ({dqn_return:+.2f}%)")
+                    else:
                         print(f"     {dqn_emoji} Action: {dqn_action}")
                 else:
                     print(f"  🤖 DQN: Not available")

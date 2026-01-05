@@ -1,0 +1,18 @@
+{
+  "log_file": "logs\\training\\crypto\\DAI-USDT\\1d\\training_log.json",
+  "total_events": 1,
+  "events": [
+    {
+      "timestamp": "2026-01-05T12:05:17.295413Z",
+      "level": "ERROR",
+      "message": "Training skipped: crypto/DAI-USDT (intraday): Bin edges must be unique: array([-inf,   0.,   0.,  inf]).\nYou can drop duplicate edges by setting the 'duplicates' kwarg",
+      "category": "TRAIN",
+      "symbol": "DAI-USDT",
+      "asset_type": "crypto",
+      "data": {
+        "error": "Bin edges must be unique: array([-inf,   0.,   0.,  inf]).\nYou can drop duplicate edges by setting the 'duplicates' kwarg",
+        "horizon": "intraday"
+      }
+    }
+  ]
+}

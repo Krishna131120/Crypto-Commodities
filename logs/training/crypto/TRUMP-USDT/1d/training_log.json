@@ -1,0 +1,18 @@
+{
+  "log_file": "logs\\training\\crypto\\TRUMP-USDT\\1d\\training_log.json",
+  "total_events": 1,
+  "events": [
+    {
+      "timestamp": "2026-01-05T12:36:50.910588Z",
+      "level": "ERROR",
+      "message": "Training skipped: crypto/TRUMP-USDT (intraday): insufficient data (151 rows, need 200)",
+      "category": "TRAIN",
+      "symbol": "TRUMP-USDT",
+      "asset_type": "crypto",
+      "data": {
+        "error": "insufficient data (151 rows, need 200)",
+        "horizon": "intraday"
+      }
+    }
+  ]
+}

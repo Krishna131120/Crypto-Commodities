@@ -1,0 +1,15 @@
+{
+  "symbol": "LTC-BTC",
+  "timeframe": "1d",
+  "asset_type": "crypto",
+  "generated_at": "2026-01-05T12:04:56.549461Z",
+  "data_file": "data.json",
+  "latest_file": "latest.json",
+  "data_file_info": {
+    "filename": "data.json",
+    "size_bytes": 1131341,
+    "candle_count": 3098,
+    "first_timestamp": "2017-07-14T00:00:00Z",
+    "last_timestamp": "2026-01-05T00:00:00Z"
+  }
+}

@@ -54,9 +54,9 @@ class TradingRiskConfig:
     max_daily_loss_pct: float = 0.05          # Maximum daily loss as % of equity (5% default, enforced for commodities)
     slippage_buffer_pct: float = 0.001        # Slippage buffer for stop-loss calculations (0.1% default)
     # IMPORTANT: Shorting support depends on your broker account and asset type.
-    # MCX supports shorting for commodity futures.
-    # This engine is designed to work correctly in both environments.
-    allow_short: bool = True                  # enable shorting (ready for live trading)
+    # COMMODITIES: Shorting DISABLED for now (will be enabled in a future update)
+    # CRYPTO: Shorting can be enabled if broker supports it
+    allow_short: bool = True                  # enable shorting (enabled for commodities futures/options)
     
     def get_effective_stop_loss_pct(self, asset_type: str = "crypto") -> float:
         """
@@ -181,7 +181,18 @@ class ExecutionEngine:
         asset_type = getattr(asset, "asset_type", "crypto").lower()
         effective_stop_loss = self.risk.get_effective_stop_loss_pct(asset_type)
         
+        # Determine asset type flags (needed for shorting logic and symbol selection)
+        is_crypto = asset_type == "crypto"
+        is_commodities = asset_type == "commodities"
+        
         # Create a risk config that uses horizon-specific values, falling back to base config
+        # SHORTING FOR COMMODITIES: Currently DISABLED (will be enabled in a future update)
+        # Use risk config's allow_short setting, but override to False for commodities
+        if is_commodities:
+            allow_short_for_asset = False  # Disabled for commodities
+        else:
+            allow_short_for_asset = self.risk.allow_short  # Use config for other assets
+        
         effective_risk = TradingRiskConfig(
             max_notional_per_symbol_pct=horizon_risk.get("max_notional_per_symbol_pct", self.risk.max_notional_per_symbol_pct),
             max_total_equity_pct=self.risk.max_total_equity_pct,
@@ -190,12 +201,10 @@ class ExecutionEngine:
             min_confidence=horizon_risk.get("min_confidence", self.risk.min_confidence),
             user_stop_loss_pct=self.risk.user_stop_loss_pct,  # Pass through user override
             manual_stop_loss=self.risk.manual_stop_loss,
-            allow_short=self.risk.allow_short,
+            allow_short=allow_short_for_asset,  # Disabled for commodities (will be enabled later)
         )
 
         # Get trading symbol - commodities MUST use MCX with DHAN (no Alpaca fallback)
-        is_crypto = getattr(asset, "asset_type", "").lower() == "crypto"
-        is_commodities = getattr(asset, "asset_type", "").lower() == "commodities"
         
         # For commodities, ALWAYS use MCX contract symbol with Angel One (enforced)
         if is_commodities:
@@ -275,9 +284,29 @@ class ExecutionEngine:
                 self._log(orders)
                 return orders
 
+        # CRITICAL: Check for existing position in broker
         existing_position = self.client.get_position(trading_symbol)
         existing_qty = float(existing_position["qty"]) if existing_position else 0.0
-        if existing_qty > 0:
+        
+        # Also check PositionManager for tracked positions (in case broker check fails)
+        tracked_position_check = self.position_manager.get_position(trading_symbol)
+        if existing_qty == 0.0 and tracked_position_check and tracked_position_check.status == "open":
+            # Broker says no position, but PositionManager thinks there is one
+            # This could be a sync issue - try to get position details from tracked position
+            print(f"  [WARNING] Broker reports no position for {trading_symbol}, but PositionManager has tracked position")
+            print(f"  [INFO] Tracked position: {abs(tracked_position_check.quantity):.8f} {trading_symbol} @ {tracked_position_check.entry_price:.2f}")
+            print(f"  [ACTION] Will monitor tracked position instead of entering new position")
+            # Use tracked position quantity to determine side_in_market
+            tracked_qty = tracked_position_check.quantity
+            if tracked_qty > 0:
+                side_in_market = "long"
+                existing_qty = tracked_qty  # Use tracked qty as fallback
+            elif tracked_qty < 0:
+                side_in_market = "short"
+                existing_qty = tracked_qty  # Use tracked qty as fallback
+            else:
+                side_in_market = "flat"
+        elif existing_qty > 0:
             side_in_market = "long"
         elif existing_qty < 0:
             side_in_market = "short"
@@ -285,8 +314,23 @@ class ExecutionEngine:
             side_in_market = "flat"
 
         # Determine target side from model action.
-        if action == "short" and self.risk.allow_short:
-            target_side = "short"
+        # COMMODITIES: SHORTING DISABLED for now (will be enabled later)
+        if action == "short":
+            if is_commodities:
+                # Shorting not available for commodities yet - inform user and set to flat
+                print(f"  [INFO] Model predicts SHORT, but shorting is not available for commodities yet.")
+                print(f"  [INFO] Shorting will be enabled in a future update.")
+                print(f"  [INFO] Setting target to FLAT (no new position).")
+                if side_in_market == "long":
+                    # We have a LONG position - will monitor and exit after a few cycles if prediction stays SHORT
+                    print(f"  [INFO] Current position is LONG. Will monitor and exit if SHORT prediction persists.")
+                target_side = "flat"
+            elif effective_risk.allow_short:
+                # Crypto or other assets with shorting enabled
+                target_side = "short"
+            else:
+                # Shorting disabled for this asset type
+                target_side = "flat"
         elif action == "long":
             target_side = "long"
         else:
@@ -297,8 +341,26 @@ class ExecutionEngine:
         tracked_position = self.position_manager.get_position(trading_symbol)
         profit_target_hit = False
         
+        # OPTIONAL: Update profit target for existing position if user provided a new one
+        # This allows users to change profit target when re-running the bot
+        if tracked_position and tracked_position.status == "open" and effective_profit_target is not None:
+            # Check if user wants to update the profit target (if different from current)
+            if abs(tracked_position.profit_target_pct - effective_profit_target) > 0.01:  # More than 0.01% difference
+                print(f"  [UPDATE] Updating profit target for existing position:")
+                print(f"    Old target: {tracked_position.profit_target_pct:.2f}% (${tracked_position.profit_target_price:.2f})")
+                updated_position = self.position_manager.update_profit_target(
+                    trading_symbol,
+                    effective_profit_target,
+                    stop_loss_pct=None,  # Keep existing stop-loss
+                )
+                if updated_position:
+                    print(f"    New target: {updated_position.profit_target_pct:.2f}% (${updated_position.profit_target_price:.2f})")
+                    tracked_position = updated_position  # Use updated position
+        
         if tracked_position and tracked_position.status == "open":
             # Check if profit target is hit
+            # For LONG: profit when price goes UP (current >= target)
+            # For SHORT: profit when price goes DOWN (current <= target)
             if tracked_position.side == "long":
                 profit_target_hit = current_price >= tracked_position.profit_target_price
             elif tracked_position.side == "short":
@@ -456,12 +518,104 @@ class ExecutionEngine:
             "dry_run": dry_run,
         }
 
-        if side_in_market == target_side:
+        # CRITICAL SAFETY: If we have a position and model wants opposite side
+        # For commodities with SHORT prediction (shorting disabled): Monitor and exit after a few cycles
+        # For other cases: IMMEDIATELY EXIT
+        position_flip_detected = False
+        original_target_side = target_side
+        short_prediction_cycles = 0  # Track cycles with SHORT prediction while holding LONG
+        
+        if side_in_market != "flat" and target_side != "flat" and side_in_market != target_side:
+            # Position flip detected (e.g., long -> short or short -> long)
+            if is_commodities and side_in_market == "long" and action == "short":
+                # Special case: LONG position, SHORT prediction, but shorting is disabled
+                # Track cycles and exit after a few cycles of monitoring
+                tracked_position = self.position_manager.get_position(trading_symbol)
+                if tracked_position:
+                    # Increment short prediction cycle count
+                    tracked_position.short_prediction_cycles = tracked_position.short_prediction_cycles + 1
+                    short_prediction_cycles = tracked_position.short_prediction_cycles
+                    
+                    # Save updated position with cycle count
+                    self.position_manager._save_positions()
+                    
+                    print(f"  [MONITORING] LONG position with SHORT prediction (shorting disabled)")
+                    print(f"  [MONITORING] Cycle {short_prediction_cycles} of monitoring SHORT prediction")
+                    print(f"  [INFO] Shorting is not available for commodities yet (will be enabled later)")
+                    
+                    # Exit after 3 cycles of SHORT prediction
+                    if short_prediction_cycles >= 3:
+                        print(f"  [ACTION] SHORT prediction persisted for {short_prediction_cycles} cycles - EXITING LONG position")
+                        must_exit_position = True
+                        target_side = "flat"
+                        orders["exit_reason"] = f"short_prediction_persisted_{short_prediction_cycles}_cycles"
+                    else:
+                        print(f"  [ACTION] Will exit after {3 - short_prediction_cycles} more cycle(s) if SHORT prediction persists")
+                        # Don't exit yet, just monitor - keep current position
+                        target_side = side_in_market  # Keep current position
+                        orders["decision"] = "monitoring_short_prediction"
+                        orders["short_prediction_cycles"] = short_prediction_cycles
+                        orders["target_side"] = target_side
+                        orders["original_target_side"] = original_target_side
+                        self._log(orders)
+                        return orders
+                else:
+                    # No tracked position - exit immediately
+                    must_exit_position = True
+                    target_side = "flat"
+            else:
+                # Normal position flip (or shorting enabled) - IMMEDIATELY exit
+                position_flip_detected = True
+                print(f"  [CRITICAL] Position flip detected: {side_in_market.upper()} -> {target_side.upper()}")
+                print(f"  [CRITICAL] IMMEDIATELY squaring off {side_in_market.upper()} position (model predicts {target_side.upper()})")
+                must_exit_position = True
+                # After exit, we'll enter the new position in next cycle
+                target_side = "flat"  # Don't enter new position in same cycle
+                # Update orders dict to reflect safety override
+                orders["target_side"] = target_side
+                orders["original_target_side"] = original_target_side
+                orders["position_flip_detected"] = True
+                orders["exit_reason"] = f"model_flipped_to_{target_side}_immediate_square_off"
+        
+        # CRITICAL: If profit target is hit, we MUST exit - skip hold_position logic entirely
+        # Check this BEFORE entering the hold_position block
+        if must_exit_position and side_in_market != "flat":
+            # Skip directly to exit logic - don't enter hold_position block
+            # Go directly to exit logic at line 761
+            pass
+        elif side_in_market == target_side and not must_exit_position:
             # Already aligned (long/short/flat) - NO PYRAMIDING, just hold the position
             # Check position status and provide detailed documentation
             
             # CRITICAL: Sync position between PositionManager and broker for commodities (real money)
             tracked_position = self.position_manager.get_position(trading_symbol)
+            
+            # Reset short prediction cycles if prediction is no longer SHORT
+            if tracked_position and tracked_position.status == "open" and action != "short":
+                if tracked_position.short_prediction_cycles > 0:
+                    tracked_position.short_prediction_cycles = 0
+                    self.position_manager._save_positions()
+            
+            # DETECT MANUAL EXIT: If tracked position exists but broker has no position, it was manually closed
+            # STOP TRADING this symbol if manually sold
+            if tracked_position and not existing_position:
+                # Position was manually closed (sold externally) - stop trading this symbol
+                print(f"  [MANUAL EXIT DETECTED] Position for {trading_symbol} was manually closed (not found in broker)")
+                print(f"  [ACTION] Closing tracked position and STOPPING trading for this symbol")
+                # Close the tracked position
+                self.position_manager.close_position(
+                    trading_symbol,
+                    current_price,  # Use current price as exit price
+                    "manually_closed_externally",
+                    0.0,  # Can't calculate P/L without actual exit price
+                    0.0,
+                )
+                # Return None to stop trading this symbol
+                orders["decision"] = "stop_trading_manual_exit"
+                orders["reason"] = f"Position manually closed externally - stopping trading for {trading_symbol}"
+                self._log(orders)
+                return None
+            
             if is_commodities:
                 # Verify position synchronization - tracked position should match broker position
                 if existing_position and not tracked_position:
@@ -470,17 +624,6 @@ class ExecutionEngine:
                     # Note: We don't have profit target info from broker, so we can't fully sync
                     # This is a warning condition - positions should be managed by the system
                     print(f"  ⚠️  WARNING: Position exists in broker but not in PositionManager (may have been opened externally)")
-                elif tracked_position and not existing_position:
-                    # PositionManager thinks we have position but broker doesn't - clear it
-                    print(f"  [SYNC] Tracked position found but no broker position - clearing PositionManager...")
-                    self.position_manager.close_position(
-                        trading_symbol,
-                        current_price,
-                        "position_not_found_in_broker",
-                        0.0,
-                        0.0,
-                    )
-                    tracked_position = None
                 elif tracked_position and existing_position:
                     # Both exist - verify they match
                     tracked_qty = abs(tracked_position.quantity)
@@ -495,6 +638,12 @@ class ExecutionEngine:
                     
             tracked_position = self.position_manager.get_position(trading_symbol)
             
+            # Reset short prediction cycles if prediction is no longer SHORT
+            if tracked_position and tracked_position.status == "open" and action != "short":
+                if tracked_position.short_prediction_cycles > 0:
+                    tracked_position.short_prediction_cycles = 0
+                    self.position_manager._save_positions()
+            
             if tracked_position and tracked_position.status == "open":
                 # Calculate current profit/loss status
                 if tracked_position.side == "long":
@@ -506,12 +655,25 @@ class ExecutionEngine:
                     profit_target_hit = current_price <= tracked_position.profit_target_price
                     stop_loss_hit = False if effective_risk.manual_stop_loss else (current_price >= tracked_position.stop_loss_price)
                 
-                unrealized_pl = (current_price - tracked_position.entry_price) * tracked_position.quantity if tracked_position.side == "long" else (tracked_position.entry_price - current_price) * tracked_position.quantity
-                progress_to_target = (unrealized_pl_pct / tracked_position.profit_target_pct) * 100 if tracked_position.profit_target_pct > 0 else 0
-                
-                # Detailed position documentation
-                orders["decision"] = "hold_position"
-                orders["position_status"] = {
+                # CRITICAL: If profit target or stop-loss is hit, exit immediately
+                # Check this BEFORE building the display/logging to avoid unnecessary work
+                if profit_target_hit or stop_loss_hit:
+                    # Exit logic will be handled below - skip hold_position display and exit
+                    must_exit_position = True
+                    # Update the global profit_target_hit and stop_loss_hit for exit logic
+                    # Skip the entire hold_position display block - we need to exit!
+                    # Don't execute the else block below - jump to exit logic
+                    # Break out of this block immediately - skip all display/logging
+                    # Exit this if block and go directly to exit logic at line 761
+                elif not must_exit_position:
+                    # Only build display if we're NOT exiting
+                    # Profit target not hit - continue with hold_position logic
+                    unrealized_pl = (current_price - tracked_position.entry_price) * tracked_position.quantity if tracked_position.side == "long" else (tracked_position.entry_price - current_price) * tracked_position.quantity
+                    progress_to_target = (unrealized_pl_pct / tracked_position.profit_target_pct) * 100 if tracked_position.profit_target_pct > 0 else 0
+                    
+                    # Detailed position documentation
+                    orders["decision"] = "hold_position"
+                    orders["position_status"] = {
                     "symbol": trading_symbol,
                     "side": tracked_position.side,
                     "entry_price": tracked_position.entry_price,
@@ -534,76 +696,137 @@ class ExecutionEngine:
                     ),
                 }
                 
-                # Calculate investment details
-                initial_investment = tracked_position.entry_price * tracked_position.quantity
-                current_value = current_price * tracked_position.quantity
+                # Calculate investment details dynamically
+                initial_investment = tracked_position.entry_price * abs(tracked_position.quantity)
+                current_value = current_price * abs(tracked_position.quantity)
                 
-                # Calculate expected profit/loss at target and stop-loss
+                # Calculate predicted price from consensus (if available)
+                predicted_return = consensus.get("consensus_return", 0.0) or 0.0
                 if tracked_position.side == "long":
-                    expected_profit_at_target = (tracked_position.profit_target_price - tracked_position.entry_price) * tracked_position.quantity
-                    expected_loss_at_stop = (tracked_position.stop_loss_price - tracked_position.entry_price) * tracked_position.quantity
+                    predicted_price = current_price * (1.0 + predicted_return) if predicted_return != 0 else current_price
                 else:  # short
-                    expected_profit_at_target = (tracked_position.entry_price - tracked_position.profit_target_price) * tracked_position.quantity
-                    expected_loss_at_stop = (tracked_position.stop_loss_price - tracked_position.entry_price) * tracked_position.quantity
+                    predicted_price = current_price * (1.0 - predicted_return) if predicted_return != 0 else current_price
                 
-                # Print detailed status
+                # Calculate expected profit/loss at target and stop-loss dynamically
+                if tracked_position.side == "long":
+                    expected_profit_at_target = (tracked_position.profit_target_price - tracked_position.entry_price) * abs(tracked_position.quantity)
+                    expected_loss_at_stop = (tracked_position.stop_loss_price - tracked_position.entry_price) * abs(tracked_position.quantity)
+                    # Distance calculations
+                    distance_to_target_price = tracked_position.profit_target_price - current_price
+                    distance_to_target_pct = (distance_to_target_price / current_price * 100) if current_price > 0 else 0.0
+                    distance_to_stop_price = current_price - tracked_position.stop_loss_price
+                    distance_to_stop_pct = (distance_to_stop_price / current_price * 100) if current_price > 0 else 0.0
+                    # Predicted profit/loss based on model prediction
+                    predicted_profit = (predicted_price - tracked_position.entry_price) * abs(tracked_position.quantity) if predicted_price != current_price else unrealized_pl
+                    predicted_profit_pct = ((predicted_price - tracked_position.entry_price) / tracked_position.entry_price * 100) if tracked_position.entry_price > 0 else 0.0
+                else:  # short
+                    expected_profit_at_target = (tracked_position.entry_price - tracked_position.profit_target_price) * abs(tracked_position.quantity)
+                    expected_loss_at_stop = (tracked_position.entry_price - tracked_position.stop_loss_price) * abs(tracked_position.quantity)
+                    # Distance calculations
+                    distance_to_target_price = current_price - tracked_position.profit_target_price
+                    distance_to_target_pct = (distance_to_target_price / current_price * 100) if current_price > 0 else 0.0
+                    distance_to_stop_price = tracked_position.stop_loss_price - current_price
+                    distance_to_stop_pct = (distance_to_stop_price / current_price * 100) if current_price > 0 else 0.0
+                    # Predicted profit/loss based on model prediction
+                    predicted_profit = (tracked_position.entry_price - predicted_price) * abs(tracked_position.quantity) if predicted_price != current_price else unrealized_pl
+                    predicted_profit_pct = ((tracked_position.entry_price - predicted_price) / tracked_position.entry_price * 100) if tracked_position.entry_price > 0 else 0.0
+                
+                # Determine currency symbol based on asset type
+                currency_symbol = "₹" if is_commodities else "$"
+                
+                # Print detailed status with enhanced information
                 print(f"\n{'='*80}")
-                print(f"POSITION STATUS: {trading_symbol}")
+                print(f"POSITION STATUS: {trading_symbol} ({asset.data_symbol})")
                 print(f"{'='*80}")
                 print(f"\n💰 INVESTMENT DETAILS:")
-                print(f"  Initial Investment: ${initial_investment:.2f}")
-                print(f"    └─ Entry Price:   ${tracked_position.entry_price:.2f}")
-                print(f"    └─ Quantity:      {tracked_position.quantity:.6f}")
+                print(f"  Initial Investment: {currency_symbol}{initial_investment:,.2f}")
+                print(f"    └─ Entry Price:   {currency_symbol}{tracked_position.entry_price:,.2f}")
+                print(f"    └─ Quantity:      {abs(tracked_position.quantity):,.2f} {'lots' if is_commodities else 'units'}")
                 print(f"    └─ Entry Time:     {tracked_position.entry_time}")
                 print(f"    └─ Side:           {tracked_position.side.upper()}")
+                print(f"    └─ Asset Type:     {asset.asset_type.upper()}")
                 
-                print(f"\n📊 CURRENT STATUS:")
-                print(f"  Current Price:     ${current_price:.2f}")
-                print(f"  Current Value:     ${current_value:.2f}")
-                print(f"  Current P/L:       ${unrealized_pl:+.2f} ({unrealized_pl_pct:+.2f}%)")
+                print(f"\n📊 CURRENT STATUS (Live Market Data):")
+                print(f"  Current Price:     {currency_symbol}{current_price:,.2f}")
+                print(f"  Current Value:     {currency_symbol}{current_value:,.2f}")
+                print(f"  Current P/L:       {currency_symbol}{unrealized_pl:+,.2f} ({unrealized_pl_pct:+.2f}%)")
                 print(f"  Progress to Target: {progress_to_target:.1f}%")
                 
-                print(f"\n🎯 TARGET SCENARIOS:")
-                print(f"  Profit Target:")
-                print(f"    └─ Target Price:  ${tracked_position.profit_target_price:.2f} ({tracked_position.profit_target_pct:+.2f}%)")
-                print(f"    └─ Expected Profit: ${expected_profit_at_target:+.2f}")
-                print(f"    └─ Total Value at Target: ${initial_investment + expected_profit_at_target:.2f}")
-                print(f"  Stop-Loss:")
-                print(f"    └─ Stop Price:    ${tracked_position.stop_loss_price:.2f} ({tracked_position.stop_loss_pct:.2f}%)")
-                print(f"    └─ Expected Loss: ${expected_loss_at_stop:.2f}")
-                print(f"    └─ Total Value at Stop: ${initial_investment + expected_loss_at_stop:.2f}")
+                # Show predicted price from model (if available)
+                if predicted_return != 0 and predicted_price != current_price:
+                    print(f"\n🔮 MODEL PREDICTION:")
+                    print(f"  Predicted Price:   {currency_symbol}{predicted_price:,.2f}")
+                    print(f"  Predicted Return:   {predicted_return*100:+.2f}%")
+                    print(f"  Predicted P/L:     {currency_symbol}{predicted_profit:+,.2f} ({predicted_profit_pct:+.2f}%)")
+                    print(f"  Price Change Needed: {currency_symbol}{abs(predicted_price - current_price):,.2f} ({abs((predicted_price - current_price) / current_price * 100):.2f}%)")
                 
-                print(f"\nStatus:           {'✅ TARGET HIT' if profit_target_hit else ('⚠️  AT RISK (Stop-Loss)' if stop_loss_hit else '⏳ IN PROGRESS')}")
-                if not profit_target_hit and not stop_loss_hit:
-                    print(f"Reason Not Hit:  {orders['position_status']['why_target_not_hit']}")
-                print(f"{'='*80}\n")
+                print(f"\n🎯 TARGET SCENARIOS (User Target: {tracked_position.profit_target_pct:.2f}%):")
+                print(f"  Profit Target:")
+                print(f"    └─ Target Price:  {currency_symbol}{tracked_position.profit_target_price:,.2f} ({tracked_position.profit_target_pct:+.2f}% from entry)")
+                print(f"    └─ Distance:      {currency_symbol}{abs(distance_to_target_price):,.2f} ({abs(distance_to_target_pct):.2f}% away)")
+                print(f"    └─ Expected Profit: {currency_symbol}{expected_profit_at_target:+,.2f}")
+                print(f"    └─ Total Value at Target: {currency_symbol}{initial_investment + expected_profit_at_target:,.2f}")
+                print(f"    └─ ROI at Target: {(expected_profit_at_target / initial_investment * 100):+.2f}%")
+                print(f"  Stop-Loss:")
+                print(f"    └─ Stop Price:    {currency_symbol}{tracked_position.stop_loss_price:,.2f} ({tracked_position.stop_loss_pct*100:.2f}% from entry)")
+                print(f"    └─ Distance:      {currency_symbol}{abs(distance_to_stop_price):,.2f} ({abs(distance_to_stop_pct):.2f}% away)")
+                print(f"    └─ Expected Loss: {currency_symbol}{expected_loss_at_stop:+,.2f}")
+                print(f"    └─ Total Value at Stop: {currency_symbol}{initial_investment + expected_loss_at_stop:,.2f}")
+                print(f"    └─ ROI at Stop: {(expected_loss_at_stop / initial_investment * 100):+.2f}%")
+                
+                # Risk/Reward ratio
+                if abs(expected_loss_at_stop) > 0:
+                    risk_reward_ratio = abs(expected_profit_at_target / expected_loss_at_stop)
+                    print(f"\n⚖️  RISK/REWARD ANALYSIS:")
+                    print(f"  Risk/Reward Ratio: 1:{risk_reward_ratio:.2f}")
+                    print(f"  Risk Amount:        {currency_symbol}{abs(expected_loss_at_stop):,.2f}")
+                    print(f"  Reward Potential:   {currency_symbol}{abs(expected_profit_at_target):,.2f}")
+                
+                    print(f"\nStatus:           {'✅ TARGET HIT' if profit_target_hit else ('⚠️  AT RISK (Stop-Loss)' if stop_loss_hit else '⏳ IN PROGRESS')}")
+                    if not profit_target_hit and not stop_loss_hit:
+                        print(f"Reason Not Hit:  {orders['position_status']['why_target_not_hit']}")
+                    print(f"{'='*80}\n")
+                    
+                    # CRITICAL: If profit target is hit, DON'T return - continue to exit logic below
+                    if must_exit_position:
+                        # Skip return - we need to exit the position! Continue to exit logic
+                        pass
+                    else:
+                        self._log(orders)
+                        return orders
             else:
-                orders["decision"] = "no_action_needed"
-                orders["reason"] = "position_aligned_no_tracking"
-            
-            self._log(orders)
-            return orders
+                # No tracked position or position not open
+                # Only return if we're not exiting
+                if not must_exit_position:
+                    orders["decision"] = "no_action_needed"
+                    orders["reason"] = "position_aligned_no_tracking"
+                    self._log(orders)
+                    return orders
+                # If must_exit_position is True, continue to exit logic below
         
         # Handle exit logic (when must_exit_position is True)
         # IMPORTANT: Only exit if we actually have a position in the broker
-        # If tracked_position exists but broker has no position, clear the tracked position and proceed to entry
+        # If tracked_position exists but broker has no position, it was manually closed - STOP TRADING
         if must_exit_position:
             # Check if we actually have a position in the broker
             if abs(existing_qty) <= 0:
                 # No actual position in broker, but tracked_position thinks there is
-                # This can happen if position was closed manually or broker reset
-                # Clear the tracked position and proceed to entry logic
+                # This means position was manually closed (sold externally) - STOP TRADING this symbol
                 if tracked_position:
-                    print(f"  [INFO] Tracked position exists but no broker position found. Clearing tracked position.")
+                    print(f"  [MANUAL EXIT DETECTED] Tracked position exists but no broker position found.")
+                    print(f"  [ACTION] Position was manually closed - STOPPING trading for {trading_symbol}")
                     self.position_manager.close_position(
                         trading_symbol,
                         current_price,
-                        "position_not_found_in_broker",
+                        "manually_closed_externally",
                         0.0,
                         0.0,
                     )
-                # Reset must_exit_position and proceed to entry logic
-                must_exit_position = False
+                # Return None to stop trading this symbol
+                orders["decision"] = "stop_trading_manual_exit"
+                orders["reason"] = f"Position manually closed externally - stopping trading for {trading_symbol}"
+                self._log(orders)
+                return None
             else:
                 # We have an actual position - proceed with exit
                 # Exit position immediately (profit target hit or stop-loss hit)
@@ -620,8 +843,18 @@ class ExecutionEngine:
                     realized_pl = (avg_entry_price - current_price) * abs(existing_qty)
                     realized_pl_pct = ((avg_entry_price - current_price) / avg_entry_price) * 100 if avg_entry_price > 0 else 0
                 
-                # Determine exit reason
-                exit_reason = "profit_target_hit" if profit_target_hit else "stop_loss_hit"
+                # Determine exit reason (preserve existing exit_reason if set by position flip detection)
+                if orders.get("exit_reason"):
+                    exit_reason = orders["exit_reason"]  # Use the exit reason set earlier (e.g., position flip)
+                elif profit_target_hit:
+                    exit_reason = "profit_target_hit"
+                elif stop_loss_hit:
+                    exit_reason = "stop_loss_hit"
+                else:
+                    # Fallback: must_exit_position was set but we don't know why
+                    # This shouldn't happen, but log it for debugging
+                    exit_reason = "unknown_exit_trigger"
+                    print(f"  [WARNING] Position exit triggered but reason unclear (profit_target_hit={profit_target_hit}, stop_loss_hit={stop_loss_hit})")
                 
                 if dry_run:
                     orders["decision"] = "would_exit_position"
@@ -655,10 +888,13 @@ class ExecutionEngine:
                     self._log(orders)
                     return orders
                 
+                # FIXED: Use qty (exact quantity) when closing positions to avoid rounding errors
+                # When closing, we want to sell/buy the EXACT quantity we have, not a rounded notional
+                # Notional is fine for opening new positions, but for closing we need precision
                 close_resp = self.client.submit_order(
                     symbol=trading_symbol,
-                    qty=abs_qty if asset.asset_type == "commodities" else None,
-                    notional=round(abs_qty * current_price, 2) if asset.asset_type == "crypto" else None,
+                    qty=abs_qty,  # Use exact quantity for both crypto and commodities when closing
+                    notional=None,
                     side="sell" if existing_qty > 0 else "buy",
                     order_type="market",
                     time_in_force="gtc",
@@ -708,20 +944,25 @@ class ExecutionEngine:
             initial_investment = avg_entry_price * abs(existing_qty)
             exit_value = current_price * abs(existing_qty)
             
-            # Print exit documentation
+            # Determine currency symbol based on asset type
+            currency_symbol = "₹" if is_commodities else "$"
+            
+            # Print exit documentation with enhanced details
             print(f"\n{'='*80}")
-            print(f"POSITION EXITED: {trading_symbol}")
+            print(f"POSITION EXITED: {trading_symbol} ({asset.data_symbol})")
             print(f"{'='*80}")
             print(f"\n💰 INVESTMENT SUMMARY:")
-            print(f"  Initial Investment: ${initial_investment:.2f}")
-            print(f"    └─ Entry Price:   ${avg_entry_price:.2f}")
-            print(f"    └─ Quantity:      {abs(existing_qty):.6f}")
-            print(f"  Exit Value:         ${exit_value:.2f}")
-            print(f"    └─ Exit Price:    ${current_price:.2f}")
-            print(f"    └─ Quantity:      {abs(existing_qty):.6f}")
+            print(f"  Initial Investment: {currency_symbol}{initial_investment:,.2f}")
+            print(f"    └─ Entry Price:   {currency_symbol}{avg_entry_price:,.2f}")
+            print(f"    └─ Quantity:      {abs(existing_qty):,.2f} {'lots' if is_commodities else 'units'}")
+            print(f"    └─ Side:          {side_in_market.upper()}")
+            print(f"  Exit Value:         {currency_symbol}{exit_value:,.2f}")
+            print(f"    └─ Exit Price:    {currency_symbol}{current_price:,.2f}")
+            print(f"    └─ Quantity:      {abs(existing_qty):,.2f} {'lots' if is_commodities else 'units'}")
             print(f"\n📊 FINAL RESULTS:")
-            print(f"  Realized P/L:       ${realized_pl:+.2f} ({realized_pl_pct:+.2f}%)")
+            print(f"  Realized P/L:       {currency_symbol}{realized_pl:+,.2f} ({realized_pl_pct:+.2f}%)")
             print(f"  Return on Investment: {(realized_pl / initial_investment * 100):+.2f}%")
+            print(f"  Price Change:       {currency_symbol}{abs(current_price - avg_entry_price):,.2f} ({abs(realized_pl_pct):.2f}%)")
             print(f"  Exit Reason:         {exit_reason.upper().replace('_', ' ')}")
             print(f"  Order ID:            {close_resp.get('id', 'N/A')}")
             print(f"{'='*80}\n")
@@ -792,10 +1033,22 @@ class ExecutionEngine:
                 return orders
             
             # Get position details for profit calculation before closing
-            avg_entry_price = float(existing_position.get("avg_entry_price", 0) or 0) if existing_position else current_price
-            market_value = float(existing_position.get("market_value", 0) or 0) if existing_position else (abs(existing_qty) * current_price)
-            unrealized_pl = float(existing_position.get("unrealized_pl", 0) or 0) if existing_position else 0
-            unrealized_pl_pct = float(existing_position.get("unrealized_plpc", 0) or 0) * 100 if existing_position else 0
+            # Use tracked_position if available (more accurate), otherwise use broker position
+            tracked_position = self.position_manager.get_position(trading_symbol)
+            if tracked_position and tracked_position.status == "open":
+                avg_entry_price = tracked_position.entry_price
+                market_value = abs(existing_qty) * current_price
+                if side_in_market == "long":
+                    unrealized_pl = (current_price - avg_entry_price) * abs(existing_qty)
+                    unrealized_pl_pct = ((current_price - avg_entry_price) / avg_entry_price) * 100 if avg_entry_price > 0 else 0
+                else:  # short
+                    unrealized_pl = (avg_entry_price - current_price) * abs(existing_qty)
+                    unrealized_pl_pct = ((avg_entry_price - current_price) / avg_entry_price) * 100 if avg_entry_price > 0 else 0
+            else:
+                avg_entry_price = float(existing_position.get("avg_entry_price", 0) or 0) if existing_position else current_price
+                market_value = float(existing_position.get("market_value", 0) or 0) if existing_position else (abs(existing_qty) * current_price)
+                unrealized_pl = float(existing_position.get("unrealized_pl", 0) or 0) if existing_position else 0
+                unrealized_pl_pct = float(existing_position.get("unrealized_plpc", 0) or 0) * 100 if existing_position else 0
             
             if dry_run:
                 orders["decision"] = "would_flip_position"
@@ -822,6 +1075,28 @@ class ExecutionEngine:
                 order_type="market",
                 time_in_force="gtc",
             )
+            
+            # Cancel any pending stop-loss or take-profit orders before closing position
+            if tracked_position:
+                if tracked_position.stop_loss_order_id:
+                    try:
+                        self.client.cancel_order(tracked_position.stop_loss_order_id)
+                    except Exception:
+                        pass
+                if tracked_position.take_profit_order_id:
+                    try:
+                        self.client.cancel_order(tracked_position.take_profit_order_id)
+                    except Exception:
+                        pass
+                
+                # Close position in position manager
+                self.position_manager.close_position(
+                    trading_symbol,
+                    current_price,
+                    f"model_changed_from_{side_in_market}_to_{target_side}",
+                    unrealized_pl,
+                    unrealized_pl_pct,
+                )
             
             # Now open new position in opposite direction
             if desired_notional > 0:
@@ -968,7 +1243,26 @@ class ExecutionEngine:
                     
                     if is_crypto:
                         orders["stop_loss_note"] = "Crypto positions: stop-loss must be managed separately (bracket orders not supported)"
+                    
+                    # Save new position to position manager after successful flip
+                    try:
+                        self.position_manager.save_position(
+                            symbol=trading_symbol,
+                            data_symbol=asset.data_symbol,
+                            asset_type=asset.asset_type,
+                            side=target_side,
+                            entry_price=current_price,
+                            quantity=new_qty,
+                            profit_target_pct=effective_profit_target,
+                            stop_loss_pct=effective_risk.default_stop_loss_pct,
+                            stop_loss_order_id=None,  # Will be set later if needed
+                            take_profit_order_id=None,  # Will be set later if needed
+                        )
+                    except Exception as save_exc:
+                        print(f"  ⚠️  Warning: Failed to save new position to position manager: {save_exc}")
                 else:
+                    # Flip to flat (closed position, not opening new one)
+                    # Position already closed in position_manager above, no need to close again
                     orders["decision"] = "flip_to_flat"
                     orders["close_order"] = close_resp
                     orders["trade_qty"] = abs(existing_qty)
@@ -982,6 +1276,8 @@ class ExecutionEngine:
                     orders["realized_pl_pct"] = unrealized_pl_pct
                     orders["market_value_at_exit"] = market_value
             else:
+                # Flip to flat (closed position, not opening new one)
+                # Position already closed in position_manager above, no need to close again
                 orders["decision"] = "flip_to_flat"
                 orders["close_order"] = close_resp
                 orders["trade_qty"] = abs(existing_qty)

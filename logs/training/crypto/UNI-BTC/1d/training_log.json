@@ -1,0 +1,18 @@
+{
+  "log_file": "logs\\training\\crypto\\UNI-BTC\\1d\\training_log.json",
+  "total_events": 1,
+  "events": [
+    {
+      "timestamp": "2026-01-05T07:31:29.299996Z",
+      "level": "ERROR",
+      "message": "Training skipped: crypto/UNI-BTC (intraday): No data.json found for crypto/UNI-BTC/1d",
+      "category": "TRAIN",
+      "symbol": "UNI-BTC",
+      "asset_type": "crypto",
+      "data": {
+        "error": "No data.json found for crypto/UNI-BTC/1d",
+        "horizon": "intraday"
+      }
+    }
+  ]
+}

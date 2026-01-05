@@ -1,0 +1,1314 @@
+{
+  "log_file": "logs\\training\\crypto\\WBTC-USDT\\1d\\training_log.json",
+  "total_events": 57,
+  "events": [
+    {
+      "timestamp": "2026-01-05T12:17:05.103009Z",
+      "level": "INFO",
+      "message": "Starting training for crypto/WBTC-USDT/1d (intraday horizon)",
+      "category": "TRAIN",
+      "symbol": "WBTC-USDT",
+      "asset_type": "crypto",
+      "data": {
+        "timeframe": "1d",
+        "min_rows": 200,
+        "horizon_profile": {
+          "name": "intraday",
+          "label": "Intraday",
+          "description": "Same-day horizon (1-2 bars) suited for quick scalp decisions. Fast entries/exits, small position sizes.",
+          "horizon_bars": 1,
+          "smoothing_window": 2,
+          "directional_threshold": 0.0005,
+          "neutral_band": 0.0002,
+          "quantile_bins": 5,
+          "quantile_window": 90,
+          "trading_style": "Scalping - many small trades, quick in/out",
+          "typical_hold_time": "Hours to 1 day",
+          "position_size_pct": 0.05,
+          "stop_loss_pct": 0.03,
+          "min_confidence": 0.15
+        }
+      }
+    },
+    {
+      "timestamp": "2026-01-05T12:17:05.118558Z",
+      "level": "INFO",
+      "message": "Loaded 984 raw candles",
+      "category": "DATA",
+      "symbol": "WBTC-USDT",
+      "asset_type": "crypto",
+      "data": {
+        "rows": 984,
+        "timeframe": "1d"
+      }
+    },
+    {
+      "timestamp": "2026-01-05T12:17:05.316773Z",
+      "level": "INFO",
+      "message": "Computed 131 features",
+      "category": "DATA",
+      "symbol": "WBTC-USDT",
+      "asset_type": "crypto",
+      "data": {
+        "feature_count": 131
+      }
+    },
+    {
+      "timestamp": "2026-01-05T12:17:05.865605Z",
+      "level": "INFO",
+      "message": "Dataset assembled: 783 rows, 131 features",
+      "category": "DATA",
+      "symbol": "WBTC-USDT",
+      "asset_type": "crypto",
+      "data": {
+        "rows_before": 784,
+        "rows_after": 783,
+        "rows_dropped": 1,
+        "feature_count": 131,
+        "initial_nans": 3688,
+        "residual_rows_dropped": 200,
+        "constant_features_removed": [
+          "Donchian_Breakout_Flag",
+          "Hour_of_Day",
+          "Is_Holiday_Flag"
+        ],
+        "feature_version": 2,
+        "split_boundaries": {
+          "train": {
+            "start": "2023-11-14T00:00:00+00:00",
+            "end": "2025-06-22T00:00:00+00:00"
+          },
+          "val": {
+            "start": "2025-06-24T00:00:00+00:00",
+            "end": "2025-09-28T00:00:00+00:00"
+          },
+          "test": {
+            "start": "2025-09-30T00:00:00+00:00",
+            "end": "2026-01-04T00:00:00+00:00"
+          }
+        }
+      }
+    },
+    {
+      "timestamp": "2026-01-05T12:17:05.867609Z",
+      "level": "INFO",
+      "message": "Dataset assembled: 783 rows",
+      "category": "DATA",
+      "symbol": "WBTC-USDT",
+      "asset_type": "crypto",
+      "data": {
+        "rows": 783,
+        "features": 162
+      }
+    },
+    {
+      "timestamp": "2026-01-05T12:17:05.868607Z",
+      "level": "INFO",
+      "message": "Data split: train=587, val=97, test=97",
+      "category": "DATA",
+      "symbol": "WBTC-USDT",
+      "asset_type": "crypto",
+      "data": {
+        "train_rows": 587,
+        "val_rows": 97,
+        "test_rows": 97,
+        "gap_days": 1,
+        "split_boundaries": {
+          "train": {
+            "start": "2023-11-14T00:00:00+00:00",
+            "end": "2025-06-22T00:00:00+00:00"
+          },
+          "val": {
+            "start": "2025-06-24T00:00:00+00:00",
+            "end": "2025-09-28T00:00:00+00:00"
+          },
+          "test": {
+            "start": "2025-09-30T00:00:00+00:00",
+            "end": "2026-01-04T00:00:00+00:00"
+          }
+        }
+      }
+    },
+    {
+      "timestamp": "2026-01-05T12:17:05.869606Z",
+      "level": "INFO",
+      "message": "Dataset utilization confirmed",
+      "category": "DATA",
+      "symbol": "WBTC-USDT",
+      "asset_type": "crypto",
+      "data": {
+        "rows_total": 783,
+        "rows_used": 781,
+        "unused_rows": 2
+      }
+    },
+    {
+      "timestamp": "2026-01-05T12:17:05.870606Z",
+      "level": "INFO",
+      "message": "Split boundaries confirmed",
+      "category": "DATA",
+      "symbol": "WBTC-USDT",
+      "asset_type": "crypto",
+      "data": {
+        "train": {
+          "start": "2023-11-14T00:00:00+00:00",
+          "end": "2025-06-22T00:00:00+00:00"
+        },
+        "val": {
+          "start": "2025-06-24T00:00:00+00:00",
+          "end": "2025-09-28T00:00:00+00:00"
+        },
+        "test": {
+          "start": "2025-09-30T00:00:00+00:00",
+          "end": "2026-01-04T00:00:00+00:00"
+        }
+      }
+    },
+    {
+      "timestamp": "2026-01-05T12:17:05.879320Z",
+      "level": "WARNING",
+      "message": "Found 23 features with zero variance, removing them",
+      "category": "DATA",
+      "symbol": "WBTC-USDT",
+      "asset_type": "crypto",
+      "data": {
+        "zero_variance_features": [
+          "dxy_index",
+          "dxy_index_return_5",
+          "dxy_index_zscore_60",
+          "vix_index",
+          "vix_index_return_5",
+          "vix_index_zscore_60",
+          "us10y_yield",
+          "us10y_yield_return_5",
+          "us10y_yield_zscore_60",
+          "us2y_yield"
+        ]
+      }
+    },
+    {
+      "timestamp": "2026-01-05T12:17:05.884321Z",
+      "level": "INFO",
+      "message": "Target variable validated",
+      "category": "DATA",
+      "symbol": "WBTC-USDT",
+      "asset_type": "crypto",
+      "data": {
+        "train_mean": 0.0021963568163885215,
+        "train_std": 0.02641334801999318,
+        "val_mean": 0.0008877013229333149,
+        "val_std": 0.014895581673790452,
+        "test_mean": -0.0018778705747921059,
+        "test_std": 0.021383232012510724
+      }
+    },
+    {
+      "timestamp": "2026-01-05T12:17:05.886319Z",
+      "level": "WARNING",
+      "message": "Data balance analysis - checking for bearish/bullish bias",
+      "category": "DATA",
+      "symbol": "WBTC-USDT",
+      "asset_type": "crypto",
+      "data": {
+        "train_distribution": {
+          "split": "train",
+          "total_samples": 587,
+          "positive_count": 308,
+          "negative_count": 279,
+          "neutral_count": 0,
+          "positive_pct": 52.4701873935264,
+          "negative_pct": 47.52981260647359,
+          "neutral_pct": 0.0,
+          "mean_return": 0.0021963568163885215,
+          "median_return": 0.0012599751435697915,
+          "std_return": 0.0263908398369364,
+          "imbalance_ratio": 1.103942652329749,
+          "bias_detected": null,
+          "bias_severity": "none"
+        },
+        "val_distribution": {
+          "split": "val",
+          "total_samples": 97,
+          "positive_count": 49,
+          "negative_count": 48,
+          "neutral_count": 0,
+          "positive_pct": 50.51546391752577,
+          "negative_pct": 49.48453608247423,
+          "neutral_pct": 0.0,
+          "mean_return": 0.0008877013229333149,
+          "median_return": 0.0001620700152837884,
+          "std_return": 0.014818601408209937,
+          "imbalance_ratio": 1.0208333333333333,
+          "bias_detected": null,
+          "bias_severity": "none"
+        },
+        "test_distribution": {
+          "split": "test",
+          "total_samples": 97,
+          "positive_count": 50,
+          "negative_count": 47,
+          "neutral_count": 0,
+          "positive_pct": 51.546391752577314,
+          "negative_pct": 48.45360824742268,
+          "neutral_pct": 0.0,
+          "mean_return": -0.0018778705747921059,
+          "median_return": 0.0005430232795435863,
+          "std_return": 0.021272723613755862,
+          "imbalance_ratio": 1.0638297872340425,
+          "bias_detected": null,
+          "bias_severity": "none"
+        },
+        "warning": "If bias_severity is 'severe' or 'moderate', models may learn directional bias"
+      }
+    },
+    {
+      "timestamp": "2026-01-05T12:17:07.016781Z",
+      "level": "INFO",
+      "message": "Feature scaling verified - all features properly normalized",
+      "category": "DATA",
+      "symbol": "WBTC-USDT",
+      "asset_type": "crypto"
+    },
+    {
+      "timestamp": "2026-01-05T12:17:07.018783Z",
+      "level": "INFO",
+      "message": "Applied robust feature scaling",
+      "category": "DATA",
+      "symbol": "WBTC-USDT",
+      "asset_type": "crypto",
+      "data": {
+        "scaler": "RobustScaler",
+        "feature_count": 100,
+        "center_sample": [
+          2.0,
+          0.001429663945671844,
+          1.0,
+          1333.0164007999495,
+          0.0009813110135039604
+        ],
+        "scale_sample": [
+          2.0,
+          0.01976813771664432,
+          2.0,
+          87666.4699628997,
+          0.025951793494421338
+        ],
+        "scaling_verification": {
+          "train": {
+            "split": "train",
+            "mean_abs_mean": 0.12116043885270562,
+            "mean_abs_median": 0.0,
+            "mean_std": 0.7388960451486666,
+            "mean_abs_min": 1.4734813850854964,
+            "mean_abs_max": 2.0885170683597676,
+            "nan_count": 0,
+            "inf_count": 0,
+            "issues": [],
+            "scaling_ok": true
+          },
+          "val": {
+            "split": "val",
+            "mean_abs_mean": 0.5768705431366591,
+            "mean_abs_median": 0.5892789121919915,
+            "mean_std": 0.40574562976664275,
+            "mean_abs_min": 1.1411199389371984,
+            "mean_abs_max": 1.4285186489051458,
+            "nan_count": 0,
+            "inf_count": 0,
+            "issues": [],
+            "scaling_ok": true
+          },
+          "test": {
+            "split": "test",
+            "mean_abs_mean": 0.622871493727828,
+            "mean_abs_median": 0.588978718240378,
+            "mean_std": 0.6127576191417324,
+            "mean_abs_min": 1.3406210901455546,
+            "mean_abs_max": 1.6067033148974104,
+            "nan_count": 0,
+            "inf_count": 0,
+            "issues": [],
+            "scaling_ok": true
+          }
+        }
+      }
+    },
+    {
+      "timestamp": "2026-01-05T12:17:07.020338Z",
+      "level": "INFO",
+      "message": "Features extracted: 100 features will be used for training",
+      "category": "DATA",
+      "symbol": "WBTC-USDT",
+      "asset_type": "crypto",
+      "data": {
+        "feature_count": 100,
+        "train_samples": 587,
+        "val_samples": 97,
+        "test_samples": 97,
+        "sample_features": [
+          "target_quantile_bin",
+          "target_return_smoothed",
+          "target_direction",
+          "Force_Index",
+          "Momentum_roc_1",
+          "Intraday_Range",
+          "Bollinger_Bands_lower_20_2",
+          "Volume_Change_7",
+          "Pivot_R2",
+          "Fractal_High"
+        ],
+        "selected_features": [
+          "target_quantile_bin",
+          "target_return_smoothed",
+          "target_direction",
+          "Force_Index",
+          "Momentum_roc_1",
+          "Intraday_Range",
+          "Bollinger_Bands_lower_20_2",
+          "Volume_Change_7",
+          "Pivot_R2",
+          "Fractal_High",
+          "Typical_Price",
+          "SMA_50",
+          "Fibonacci_Level_0.5",
+          "Open_Lag_1",
+          "Fibonacci_Level_0.786",
+          "EMA_26",
+          "Keltner_Channel_lower",
+          "Keltner_Channel_upper",
+          "Fibonacci_Level_0.236",
+          "Close_Lag_4",
+          "RSI_Band_Cross",
+          "Ichimoku_Senkou_Span_A",
+          "Donchian_Channel_low",
+          "Close_Lag_10",
+          "Donchian_Channel_high",
+          "Close_Lag_7",
+          "SMA_100",
+          "EMA_100",
+          "OBV",
+          "Ichimoku_Kijun",
+          "Bollinger_Bandwidth",
+          "Ichimoku_Tenkan",
+          "Parabolic_SAR",
+          "ZScore_returns_30",
+          "Pivot_S1",
+          "MA_Crossover_Signal",
+          "Fractal_Low",
+          "Ichimoku_Senkou_Span_B",
+          "drawdown_lookback_90",
+          "EMA_200",
+          "Pivot_S2",
+          "Volatility_Expansion_Flag",
+          "Session_VWAP",
+          "SMA_200",
+          "MFI",
+          "Day_of_Week",
+          "Return_3",
+          "Accumulation_Distribution",
+          "ATR_14",
+          "Momentum_roc_7",
+          "Gap_Percentage",
+          "Gap_Open",
+          "Volatility_Clustering",
+          "Seasonality_DayOfMonth",
+          "ATR_7",
+          "Ensemble_Feature_Aggregates",
+          "mean_reversion_flag",
+          "Seasonality_Monthly",
+          "Volume_Ratio",
+          "Volume_Change_1",
+          "DI_plus",
+          "Chaikin_Oscillator",
+          "Historical_Volatility",
+          "Rolling_Sharpe_30",
+          "Rate_of_Change",
+          "TSI",
+          "MACD_Crossover_Signal",
+          "TRIX",
+          "Max_Drawdown_30",
+          "ZScore_returns_7",
+          "Cumulative_Return_30",
+          "volatility_cluster_20",
+          "Drawdown_Duration",
+          "ADX_14",
+          "Volume_Surge_Flag",
+          "RSI_7",
+          "Price_Channel_Slope",
+          "Bollinger_%b",
+          "Rolling_Sharpe_90",
+          "Stochastic_%K",
+          "CMF",
+          "Stochastic_%D",
+          "Feature_Interaction_Terms",
+          "Volatility_Skew",
+          "Price_Range",
+          "Rolling_Volatility_7",
+          "Rolling_Kurtosis",
+          "CCI_20",
+          "Momentum_roc_14",
+          "volatility_regime_state",
+          "MACD_signal",
+          "Ease_of_Movement",
+          "DI_minus",
+          "RSI_14",
+          "MACD",
+          "Rolling_Volatility_14",
+          "trend_strength_60",
+          "Rolling_Skew",
+          "RSI_21",
+          "MACD_histogram"
+        ],
+        "removed_low_variance": [],
+        "max_abs_corr": 0.8736163969113585,
+        "importance_filter": {
+          "method": "lightgbm_importance",
+          "selected_features": [
+            "SMA_5",
+            "SMA_10",
+            "SMA_20",
+            "SMA_50",
+            "SMA_100",
+            "SMA_200",
+            "EMA_9",
+            "EMA_12",
+            "EMA_26",
+            "EMA_50",
+            "EMA_100",
+            "EMA_200",
+            "WMA_14",
+            "Hull_MA",
+            "VWMA",
+            "VWAP",
+            "Session_VWAP",
+            "MACD",
+            "MACD_signal",
+            "MACD_histogram",
+            "RSI_7",
+            "RSI_14",
+            "RSI_21",
+            "Momentum_roc_1",
+            "Momentum_roc_7",
+            "Momentum_roc_14",
+            "Rate_of_Change",
+            "TRIX",
+            "TSI",
+            "Stochastic_%K",
+            "Stochastic_%D",
+            "Williams_%R",
+            "CCI_20",
+            "ATR_14",
+            "ATR_7",
+            "Bollinger_Bands_upper_20_2",
+            "Bollinger_Bands_lower_20_2",
+            "Bollinger_Bandwidth",
+            "Bollinger_%b",
+            "Keltner_Channel_upper",
+            "Keltner_Channel_lower",
+            "Donchian_Channel_high",
+            "Donchian_Channel_low",
+            "ADX_14",
+            "DI_plus",
+            "DI_minus",
+            "RSI_Band_Cross",
+            "ROC_Signal",
+            "Rolling_Volatility_7",
+            "Rolling_Volatility_14",
+            "Rolling_Volatility_30",
+            "Realized_Volatility",
+            "Historical_Volatility",
+            "Rolling_Skew",
+            "Rolling_Kurtosis",
+            "Volatility_Skew",
+            "Volatility_Clustering",
+            "ZScore_returns_7",
+            "ZScore_returns_30",
+            "Normalized_Returns",
+            "Log_Returns",
+            "Return_1",
+            "Return_3",
+            "Return_7",
+            "Cumulative_Return_30",
+            "Rolling_Sharpe_30",
+            "Rolling_Sharpe_90",
+            "Max_Drawdown_30",
+            "Drawdown_Duration",
+            "OBV",
+            "CMF",
+            "MFI",
+            "Ease_of_Movement",
+            "Force_Index",
+            "Accumulation_Distribution",
+            "Chaikin_Oscillator",
+            "Volume_Change_1",
+            "Volume_Change_7",
+            "Volume_Ratio",
+            "Volume_Surge_Flag",
+            "Price_Lag_1",
+            "Price_Lag_2",
+            "Price_Lag_3",
+            "Close_Lag_1",
+            "Close_Lag_2",
+            "Close_Lag_3",
+            "Close_Lag_4",
+            "Close_Lag_5",
+            "Close_Lag_6",
+            "Close_Lag_7",
+            "Close_Lag_8",
+            "Close_Lag_9",
+            "Close_Lag_10",
+            "Open_Lag_1",
+            "High_Lag_1",
+            "Low_Lag_1",
+            "Typical_Price",
+            "Median_Price",
+            "Price_Range",
+            "Intraday_Range",
+            "Gap_Open",
+            "Gap_Percentage",
+            "MA_Crossover_Signal",
+            "MACD_Crossover_Signal",
+            "Volatility_Expansion_Flag",
+            "Ichimoku_Tenkan",
+            "Ichimoku_Kijun",
+            "Ichimoku_Senkou_Span_A",
+            "Ichimoku_Senkou_Span_B",
+            "Parabolic_SAR",
+            "Price_Channel_Slope",
+            "Fractal_High",
+            "Fractal_Low",
+            "Pivot_Point",
+            "Pivot_R1",
+            "Pivot_S1",
+            "Pivot_R2",
+            "Pivot_S2",
+            "Fibonacci_Level_0.236",
+            "Fibonacci_Level_0.382",
+            "Fibonacci_Level_0.5",
+            "Fibonacci_Level_0.618",
+            "Fibonacci_Level_0.786",
+            "Seasonality_Monthly",
+            "Seasonality_DayOfMonth",
+            "Day_of_Week",
+            "Feature_Interaction_Terms",
+            "Ensemble_Feature_Aggregates",
+            "target_return_smoothed",
+            "target_direction",
+            "target_quantile_bin",
+            "trend_strength_60",
+            "volatility_cluster_20",
+            "mean_reversion_flag",
+            "volatility_regime_state",
+            "drawdown_lookback_90"
+          ],
+          "dropped_features": [],
+          "skipped": true
+        }
+      }
+    },
+    {
+      "timestamp": "2026-01-05T12:17:07.023852Z",
+      "level": "INFO",
+      "message": "Data splits prepared - test set isolated for final evaluation only",
+      "category": "DATA",
+      "symbol": "WBTC-USDT",
+      "asset_type": "crypto",
+      "data": {
+        "train_rows": 587,
+        "val_rows": 97,
+        "test_rows": 97,
+        "full_train_val_rows": 684,
+        "note": "Test set will NOT be used during training or hyperparameter optimization"
+      }
+    },
+    {
+      "timestamp": "2026-01-05T12:17:07.028859Z",
+      "level": "INFO",
+      "message": "Reference price recalibrated",
+      "category": "DATA",
+      "symbol": "WBTC-USDT",
+      "asset_type": "crypto",
+      "data": {
+        "dataset_close": 91472.5,
+        "latest_market_price": 92966.81
+      }
+    },
+    {
+      "timestamp": "2026-01-05T12:17:07.030862Z",
+      "level": "INFO",
+      "message": "Training Random Forest model",
+      "category": "MODEL",
+      "symbol": "WBTC-USDT",
+      "asset_type": "crypto",
+      "data": {
+        "model": "RandomForest",
+        "training_samples": 587,
+        "features_count": 100,
+        "feature_names_sample": [
+          "target_quantile_bin",
+          "target_return_smoothed",
+          "target_direction",
+          "Force_Index",
+          "Momentum_roc_1"
+        ]
+      }
+    },
+    {
+      "timestamp": "2026-01-05T12:18:46.767990Z",
+      "level": "INFO",
+      "message": "RandomForest hyperparameter search complete",
+      "category": "MODEL",
+      "symbol": "WBTC-USDT",
+      "asset_type": "crypto",
+      "data": {
+        "best_params": {
+          "n_estimators": 300,
+          "max_depth": 6,
+          "min_samples_leaf": 5,
+          "min_samples_split": 5,
+          "max_features": 0.7308972573523491,
+          "max_samples": 0.8164322792344529,
+          "ccp_alpha": 0.0003660461451868271
+        }
+      }
+    },
+    {
+      "timestamp": "2026-01-05T12:18:54.613281Z",
+      "level": "INFO",
+      "message": "Random Forest prediction made using 100 features",
+      "category": "PREDICTION",
+      "symbol": "WBTC-USDT",
+      "asset_type": "crypto",
+      "data": {
+        "model": "RandomForest",
+        "features_used": 100,
+        "test_sample_index": 96,
+        "raw_return": 0.0038021685693627296,
+        "clamped_return": 0.0038021685693627296
+      }
+    },
+    {
+      "timestamp": "2026-01-05T12:18:54.615287Z",
+      "level": "INFO",
+      "message": "random_forest metrics computed",
+      "category": "MODEL",
+      "symbol": "WBTC-USDT",
+      "asset_type": "crypto",
+      "data": {
+        "model": "random_forest",
+        "val_r2": 0.5499543563860276,
+        "val_mae": 0.006287659124516222,
+        "val_dir": 0.9072164948453608,
+        "train_metrics": {
+          "mae": 0.013655677777763255,
+          "rmse": 0.021065656724603105,
+          "r2": 0.3628472180173068,
+          "directional_accuracy": 0.8756388415672913,
+          "mean_predicted_return": 0.0021661303572806353,
+          "mean_actual_return": 0.0021963568163885215
+        },
+        "test_metrics": {
+          "mae": 0.01099696701631679,
+          "rmse": 0.016453847779053676,
+          "r2": 0.401741668783114,
+          "directional_accuracy": 0.8865979381443299,
+          "mean_predicted_return": 0.0022543272049990754,
+          "mean_actual_return": -0.0018778705747921059
+        }
+      }
+    },
+    {
+      "timestamp": "2026-01-05T12:18:54.616286Z",
+      "level": "INFO",
+      "message": "random_forest overfitting analysis",
+      "category": "OVERFITTING",
+      "symbol": "WBTC-USDT",
+      "asset_type": "crypto",
+      "data": {
+        "model": "random_forest",
+        "train_r2": 0.3628472180173068,
+        "val_r2": 0.5499543563860276,
+        "test_r2": 0.401741668783114,
+        "train_val_gap": -0.18710713836872084,
+        "val_test_gap": 0.14821268760291362
+      }
+    },
+    {
+      "timestamp": "2026-01-05T12:18:54.617286Z",
+      "level": "WARNING",
+      "message": "random_forest shows generalization failure: val/test gap=0.148",
+      "category": "OVERFITTING",
+      "symbol": "WBTC-USDT",
+      "asset_type": "crypto",
+      "data": {
+        "model": "random_forest",
+        "val_r2": 0.5499543563860276,
+        "test_r2": 0.401741668783114,
+        "gap": 0.14821268760291362
+      }
+    },
+    {
+      "timestamp": "2026-01-05T12:18:54.618287Z",
+      "level": "SUCCESS",
+      "message": "Random Forest training completed",
+      "category": "MODEL",
+      "symbol": "WBTC-USDT",
+      "asset_type": "crypto",
+      "data": {
+        "model": "RandomForest",
+        "metrics": {
+          "model_name": "RandomForest",
+          "mae": 0.006287659124516222,
+          "rmse": 0.009941124151089711,
+          "r2": 0.5499543563860276,
+          "directional_accuracy": 0.9072164948453608,
+          "mean_predicted_return": 0.00235803448029832,
+          "mean_actual_return": 0.0008877013229333149,
+          "notes": null,
+          "precision": null,
+          "recall": null,
+          "f1": null,
+          "roc_auc": null
+        },
+        "current_price": 92966.81,
+        "predicted_return": 0.0038021685693627296,
+        "predicted_price": 93320.28548297592,
+        "features_used": 100
+      }
+    },
+    {
+      "timestamp": "2026-01-05T12:18:54.619286Z",
+      "level": "INFO",
+      "message": "Training LightGBM model",
+      "category": "MODEL",
+      "symbol": "WBTC-USDT",
+      "asset_type": "crypto",
+      "data": {
+        "model": "LightGBM",
+        "training_samples": 587,
+        "features_count": 100
+      }
+    },
+    {
+      "timestamp": "2026-01-05T12:18:56.093912Z",
+      "level": "INFO",
+      "message": "LightGBM hyperparameter search complete",
+      "category": "MODEL",
+      "symbol": "WBTC-USDT",
+      "asset_type": "crypto",
+      "data": {
+        "best_params": {
+          "max_depth": 4,
+          "num_leaves": 12,
+          "n_estimators": 175,
+          "learning_rate": 0.07786651192106464,
+          "subsample": 0.7906723869269988,
+          "colsample_bytree": 0.7812695002321577,
+          "min_child_samples": 18,
+          "reg_alpha": 2.0059002198127582,
+          "reg_lambda": 2.8824467236596285,
+          "min_split_gain": 0.010031452915025909
+        }
+      }
+    },
+    {
+      "timestamp": "2026-01-05T12:18:56.481961Z",
+      "level": "INFO",
+      "message": "LightGBM prediction made using 100 features",
+      "category": "PREDICTION",
+      "symbol": "WBTC-USDT",
+      "asset_type": "crypto",
+      "data": {
+        "model": "LightGBM",
+        "features_used": 100,
+        "test_sample_index": 96,
+        "raw_return": 0.012316704738810406,
+        "clamped_return": 0.012316704738810406
+      }
+    },
+    {
+      "timestamp": "2026-01-05T12:18:56.484963Z",
+      "level": "INFO",
+      "message": "lightgbm metrics computed",
+      "category": "MODEL",
+      "symbol": "WBTC-USDT",
+      "asset_type": "crypto",
+      "data": {
+        "model": "lightgbm",
+        "val_r2": 0.5832499949007124,
+        "val_mae": 0.005745235853849465,
+        "val_dir": 0.9072164948453608,
+        "train_metrics": {
+          "mae": 0.01295421402738241,
+          "rmse": 0.020804787146811665,
+          "r2": 0.378530053195287,
+          "directional_accuracy": 0.9148211243611585,
+          "mean_predicted_return": 0.002386898554955817,
+          "mean_actual_return": 0.0021963568163885215
+        },
+        "test_metrics": {
+          "mae": 0.010354858171458915,
+          "rmse": 0.015945071787147574,
+          "r2": 0.4381676234045223,
+          "directional_accuracy": 0.9278350515463918,
+          "mean_predicted_return": 0.002330904357158052,
+          "mean_actual_return": -0.0018778705747921059
+        }
+      }
+    },
+    {
+      "timestamp": "2026-01-05T12:18:56.486492Z",
+      "level": "INFO",
+      "message": "lightgbm overfitting analysis",
+      "category": "OVERFITTING",
+      "symbol": "WBTC-USDT",
+      "asset_type": "crypto",
+      "data": {
+        "model": "lightgbm",
+        "train_r2": 0.378530053195287,
+        "val_r2": 0.5832499949007124,
+        "test_r2": 0.4381676234045223,
+        "train_val_gap": -0.2047199417054254,
+        "val_test_gap": 0.14508237149619008
+      }
+    },
+    {
+      "timestamp": "2026-01-05T12:18:56.488496Z",
+      "level": "WARNING",
+      "message": "lightgbm shows generalization failure: val/test gap=0.145",
+      "category": "OVERFITTING",
+      "symbol": "WBTC-USDT",
+      "asset_type": "crypto",
+      "data": {
+        "model": "lightgbm",
+        "val_r2": 0.5832499949007124,
+        "test_r2": 0.4381676234045223,
+        "gap": 0.14508237149619008
+      }
+    },
+    {
+      "timestamp": "2026-01-05T12:18:56.490502Z",
+      "level": "SUCCESS",
+      "message": "LightGBM training completed",
+      "category": "MODEL",
+      "symbol": "WBTC-USDT",
+      "asset_type": "crypto",
+      "data": {
+        "model": "LightGBM",
+        "metrics": {
+          "model_name": "LightGBM",
+          "mae": 0.005745235853849465,
+          "rmse": 0.009566322625325575,
+          "r2": 0.5832499949007124,
+          "directional_accuracy": 0.9072164948453608,
+          "mean_predicted_return": 0.002475913217900791,
+          "mean_actual_return": 0.0008877013229333149,
+          "notes": null,
+          "precision": null,
+          "recall": null,
+          "f1": null,
+          "roc_auc": null
+        },
+        "current_price": 92966.81,
+        "predicted_return": 0.012316704738810406,
+        "predicted_price": 94111.85474927908,
+        "features_used": 100
+      }
+    },
+    {
+      "timestamp": "2026-01-05T12:18:56.493502Z",
+      "level": "INFO",
+      "message": "Training XGBoost model",
+      "category": "MODEL",
+      "symbol": "WBTC-USDT",
+      "asset_type": "crypto",
+      "data": {
+        "model": "XGBoost",
+        "training_samples": 587,
+        "features_count": 100
+      }
+    },
+    {
+      "timestamp": "2026-01-05T12:19:00.741079Z",
+      "level": "INFO",
+      "message": "XGBoost hyperparameter search complete",
+      "category": "MODEL",
+      "symbol": "WBTC-USDT",
+      "asset_type": "crypto",
+      "data": {
+        "best_params": {
+          "n_estimators": 245,
+          "learning_rate": 0.0649012031254395,
+          "max_depth": 2,
+          "subsample": 0.7784353741204818,
+          "colsample_bytree": 0.6780352817697428,
+          "min_child_weight": 3.56527018083184,
+          "gamma": 0.2331104183006302,
+          "reg_alpha": 3.6554386877939273,
+          "reg_lambda": 4.868395075454067
+        }
+      }
+    },
+    {
+      "timestamp": "2026-01-05T12:19:01.875668Z",
+      "level": "INFO",
+      "message": "XGBoost prediction made using 100 features",
+      "category": "PREDICTION",
+      "symbol": "WBTC-USDT",
+      "asset_type": "crypto",
+      "data": {
+        "model": "XGBoost",
+        "features_used": 100,
+        "test_sample_index": 96,
+        "raw_return": 0.027186980471014977,
+        "clamped_return": 0.027186980471014977
+      }
+    },
+    {
+      "timestamp": "2026-01-05T12:19:01.878668Z",
+      "level": "INFO",
+      "message": "xgboost metrics computed",
+      "category": "MODEL",
+      "symbol": "WBTC-USDT",
+      "asset_type": "crypto",
+      "data": {
+        "model": "xgboost",
+        "val_r2": 0.7502025516565057,
+        "val_mae": 0.00555181993864077,
+        "val_dir": 0.9072164948453608,
+        "train_metrics": {
+          "mae": 0.004467609505416289,
+          "rmse": 0.006086425877147903,
+          "r2": 0.946811437536103,
+          "directional_accuracy": 0.9420783645655877,
+          "mean_predicted_return": 0.0021403722930699587,
+          "mean_actual_return": 0.0021963568163885215
+        },
+        "test_metrics": {
+          "mae": 0.0058703981055252714,
+          "rmse": 0.00771913134007738,
+          "r2": 0.8683288387336987,
+          "directional_accuracy": 0.9278350515463918,
+          "mean_predicted_return": 0.0011676930589601398,
+          "mean_actual_return": -0.0018778705747921059
+        }
+      }
+    },
+    {
+      "timestamp": "2026-01-05T12:19:01.880669Z",
+      "level": "INFO",
+      "message": "xgboost overfitting analysis",
+      "category": "OVERFITTING",
+      "symbol": "WBTC-USDT",
+      "asset_type": "crypto",
+      "data": {
+        "model": "xgboost",
+        "train_r2": 0.946811437536103,
+        "val_r2": 0.7502025516565057,
+        "test_r2": 0.8683288387336987,
+        "train_val_gap": 0.19660888587959724,
+        "val_test_gap": -0.11812628707719297
+      }
+    },
+    {
+      "timestamp": "2026-01-05T12:19:01.883668Z",
+      "level": "WARNING",
+      "message": "xgboost shows train/val overfitting: gap=0.197",
+      "category": "OVERFITTING",
+      "symbol": "WBTC-USDT",
+      "asset_type": "crypto",
+      "data": {
+        "model": "xgboost",
+        "train_r2": 0.946811437536103,
+        "val_r2": 0.7502025516565057,
+        "gap": 0.19660888587959724
+      }
+    },
+    {
+      "timestamp": "2026-01-05T12:19:01.885198Z",
+      "level": "WARNING",
+      "message": "xgboost has suspiciously high test R²: 0.868 (expected: 0.3-0.7)",
+      "category": "OVERFITTING",
+      "symbol": "WBTC-USDT",
+      "asset_type": "crypto",
+      "data": {
+        "model": "xgboost",
+        "test_r2": 0.8683288387336987,
+        "severity": "WARNING"
+      }
+    },
+    {
+      "timestamp": "2026-01-05T12:19:01.888201Z",
+      "level": "WARNING",
+      "message": "xgboost rejected: train/val gap 0.197 exceeds 0.15",
+      "category": "MODEL",
+      "symbol": "WBTC-USDT",
+      "asset_type": "crypto"
+    },
+    {
+      "timestamp": "2026-01-05T12:19:01.891203Z",
+      "level": "SUCCESS",
+      "message": "XGBoost training completed",
+      "category": "MODEL",
+      "symbol": "WBTC-USDT",
+      "asset_type": "crypto",
+      "data": {
+        "model": "XGBoost",
+        "metrics": {
+          "model_name": "XGBoost",
+          "mae": 0.00555181993864077,
+          "rmse": 0.007406298563630892,
+          "r2": 0.7502025516565057,
+          "directional_accuracy": 0.9072164948453608,
+          "mean_predicted_return": 0.0023751684930175543,
+          "mean_actual_return": 0.0008877013229333149,
+          "notes": null,
+          "precision": null,
+          "recall": null,
+          "f1": null,
+          "roc_auc": null
+        },
+        "current_price": 92966.81,
+        "predicted_return": 0.027186980471014977,
+        "predicted_price": 95494.29684792255,
+        "features_used": 100
+      }
+    },
+    {
+      "timestamp": "2026-01-05T12:19:01.962998Z",
+      "level": "INFO",
+      "message": "stacked_blend metrics computed",
+      "category": "MODEL",
+      "symbol": "WBTC-USDT",
+      "asset_type": "crypto",
+      "data": {
+        "model": "stacked_blend",
+        "val_r2": 0.3647911429438905,
+        "val_mae": 0.008501884690679367,
+        "val_dir": 0.7835051546391752,
+        "train_metrics": {
+          "mae": 0.01572570897245273,
+          "rmse": 0.022370510854928798,
+          "r2": 0.2814692123158258,
+          "directional_accuracy": 0.8245315161839863,
+          "mean_predicted_return": 0.0021963568163885223,
+          "mean_actual_return": 0.0021963568163885215
+        },
+        "test_metrics": {
+          "mae": 0.013379346451851676,
+          "rmse": 0.018036180297520053,
+          "r2": 0.2811422801635949,
+          "directional_accuracy": 0.865979381443299,
+          "mean_predicted_return": 0.0020490522240398383,
+          "mean_actual_return": -0.0018778705747921059
+        }
+      }
+    },
+    {
+      "timestamp": "2026-01-05T12:19:01.966533Z",
+      "level": "INFO",
+      "message": "stacked_blend overfitting analysis",
+      "category": "OVERFITTING",
+      "symbol": "WBTC-USDT",
+      "asset_type": "crypto",
+      "data": {
+        "model": "stacked_blend",
+        "train_r2": 0.2814692123158258,
+        "val_r2": 0.3647911429438905,
+        "test_r2": 0.2811422801635949,
+        "train_val_gap": -0.0833219306280647,
+        "val_test_gap": 0.0836488627802956
+      }
+    },
+    {
+      "timestamp": "2026-01-05T12:19:01.968533Z",
+      "level": "WARNING",
+      "message": "stacked_blend shows generalization failure: val/test gap=0.084",
+      "category": "OVERFITTING",
+      "symbol": "WBTC-USDT",
+      "asset_type": "crypto",
+      "data": {
+        "model": "stacked_blend",
+        "val_r2": 0.3647911429438905,
+        "test_r2": 0.2811422801635949,
+        "gap": 0.0836488627802956
+      }
+    },
+    {
+      "timestamp": "2026-01-05T12:19:01.971533Z",
+      "level": "SUCCESS",
+      "message": "Stacked blender created",
+      "category": "MODEL",
+      "symbol": "WBTC-USDT",
+      "asset_type": "crypto",
+      "data": {
+        "models": [
+          "lightgbm",
+          "random_forest",
+          "xgboost"
+        ],
+        "weights": [
+          0.038842402726924276,
+          0.03751835933106629,
+          0.15260800708711653
+        ],
+        "alpha": 2.0,
+        "latest_return": 0.006814411808485448
+      }
+    },
+    {
+      "timestamp": "2026-01-05T12:19:01.974038Z",
+      "level": "INFO",
+      "message": "Training DQN model",
+      "category": "MODEL",
+      "symbol": "WBTC-USDT",
+      "asset_type": "crypto",
+      "data": {
+        "model": "DQN",
+        "training_samples": 587,
+        "features_count": 100
+      }
+    },
+    {
+      "timestamp": "2026-01-05T12:19:06.385505Z",
+      "level": "SUCCESS",
+      "message": "DQN training completed",
+      "category": "MODEL",
+      "symbol": "WBTC-USDT",
+      "asset_type": "crypto",
+      "data": {
+        "model": "DQN",
+        "action": "short",
+        "current_price": 92966.81,
+        "features_used": 100,
+        "validation_policy": {
+          "total_return": 0.9723693168301732,
+          "avg_return": 0.010128847050314305,
+          "sharpe": 15.750131620678191,
+          "hit_rate": 0.875,
+          "max_drawdown": -0.006972653097163439
+        },
+        "test_policy": {
+          "total_return": 1.3328126532041116,
+          "avg_return": 0.013883465137542829,
+          "sharpe": 13.867072241555993,
+          "hit_rate": 0.7916666666666666,
+          "max_drawdown": -0.01872575823942113
+        }
+      }
+    },
+    {
+      "timestamp": "2026-01-05T12:19:06.388503Z",
+      "level": "WARNING",
+      "message": "random_forest: Val R² (0.550) >> Test R² (0.402), gap=0.148 (generalization failure)",
+      "category": "OVERFITTING",
+      "symbol": "WBTC-USDT",
+      "asset_type": "crypto"
+    },
+    {
+      "timestamp": "2026-01-05T12:19:06.391509Z",
+      "level": "WARNING",
+      "message": "random_forest: Validation accuracy (90.7%) suspiciously high (expected: 55-70%)",
+      "category": "OVERFITTING",
+      "symbol": "WBTC-USDT",
+      "asset_type": "crypto"
+    },
+    {
+      "timestamp": "2026-01-05T12:19:06.395508Z",
+      "level": "WARNING",
+      "message": "lightgbm: Val R² (0.583) >> Test R² (0.438), gap=0.145 (generalization failure)",
+      "category": "OVERFITTING",
+      "symbol": "WBTC-USDT",
+      "asset_type": "crypto"
+    },
+    {
+      "timestamp": "2026-01-05T12:19:06.398869Z",
+      "level": "WARNING",
+      "message": "lightgbm: Validation accuracy (90.7%) suspiciously high (expected: 55-70%)",
+      "category": "OVERFITTING",
+      "symbol": "WBTC-USDT",
+      "asset_type": "crypto"
+    },
+    {
+      "timestamp": "2026-01-05T12:19:06.401868Z",
+      "level": "WARNING",
+      "message": "lightgbm: Test accuracy (92.8%) suspiciously high (expected: 55-70%)",
+      "category": "OVERFITTING",
+      "symbol": "WBTC-USDT",
+      "asset_type": "crypto"
+    },
+    {
+      "timestamp": "2026-01-05T12:19:06.406375Z",
+      "level": "WARNING",
+      "message": "xgboost: Train R² (0.947) >> Val R² (0.750), gap=0.197",
+      "category": "OVERFITTING",
+      "symbol": "WBTC-USDT",
+      "asset_type": "crypto"
+    },
+    {
+      "timestamp": "2026-01-05T12:19:06.409375Z",
+      "level": "WARNING",
+      "message": "xgboost: Test R² (0.868) suspiciously high for financial data (WARNING)",
+      "category": "OVERFITTING",
+      "symbol": "WBTC-USDT",
+      "asset_type": "crypto"
+    },
+    {
+      "timestamp": "2026-01-05T12:19:06.413411Z",
+      "level": "WARNING",
+      "message": "xgboost: Validation accuracy (90.7%) suspiciously high (expected: 55-70%)",
+      "category": "OVERFITTING",
+      "symbol": "WBTC-USDT",
+      "asset_type": "crypto"
+    },
+    {
+      "timestamp": "2026-01-05T12:19:06.416411Z",
+      "level": "WARNING",
+      "message": "xgboost: Test accuracy (92.8%) suspiciously high (expected: 55-70%)",
+      "category": "OVERFITTING",
+      "symbol": "WBTC-USDT",
+      "asset_type": "crypto"
+    },
+    {
+      "timestamp": "2026-01-05T12:19:06.420411Z",
+      "level": "WARNING",
+      "message": "stacked_blend: Val R² (0.365) >> Test R² (0.281), gap=0.084 (generalization failure)",
+      "category": "OVERFITTING",
+      "symbol": "WBTC-USDT",
+      "asset_type": "crypto"
+    },
+    {
+      "timestamp": "2026-01-05T12:19:06.423913Z",
+      "level": "INFO",
+      "message": "Consensus action computed: HOLD",
+      "category": "CONSENSUS",
+      "symbol": "WBTC-USDT",
+      "asset_type": "crypto",
+      "data": {
+        "consensus_action": "hold",
+        "consensus_confidence": 0.6232878606122645,
+        "consensus_price": 93681.0216435988,
+        "consensus_return": 0.007682436813727318,
+        "action_scores": {
+          "long": 0.0,
+          "hold": 0.6232878606122645,
+          "short": 0.3767121393877355
+        }
+      }
+    },
+    {
+      "timestamp": "2026-01-05T12:19:06.509622Z",
+      "level": "SUCCESS",
+      "message": "Training completed for WBTC-USDT",
+      "category": "TRAIN",
+      "symbol": "WBTC-USDT",
+      "asset_type": "crypto",
+      "data": {
+        "summary_file": "models\\crypto\\WBTC-USDT\\1d\\intraday\\summary.json",
+        "log_file": "logs\\training\\crypto\\WBTC-USDT\\1d\\training_log.json",
+        "models_trained": 4,
+        "models_failed": 1
+      }
+    }
+  ]
+}

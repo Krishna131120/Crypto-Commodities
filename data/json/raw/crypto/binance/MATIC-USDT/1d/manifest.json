@@ -1,0 +1,15 @@
+{
+  "symbol": "MATIC-USDT",
+  "timeframe": "1d",
+  "asset_type": "crypto",
+  "generated_at": "2026-01-05T09:25:03.498908Z",
+  "data_file": "data.json",
+  "latest_file": "latest.json",
+  "data_file_info": {
+    "filename": "data.json",
+    "size_bytes": 713312,
+    "candle_count": 1965,
+    "first_timestamp": "2019-04-26T00:00:00Z",
+    "last_timestamp": "2024-09-10T00:00:00Z"
+  }
+}

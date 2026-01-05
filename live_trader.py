@@ -315,6 +315,7 @@ def run_trading_cycle(
     regenerate_features_flag: bool = True,
     profit_target_pct: Optional[float] = None,
     user_stop_loss_pct: Optional[float] = None,
+    excluded_symbols: Optional[set] = None,
 ) -> Dict[str, Any]:
     """
     Run one complete trading cycle: fetch data -> regenerate features -> predict + execute for all symbols.
@@ -327,6 +328,7 @@ def run_trading_cycle(
         update_data: If True, fetch latest live data from Alpaca/Binance before each cycle
         regenerate_features_flag: If True, regenerate features after updating data
         profit_target_pct: Optional profit target percentage (e.g., 0.15 for 0.15%%). If None, uses horizon default.
+        excluded_symbols: Set of data_symbols to exclude from trading (manually closed positions)
     
     Returns summary dict with counts of successes/failures.
     """
@@ -336,9 +338,23 @@ def run_trading_cycle(
         "symbols_processed": 0,
         "symbols_traded": 0,
         "symbols_skipped": 0,
+        "symbols_stopped": [],  # Symbols that should stop trading (manual exit)
         "errors": [],
         "details": [],
     }
+    
+    # Initialize excluded_symbols if not provided
+    if excluded_symbols is None:
+        excluded_symbols = set()
+    
+    # Filter out excluded symbols (manually closed positions)
+    if excluded_symbols:
+        original_count = len(tradable_symbols)
+        tradable_symbols = [s for s in tradable_symbols if s.get("asset") and s["asset"].data_symbol not in excluded_symbols]
+        if len(tradable_symbols) < original_count:
+            excluded_count = original_count - len(tradable_symbols)
+            if verbose:
+                print(f"[FILTER] Excluding {excluded_count} symbol(s) that were manually closed: {', '.join(sorted(excluded_symbols))}")
     
     # Step 1: Update live data for all symbols (if enabled)
     # PRIMARY: Get live price from Binance (for crypto) or Angel One/Alpaca (for commodities) and update last candle's close price
@@ -358,127 +374,155 @@ def run_trading_cycle(
             unique_symbols = list(set(info["asset"].data_symbol for info in tradable_symbols))
             updated_count = 0
             
-            # COMMODITIES-ONLY: Use DhanClient exclusively (no crypto/Alpaca fallbacks)
-            if hasattr(execution_engine, 'client') and execution_engine.client.broker_name == "angelone":
-                client = execution_engine.client  # Use AngelOneClient for commodities
+            # Determine asset type from tradable symbols (all should be same type)
+            asset_type = None
+            if tradable_symbols:
+                asset_type = tradable_symbols[0]["asset"].asset_type
+            
+            if not asset_type:
                 if verbose:
-                    print("  [INFO] Using AngelOneClient for commodities data updates (MCX exchange)")
+                    print(f"  [SKIP] Could not determine asset type")
+                # Skip data update if we can't determine asset type
+                pass
+            elif asset_type == "commodities":
+                # COMMODITIES: Use AngelOneClient exclusively
+                if hasattr(execution_engine, 'client') and execution_engine.client.broker_name == "angelone":
+                    client = execution_engine.client  # Use AngelOneClient for commodities
+                    if verbose:
+                        print("  [INFO] Using AngelOneClient for commodities data updates (MCX exchange)")
+                else:
+                    # If not AngelOneClient, this is an error for commodities trading
+                    raise RuntimeError("Commodities trading requires AngelOneClient. AlpacaClient is for crypto only.")
+            elif asset_type == "crypto":
+                # CRYPTO: Skip broker-based price updates (crypto uses Binance for data, not Alpaca)
+                # Crypto prices are fetched via Binance API in get_current_price_from_features()
+                if verbose:
+                    print("  [INFO] Crypto data updates use Binance API (not broker-based)")
+                # Skip the broker-based update loop for crypto - prices are fetched on-demand
+                pass
             else:
-                # If not AngelOneClient, this is an error for commodities trading
-                raise RuntimeError("Commodities trading requires AngelOneClient. AlpacaClient is for crypto only.")
+                if verbose:
+                    print(f"  [SKIP] Unknown asset type: {asset_type}")
+                pass
             
-            for symbol in unique_symbols:
-                try:
-                    # COMMODITIES-ONLY: Get asset mapping to verify it's a commodity
-                    asset_mapping = find_by_data_symbol(symbol)
-                    if not asset_mapping:
-                        if verbose:
-                            print(f"  [SKIP] {symbol}: Not found in symbol universe")
-                        continue
-                    
-                    # STRICT CHECK: Only process commodities
-                    if asset_mapping.asset_type != "commodities":
-                        if verbose:
-                            print(f"  [SKIP] {symbol}: Not a commodity (asset_type={asset_mapping.asset_type})")
-                        continue
-                    
-                    live_price = None
-                    
-                    # COMMODITIES-ONLY: Use AngelOneClient to get last trade price (MCX)
-                    # NO Binance, NO Alpaca - only Angel One for commodities
+            # Only process commodities broker-based updates here
+            # Crypto prices are handled via Binance API in get_current_price_from_features()
+            if asset_type == "commodities":
+                for symbol in unique_symbols:
                     try:
-                        # Get MCX symbol for commodities (required for Dhan)
-                        if hasattr(asset_mapping, 'get_mcx_symbol'):
-                            # Get horizon from tradable_symbols info
-                            symbol_info = next((info for info in tradable_symbols if info["asset"].data_symbol == symbol), None)
-                            horizon = symbol_info.get("horizon", "short") if symbol_info else "short"
-                            mcx_symbol = asset_mapping.get_mcx_symbol(horizon)
-                            trading_symbol_for_price = mcx_symbol
-                        else:
-                            trading_symbol_for_price = asset_mapping.trading_symbol
+                        # COMMODITIES-ONLY: Get asset mapping to verify it's a commodity
+                        asset_mapping = find_by_data_symbol(symbol)
+                        if not asset_mapping:
+                            if verbose:
+                                print(f"  [SKIP] {symbol}: Not found in symbol universe")
+                            continue
                         
-                        # Use AngelOneClient to get MCX last trade price
-                        last_trade = client.get_last_trade(trading_symbol_for_price, max_retries=3, retry_delay=1.0, force_retry=False)
-                        if last_trade:
-                            price = last_trade.get("price") or last_trade.get("p") or last_trade.get("ltp")
-                            if price:
-                                live_price = float(price)
-                                if verbose:
-                                    print(f"  [OK] {symbol}: Got live price ${live_price:.2f} from Angel One (MCX: {trading_symbol_for_price})")
-                    except Exception as trade_exc:
-                        if verbose:
-                            print(f"  [WARN] {symbol}: Angel One MCX price fetch failed: {trade_exc}")
-                        pass
-                    
-                    if live_price is None or live_price <= 0:
-                        if verbose:
-                            print(f"  [WARN] {symbol}: No live price available - will use existing data.json price")
-                        continue
-                    
-                    # COMMODITIES-ONLY: Load existing data.json from commodities paths only
-                    asset_mapping = find_by_data_symbol(symbol)
-                    if not asset_mapping or asset_mapping.asset_type != "commodities":
-                        if verbose:
-                            print(f"  [SKIP] {symbol}: Not a commodity symbol")
-                        continue
-                    
-                    # Only commodities data paths (no crypto paths)
-                    data_paths = [
-                        get_data_path("commodities", symbol, "1d", None, "yahoo_chart").parent / "data.json",
-                        get_data_path("commodities", symbol, "1d", None, "stooq").parent / "data.json",
-                    ]
-                    
-                    data_file = None
-                    for path in data_paths:
-                        if path.exists():
-                            data_file = path
-                            break
-                    
-                    if not data_file or not data_file.exists():
-                        if verbose:
-                            print(f"  [SKIP] {symbol}: No existing data.json found")
-                        continue
-                    
-                    # Load existing candles
-                    existing_candles = load_json_file(data_file)
-                    if not existing_candles:
-                        if verbose:
-                            print(f"  [SKIP] {symbol}: No existing candles")
-                        continue
-                    
-                    # Update the last candle's close price with live price
-                    last_candle = existing_candles[-1].copy()
-                    last_timestamp = last_candle.get("timestamp", "")
-                    
-                    # Update close price (and high/low if live price exceeds them)
-                    last_candle["close"] = live_price
-                    if live_price > last_candle.get("high", 0):
-                        last_candle["high"] = live_price
-                    if live_price < last_candle.get("low", float("inf")) or last_candle.get("low", 0) == 0:
-                        last_candle["low"] = live_price
-                    last_candle["source"] = last_candle.get("source", "alpaca")
-                    # Mark as live-updated
-                    last_candle["live_updated"] = True
-                    
-                    # Replace last candle in the list
-                    existing_candles[-1] = last_candle
-                    
-                    # Save updated data
-                    save_json_file(data_file, existing_candles, append=False)
-                    updated_count += 1
-                    
-                    if verbose:
-                        # Determine source for message
-                        source = "Dhan (MCX)"  # Commodities-only: always Dhan
-                        print(f"  [OK] {symbol}: Updated last candle close to ${live_price:.2f} ({source} live)")
+                        # STRICT CHECK: Only process commodities
+                        if asset_mapping.asset_type != "commodities":
+                            if verbose:
+                                print(f"  [SKIP] {symbol}: Not a commodity (asset_type={asset_mapping.asset_type})")
+                            continue
                         
-                except Exception as sym_exc:
-                    if verbose:
-                        print(f"  [WARN] {symbol}: Failed to update with live price ({sym_exc})")
+                        live_price = None
+                        
+                        # COMMODITIES-ONLY: Use AngelOneClient to get last trade price (MCX)
+                        # NO Binance, NO Alpaca - only Angel One for commodities
+                        try:
+                            # Get MCX symbol for commodities (required for Dhan)
+                            if hasattr(asset_mapping, 'get_mcx_symbol'):
+                                # Get horizon from tradable_symbols info
+                                symbol_info = next((info for info in tradable_symbols if info["asset"].data_symbol == symbol), None)
+                                horizon = symbol_info.get("horizon", "short") if symbol_info else "short"
+                                mcx_symbol = asset_mapping.get_mcx_symbol(horizon)
+                                trading_symbol_for_price = mcx_symbol
+                            else:
+                                trading_symbol_for_price = asset_mapping.trading_symbol
+                            
+                            # Use AngelOneClient to get MCX last trade price
+                            last_trade = client.get_last_trade(trading_symbol_for_price, max_retries=3, retry_delay=1.0, force_retry=False)
+                            if last_trade:
+                                price = last_trade.get("price") or last_trade.get("p") or last_trade.get("ltp")
+                                if price:
+                                    live_price = float(price)
+                                    if verbose:
+                                        print(f"  [OK] {symbol}: Got live price ${live_price:.2f} from Angel One (MCX: {trading_symbol_for_price})")
+                        except Exception as trade_exc:
+                            if verbose:
+                                print(f"  [WARN] {symbol}: Angel One MCX price fetch failed: {trade_exc}")
+                            pass
+                        
+                        if live_price is None or live_price <= 0:
+                            if verbose:
+                                print(f"  [WARN] {symbol}: No live price available - will use existing data.json price")
+                            continue
+                        
+                        # COMMODITIES-ONLY: Load existing data.json from commodities paths only
+                        asset_mapping = find_by_data_symbol(symbol)
+                        if not asset_mapping or asset_mapping.asset_type != "commodities":
+                            if verbose:
+                                print(f"  [SKIP] {symbol}: Not a commodity symbol")
+                            continue
+                        
+                        # Only commodities data paths (no crypto paths)
+                        data_paths = [
+                            get_data_path("commodities", symbol, "1d", None, "yahoo_chart").parent / "data.json",
+                            get_data_path("commodities", symbol, "1d", None, "stooq").parent / "data.json",
+                        ]
+                        
+                        data_file = None
+                        for path in data_paths:
+                            if path.exists():
+                                data_file = path
+                                break
+                        
+                        if not data_file or not data_file.exists():
+                            if verbose:
+                                print(f"  [SKIP] {symbol}: No existing data.json found")
+                            continue
+                        
+                        # Load existing candles
+                        existing_candles = load_json_file(data_file)
+                        if not existing_candles:
+                            if verbose:
+                                print(f"  [SKIP] {symbol}: No existing candles")
+                            continue
+                        
+                        # Update the last candle's close price with live price
+                        last_candle = existing_candles[-1].copy()
+                        last_timestamp = last_candle.get("timestamp", "")
+                        
+                        # Update close price (and high/low if live price exceeds them)
+                        last_candle["close"] = live_price
+                        if live_price > last_candle.get("high", 0):
+                            last_candle["high"] = live_price
+                        if live_price < last_candle.get("low", float("inf")) or last_candle.get("low", 0) == 0:
+                            last_candle["low"] = live_price
+                        last_candle["source"] = last_candle.get("source", "alpaca")
+                        # Mark as live-updated
+                        last_candle["live_updated"] = True
+                        
+                        # Replace last candle in the list
+                        existing_candles[-1] = last_candle
+                        
+                        # Save updated data
+                        save_json_file(data_file, existing_candles, append=False)
+                        updated_count += 1
+                        
+                        if verbose:
+                            # Determine source for message
+                            source = "Dhan (MCX)"  # Commodities-only: always Dhan
+                            print(f"  [OK] {symbol}: Updated last candle close to ${live_price:.2f} ({source} live)")
+                    except Exception as sym_exc:
+                        if verbose:
+                            print(f"  [WARN] {symbol}: Failed to update with live price ({sym_exc})")
             
-            if verbose:
-                broker_name = execution_engine.client.broker_name if hasattr(execution_engine, 'client') else "Alpaca"
-                print(f"[UPDATE] Live prices updated for {updated_count}/{len(unique_symbols)} commodity symbol(s) via Angel One (MCX exchange)")
+                if verbose:
+                    broker_name = execution_engine.client.broker_name if hasattr(execution_engine, 'client') else "AngelOne"
+                    print(f"[UPDATE] Live prices updated for {updated_count}/{len(unique_symbols)} commodity symbol(s) via Angel One (MCX exchange)")
+            elif asset_type == "crypto":
+                if verbose:
+                    print(f"[UPDATE] Crypto symbols will use Binance API for live prices (on-demand)")
+            # If asset_type is None or unknown, no update message needed
         except Exception as exc:
             if verbose:
                 print(f"[WARN] Failed to update live prices: {exc}")
@@ -493,17 +537,22 @@ def run_trading_cycle(
             from pipeline_runner import regenerate_features
             unique_symbols = list(set(info["asset"].data_symbol for info in tradable_symbols))
             # Determine asset type from first symbol (all should be same type in a cycle)
-            # COMMODITIES-ONLY: Verify all symbols are commodities
             asset_type = None
             if tradable_symbols:
                 asset_type = tradable_symbols[0]["asset"].asset_type
-                # Verify all are commodities
+                # Verify all symbols are same type (crypto or commodities)
                 for info in tradable_symbols:
-                    if info["asset"].asset_type != "commodities":
-                        raise RuntimeError(f"Non-commodity symbol found: {info['asset'].data_symbol} (type: {info['asset'].asset_type}). Commodities trading only.")
+                    if info["asset"].asset_type != asset_type:
+                        raise RuntimeError(f"Mixed asset types detected: {info['asset'].data_symbol} is {info['asset'].asset_type}, expected {asset_type}")
             else:
-                asset_type = "commodities"  # Default to commodities for this script
-            updated_count = regenerate_features(asset_type, set(unique_symbols), "1d")
+                if verbose:
+                    print(f"  [WARN] No tradable symbols found")
+                asset_type = None
+            
+            if asset_type:
+                updated_count = regenerate_features(asset_type, set(unique_symbols), "1d")
+            else:
+                updated_count = 0
             if verbose:
                 if updated_count > 0:
                     print(f"[FEATURES] Features regenerated for {updated_count}/{len(unique_symbols)} symbol(s)")
@@ -534,184 +583,206 @@ def run_trading_cycle(
             from trading.symbol_universe import find_by_data_symbol
             from ml.horizons import get_horizon_risk_config, normalize_profile
             
-            # COMMODITIES-ONLY: Use AngelOneClient exclusively
-            if hasattr(execution_engine, 'client') and execution_engine.client.broker_name == "angelone":
-                client = execution_engine.client  # AngelOneClient for commodities (MCX)
+            # Determine asset type from tradable symbols
+            asset_type = None
+            if tradable_symbols:
+                asset_type = tradable_symbols[0]["asset"].asset_type
+            
+            if not asset_type:
+                if verbose:
+                    print(f"  [SKIP] Could not determine asset type for stop-loss checking")
+                # Skip stop-loss checking if we can't determine asset type
+                pass
             else:
-                raise RuntimeError("Commodities trading requires AngelOneClient. AlpacaClient is for crypto only.")
-            all_positions = client.list_positions()
-            stop_loss_triggered_count = 0
-            
-            # COMMODITIES-ONLY: Filter to MCX positions only (protect non-MCX positions)
-            mcx_positions = []
-            for pos in all_positions:
-                exchange_segment = pos.get("exchange_segment", pos.get("_raw_exchange", "")).upper()
-                if exchange_segment == "MCX":
-                    mcx_positions.append(pos)
-            
-            # Only process MCX positions for stop-loss checking
-            for position in mcx_positions:
-                try:
-                    trading_symbol = position.get("symbol", "")
-                    position_qty = float(position.get("qty", 0) or 0)
-                    
-                    if position_qty == 0:
-                        continue
-                    
-                    # Get data symbol from trading symbol (MCX commodities only)
-                    asset_mapping = None
-                    for symbol_info in tradable_symbols:
-                        # For commodities, check MCX symbol match
-                        if symbol_info["asset"].asset_type == "commodities":
-                            if hasattr(symbol_info["asset"], 'get_mcx_symbol'):
-                                horizon = symbol_info.get("horizon", "short")
-                                mcx_symbol = symbol_info["asset"].get_mcx_symbol(horizon).upper()
-                                if mcx_symbol == trading_symbol.upper():
+                # Use the client from execution engine
+                client = execution_engine.client
+                all_positions = client.list_positions()
+                stop_loss_triggered_count = 0
+                
+                # Filter positions based on asset type
+                relevant_positions = []
+                if asset_type == "commodities":
+                    # COMMODITIES: Filter to MCX positions only (protect non-MCX positions)
+                    for pos in all_positions:
+                        exchange_segment = pos.get("exchange_segment", pos.get("_raw_exchange", "")).upper()
+                        if exchange_segment == "MCX":
+                            relevant_positions.append(pos)
+                elif asset_type == "crypto":
+                    # CRYPTO: Use all positions (Alpaca crypto positions)
+                    relevant_positions = all_positions
+                else:
+                    if verbose:
+                        print(f"  [SKIP] Unknown asset type for stop-loss checking: {asset_type}")
+                    relevant_positions = []
+                
+                # Process positions for stop-loss checking
+                for position in relevant_positions:
+                    try:
+                        trading_symbol = position.get("symbol", "")
+                        position_qty = float(position.get("qty", 0) or 0)
+                        
+                        if position_qty == 0:
+                            continue
+                        
+                        # Get data symbol from trading symbol
+                        asset_mapping = None
+                        for symbol_info in tradable_symbols:
+                            # Match based on asset type
+                            if symbol_info["asset"].asset_type == "commodities":
+                                # For commodities, check MCX symbol match
+                                if hasattr(symbol_info["asset"], 'get_mcx_symbol'):
+                                    horizon = symbol_info.get("horizon", "short")
+                                    mcx_symbol = symbol_info["asset"].get_mcx_symbol(horizon).upper()
+                                    if mcx_symbol == trading_symbol.upper():
+                                        asset_mapping = symbol_info["asset"]
+                                        break
+                            elif symbol_info["asset"].asset_type == "crypto":
+                                # For crypto, match trading symbol directly
+                                if symbol_info["asset"].trading_symbol.upper() == trading_symbol.upper():
                                     asset_mapping = symbol_info["asset"]
                                     break
-                        elif symbol_info["asset"].trading_symbol.upper() == trading_symbol.upper():
-                            asset_mapping = symbol_info["asset"]
-                            break
-                    
-                    if not asset_mapping:
-                        continue
-                    
-                    # STRICT CHECK: Only process commodities
-                    if asset_mapping.asset_type != "commodities":
-                        continue
-                    
-                    # Get current price - use force_live=True when monitoring positions
-                    current_price = get_current_price_from_features(asset_mapping.asset_type, asset_mapping.data_symbol, "1d", force_live=True)
-                    if current_price is None or current_price <= 0:
-                        continue
-                    
-                    # Get entry price from position
-                    avg_entry_price = float(position.get("avg_entry_price", 0) or 0)
-                    if avg_entry_price <= 0:
-                        continue
-                    
-                    # Get horizon for this symbol to determine stop-loss percentage
-                    horizon = normalize_profile(getattr(asset_mapping, "horizon_profile", None) or "short")
-                    horizon_risk = get_horizon_risk_config(horizon)
-                    stop_loss_pct = horizon_risk.get("default_stop_loss_pct", 0.02)
-                    slippage_buffer = 0.001  # 0.1% slippage buffer for stop-loss execution
-                    
-                    # Calculate stop-loss price with slippage buffer
-                    is_long = position_qty > 0
-                    if is_long:
-                        # Calculate stop-loss price (with slippage buffer applied at entry)
-                        stop_loss_price = avg_entry_price * (1.0 - stop_loss_pct)
-                        price_change_pct = ((current_price - avg_entry_price) / avg_entry_price) * 100
-                        # Trigger stop-loss slightly before exact price to account for execution slippage
-                        # This ensures we exit before hitting the exact stop-loss level
-                        stop_loss_triggered = current_price <= stop_loss_price
-                    else:
-                        # Calculate stop-loss price (with slippage buffer applied at entry)
-                        stop_loss_price = avg_entry_price * (1.0 + stop_loss_pct)
-                        price_change_pct = ((avg_entry_price - current_price) / avg_entry_price) * 100
-                        # Trigger stop-loss slightly before exact price to account for execution slippage
-                        # This ensures we exit before hitting the exact stop-loss level
-                        stop_loss_triggered = current_price >= stop_loss_price
-                    
-                    # Calculate accurate position metrics (ALWAYS recalculate, don't trust Alpaca's values)
-                    market_value = float(position.get("market_value", 0) or 0)
-                    
-                    # ALWAYS recalculate P/L ourselves for accuracy
-                    if avg_entry_price > 0 and current_price > 0 and abs(position_qty) > 0:
-                        if is_long:
-                            # Long position: profit when current price > entry price
-                            unrealized_pl = (current_price - avg_entry_price) * abs(position_qty)
-                            unrealized_pl_pct = ((current_price - avg_entry_price) / avg_entry_price) * 100
-                        else:
-                            # Short position: profit when current price < entry price
-                            unrealized_pl = (avg_entry_price - current_price) * abs(position_qty)
-                            unrealized_pl_pct = ((avg_entry_price - current_price) / avg_entry_price) * 100
-                    else:
-                        unrealized_pl = 0
-                        unrealized_pl_pct = 0
-                    
-                    # Calculate accurate market value if not provided
-                    if market_value == 0 and current_price > 0 and abs(position_qty) > 0:
-                        market_value = abs(position_qty) * current_price
-                    
-                    print(f"\n[POSITION] {asset_mapping.data_symbol} ({trading_symbol}):")
-                    print(f"  Current Price: ${current_price:.2f}")
-                    print(f"  Entry Price: ${avg_entry_price:.2f}")
-                    print(f"  Quantity: {abs(position_qty):.8f} {'LONG' if is_long else 'SHORT'}")
-                    print(f"  Market Value: ${market_value:.2f}")
-                    print(f"  Unrealized P/L: ${unrealized_pl:.2f} ({unrealized_pl_pct:+.2f}%)")
-                    if unrealized_pl > 0:
-                        print(f"  ✅ IN PROFIT")
-                    elif unrealized_pl < 0:
-                        print(f"  ⚠️  IN LOSS")
-                    else:
-                        print(f"  ➖ Break even")
-                    print(f"  Stop-Loss Price: ${stop_loss_price:.2f} ({stop_loss_pct*100:.2f}% from entry)")
-                    print(f"  Price Change: {price_change_pct:+.2f}%")
-                    
-                    # Check if stop-loss is triggered OR if prediction changed to SHORT (force exit)
-                    # First, check if this symbol has a SHORT prediction (we'll check in the trading cycle)
-                    # For now, just check stop-loss trigger
-                    should_force_exit = False
-                    force_exit_reason = None
-                    
-                    # Check if prediction is SHORT for this symbol (will be checked in main trading cycle)
-                    # This is a safety check - if position exists and prediction is SHORT, we should exit
-                    # The main trading cycle will handle this, but we add a safety check here too
-                    
-                    if stop_loss_triggered:
-                        should_force_exit = True
-                        force_exit_reason = "stop_loss_triggered"
-                        print(f"  ⚠️  STOP-LOSS TRIGGERED! Current price ${current_price:.2f} {'<=' if is_long else '>='} stop-loss ${stop_loss_price:.2f}")
-                    else:
-                        # Position is still active, show distance to stop-loss
-                        distance_to_stop = abs(current_price - stop_loss_price) / current_price * 100
-                        print(f"  ✓ Position active (Distance to stop-loss: {distance_to_stop:.2f}%)")
-                    
-                    if should_force_exit and not dry_run:
-                        try:
-                            # Execute stop-loss: close the position
-                            close_qty = abs(position_qty)
-                            close_side = "sell" if is_long else "buy"
-                            
-                            close_resp = client.submit_order(
-                                symbol=trading_symbol,
-                                qty=close_qty,
-                                side=close_side,
-                                order_type="market",
-                                time_in_force="gtc",
-                            )
-                            
-                            print(f"  ✅ STOP-LOSS EXECUTED: Closed {close_qty:.8f} @ ${current_price:.2f}")
-                            print(f"  💰 Realized {'Loss' if unrealized_pl < 0 else 'P/L'}: ${unrealized_pl:.2f} ({unrealized_pl_pct:+.2f}%)")
-                            
-                            stop_loss_triggered_count += 1
-                            results["details"].append({
-                                "symbol": asset_mapping.data_symbol,
-                                "status": "stop_loss_executed",
-                                "entry_price": avg_entry_price,
-                                "exit_price": current_price,
-                                "quantity": close_qty,
-                                "realized_pl": unrealized_pl,
-                                "realized_pl_pct": unrealized_pl_pct,
-                                "exit_reason": force_exit_reason,
-                            })
-                        except Exception as stop_exc:
-                            print(f"  ❌ ERROR executing stop-loss: {stop_exc}")
-                            results["errors"].append(f"{asset_mapping.data_symbol}: Stop-loss execution failed: {stop_exc}")
                         
-                except Exception as pos_exc:
-                    if verbose:
-                        print(f"  [WARN] Error checking position: {pos_exc}")
+                        if not asset_mapping:
+                            continue
+                        
+                        # Verify asset type matches
+                        if asset_mapping.asset_type != asset_type:
+                            continue
+                        
+                        # Get current price - use force_live=True when monitoring positions
+                        current_price = get_current_price_from_features(asset_mapping.asset_type, asset_mapping.data_symbol, "1d", force_live=True)
+                        if current_price is None or current_price <= 0:
+                            continue
+                        
+                        # Get entry price from position
+                        avg_entry_price = float(position.get("avg_entry_price", 0) or 0)
+                        if avg_entry_price <= 0:
+                            continue
+                        
+                        # Get horizon for this symbol to determine stop-loss percentage
+                        horizon = normalize_profile(getattr(asset_mapping, "horizon_profile", None) or "short")
+                        horizon_risk = get_horizon_risk_config(horizon)
+                        stop_loss_pct = horizon_risk.get("default_stop_loss_pct", 0.02)
+                        slippage_buffer = 0.001  # 0.1% slippage buffer for stop-loss execution
+                        
+                        # Calculate stop-loss price with slippage buffer
+                        is_long = position_qty > 0
+                        if is_long:
+                            # Calculate stop-loss price (with slippage buffer applied at entry)
+                            stop_loss_price = avg_entry_price * (1.0 - stop_loss_pct)
+                            price_change_pct = ((current_price - avg_entry_price) / avg_entry_price) * 100
+                            # Trigger stop-loss slightly before exact price to account for execution slippage
+                            # This ensures we exit before hitting the exact stop-loss level
+                            stop_loss_triggered = current_price <= stop_loss_price
+                        else:
+                            # Calculate stop-loss price (with slippage buffer applied at entry)
+                            stop_loss_price = avg_entry_price * (1.0 + stop_loss_pct)
+                            price_change_pct = ((avg_entry_price - current_price) / avg_entry_price) * 100
+                            # Trigger stop-loss slightly before exact price to account for execution slippage
+                            # This ensures we exit before hitting the exact stop-loss level
+                            stop_loss_triggered = current_price >= stop_loss_price
+                        
+                        # Calculate accurate position metrics (ALWAYS recalculate, don't trust Alpaca's values)
+                        market_value = float(position.get("market_value", 0) or 0)
+                        
+                        # ALWAYS recalculate P/L ourselves for accuracy
+                        if avg_entry_price > 0 and current_price > 0 and abs(position_qty) > 0:
+                            if is_long:
+                                # Long position: profit when current price > entry price
+                                unrealized_pl = (current_price - avg_entry_price) * abs(position_qty)
+                                unrealized_pl_pct = ((current_price - avg_entry_price) / avg_entry_price) * 100
+                            else:
+                                # Short position: profit when current price < entry price
+                                unrealized_pl = (avg_entry_price - current_price) * abs(position_qty)
+                                unrealized_pl_pct = ((avg_entry_price - current_price) / avg_entry_price) * 100
+                        else:
+                            unrealized_pl = 0
+                            unrealized_pl_pct = 0
+                        
+                        # Calculate accurate market value if not provided
+                        if market_value == 0 and current_price > 0 and abs(position_qty) > 0:
+                            market_value = abs(position_qty) * current_price
+                        
+                        print(f"\n[POSITION] {asset_mapping.data_symbol} ({trading_symbol}):")
+                        print(f"  Current Price: ${current_price:.2f}")
+                        print(f"  Entry Price: ${avg_entry_price:.2f}")
+                        print(f"  Quantity: {abs(position_qty):.8f} {'LONG' if is_long else 'SHORT'}")
+                        print(f"  Market Value: ${market_value:.2f}")
+                        print(f"  Unrealized P/L: ${unrealized_pl:.2f} ({unrealized_pl_pct:+.2f}%)")
+                        if unrealized_pl > 0:
+                            print(f"  ✅ IN PROFIT")
+                        elif unrealized_pl < 0:
+                            print(f"  ⚠️  IN LOSS")
+                        else:
+                            print(f"  ➖ Break even")
+                        print(f"  Stop-Loss Price: ${stop_loss_price:.2f} ({stop_loss_pct*100:.2f}% from entry)")
+                        print(f"  Price Change: {price_change_pct:+.2f}%")
+                        
+                        # Check if stop-loss is triggered OR if prediction changed to SHORT (force exit)
+                        # First, check if this symbol has a SHORT prediction (we'll check in the trading cycle)
+                        # For now, just check stop-loss trigger
+                        should_force_exit = False
+                        force_exit_reason = None
+                        
+                        # Check if prediction is SHORT for this symbol (will be checked in main trading cycle)
+                        # This is a safety check - if position exists and prediction is SHORT, we should exit
+                        # The main trading cycle will handle this, but we add a safety check here too
+                        
+                        if stop_loss_triggered:
+                            should_force_exit = True
+                            force_exit_reason = "stop_loss_triggered"
+                            print(f"  ⚠️  STOP-LOSS TRIGGERED! Current price ${current_price:.2f} {'<=' if is_long else '>='} stop-loss ${stop_loss_price:.2f}")
+                        else:
+                            # Position is still active, show distance to stop-loss
+                            distance_to_stop = abs(current_price - stop_loss_price) / current_price * 100
+                            print(f"  ✓ Position active (Distance to stop-loss: {distance_to_stop:.2f}%)")
+                        
+                        if should_force_exit and not dry_run:
+                            try:
+                                # Execute stop-loss: close the position
+                                close_qty = abs(position_qty)
+                                close_side = "sell" if is_long else "buy"
+                                
+                                close_resp = client.submit_order(
+                                    symbol=trading_symbol,
+                                    qty=close_qty,
+                                    side=close_side,
+                                    order_type="market",
+                                    time_in_force="gtc",
+                                )
+                                
+                                print(f"  ✅ STOP-LOSS EXECUTED: Closed {close_qty:.8f} @ ${current_price:.2f}")
+                                print(f"  💰 Realized {'Loss' if unrealized_pl < 0 else 'P/L'}: ${unrealized_pl:.2f} ({unrealized_pl_pct:+.2f}%)")
+                                
+                                stop_loss_triggered_count += 1
+                                results["details"].append({
+                                    "symbol": asset_mapping.data_symbol,
+                                    "status": "stop_loss_executed",
+                                    "entry_price": avg_entry_price,
+                                    "exit_price": current_price,
+                                    "quantity": close_qty,
+                                    "realized_pl": unrealized_pl,
+                                    "realized_pl_pct": unrealized_pl_pct,
+                                    "exit_reason": force_exit_reason,
+                                })
+                            except Exception as stop_exc:
+                                print(f"  ❌ ERROR executing stop-loss: {stop_exc}")
+                                results["errors"].append(f"{asset_mapping.data_symbol}: Stop-loss execution failed: {stop_exc}")
+                    except Exception as pos_exc:
+                        if verbose:
+                            print(f"  [WARN] Error checking position: {pos_exc}")
             
-            if stop_loss_triggered_count > 0:
-                print(f"[STOP-LOSS] Executed {stop_loss_triggered_count} MCX commodity stop-loss order(s)")
-            elif mcx_positions:
-                print(f"[STOP-LOSS] Checked {len(mcx_positions)} MCX commodity position(s), all within stop-loss limits")
-                if len(all_positions) > len(mcx_positions):
-                    print(f"[PROTECTED] {len(all_positions) - len(mcx_positions)} non-MCX position(s) exist but are NOT checked")
-            else:
-                print("[STOP-LOSS] No open positions to check")
+                if stop_loss_triggered_count > 0:
+                    asset_type_label = "commodity" if asset_type == "commodities" else "crypto"
+                    print(f"[STOP-LOSS] Executed {stop_loss_triggered_count} {asset_type_label} stop-loss order(s)")
+                elif relevant_positions:
+                    asset_type_label = "commodity" if asset_type == "commodities" else "crypto"
+                    print(f"[STOP-LOSS] Checked {len(relevant_positions)} {asset_type_label} position(s), all within stop-loss limits")
+                    if len(all_positions) > len(relevant_positions):
+                        print(f"[PROTECTED] {len(all_positions) - len(relevant_positions)} non-{asset_type_label} position(s) exist but are NOT checked")
+                else:
+                    asset_type_label = "commodity" if asset_type == "commodities" else "crypto"
+                    print(f"[STOP-LOSS] No open {asset_type_label} positions to check")
                 
         except Exception as exc:
             if verbose:
@@ -721,21 +792,33 @@ def run_trading_cycle(
         # Manual mode - just show positions without executing stop-losses
         if verbose:
             try:
-                # COMMODITIES-ONLY: Use execution engine's AngelOneClient
-                if hasattr(execution_engine, 'client') and execution_engine.client.broker_name == "angelone":
+                # Determine asset type
+                asset_type_manual = None
+                if tradable_symbols:
+                    asset_type_manual = tradable_symbols[0]["asset"].asset_type
+                
+                if asset_type_manual:
+                    # Use the client from execution engine
                     client = execution_engine.client
-                else:
-                    raise RuntimeError("Commodities trading requires AngelOneClient.")
-                all_positions = client.list_positions()
-                # COMMODITIES-ONLY: Filter to MCX positions only
-                mcx_positions = [pos for pos in all_positions 
-                               if pos.get("exchange_segment", pos.get("_raw_exchange", "")).upper() == "MCX"]
-                if mcx_positions:
-                    print(f"[STOP-LOSS] Manual mode: {len(mcx_positions)} MCX commodity position(s) active - you manage stop-losses manually")
-                    if len(all_positions) > len(mcx_positions):
-                        print(f"[PROTECTED] {len(all_positions) - len(mcx_positions)} non-MCX position(s) exist but are NOT managed")
-                else:
-                    print("[STOP-LOSS] Manual mode: No MCX commodity positions")
+                    all_positions = client.list_positions()
+                    
+                    # Filter positions based on asset type
+                    relevant_positions_manual = []
+                    if asset_type_manual == "commodities":
+                        # Filter to MCX positions only
+                        relevant_positions_manual = [pos for pos in all_positions 
+                                                     if pos.get("exchange_segment", pos.get("_raw_exchange", "")).upper() == "MCX"]
+                    elif asset_type_manual == "crypto":
+                        # Use all positions for crypto
+                        relevant_positions_manual = all_positions
+                    
+                    asset_type_label = "commodity" if asset_type_manual == "commodities" else "crypto"
+                    if relevant_positions_manual:
+                        print(f"[STOP-LOSS] Manual mode: {len(relevant_positions_manual)} {asset_type_label} position(s) active - you manage stop-losses manually")
+                        if len(all_positions) > len(relevant_positions_manual):
+                            print(f"[PROTECTED] {len(all_positions) - len(relevant_positions_manual)} non-{asset_type_label} position(s) exist but are NOT managed")
+                    else:
+                        print(f"[STOP-LOSS] Manual mode: No open {asset_type_label} positions")
             except Exception:
                 pass
     
@@ -1046,10 +1129,13 @@ def run_trading_cycle(
                     print(f"    Previous Close:  ${previous_close:,.{price_precision}f}")
                     print(f"    Current Price:   ${current_price:,.{price_precision}f}")
                 print(f"    Reasoning:       {price_action_reasoning}")
-                if consensus.get("price_action_prioritized"):
-                    print(f"    ⚠️  Price action prioritized over model predictions (real-time data > historical patterns)")
                 if consensus.get("price_action_model_disagreement"):
-                    print(f"    ⚠️  Models disagreed with price action but were overridden")
+                    if consensus.get("price_action_prioritized"):
+                        print(f"    ⚠️  Models disagreed with price action - price action prioritized (real-time data > historical patterns)")
+                    else:
+                        print(f"    ⚠️  Models disagreed with price action but were overridden")
+                elif consensus.get("price_action_prioritized"):
+                    print(f"    ✓  Price action aligned with model predictions")
             
             # Debug: Show raw values to verify calculation (only if verbose)
             if verbose and abs(expected_move) > 0.0001:  # Only show if there's a meaningful move
@@ -1103,6 +1189,23 @@ def run_trading_cycle(
                 continue
             
             if execution_result:
+                # Check if this is a manual exit signal - stop trading this symbol
+                decision = execution_result.get("decision", "")
+                if decision == "stop_trading_manual_exit":
+                    reason = execution_result.get("reason", "Position manually closed")
+                    print(f"\n[STOP TRADING] {data_symbol}: {reason}")
+                    print(f"  [ACTION] This symbol will be excluded from future trading cycles")
+                    # Add to results so caller can filter it out
+                    results["symbols_stopped"] = results.get("symbols_stopped", [])
+                    results["symbols_stopped"].append(data_symbol)
+                    results["details"].append({
+                        "symbol": data_symbol,
+                        "status": "stopped",
+                        "decision": decision,
+                        "reason": reason,
+                    })
+                    continue  # Skip to next symbol, don't process this one further
+                
                 results["symbols_traded"] += 1
                 results["details"].append({
                     "symbol": data_symbol,
@@ -1331,16 +1434,27 @@ def main():
     
     # Run trading loop
     cycle_count = 0
+    # Track consecutive failures per symbol to skip problematic symbols
+    # Format: {data_symbol: consecutive_failure_count}
+    symbol_failures = {}
+    MAX_CONSECUTIVE_FAILURES = 3
+    
     try:
         while True:
             cycle_count += 1
             print(f"\n[CYCLE {cycle_count}] Starting trading cycle at {datetime.utcnow().isoformat()}")
+            
+            # Filter out symbols with too many consecutive failures
+            symbols_to_skip = {sym for sym, count in symbol_failures.items() if count >= MAX_CONSECUTIVE_FAILURES}
+            if symbols_to_skip:
+                print(f"[SKIP] Excluding {len(symbols_to_skip)} symbol(s) due to consecutive failures: {', '.join(sorted(symbols_to_skip))}")
             
             cycle_results = run_trading_cycle(
                 execution_engine=execution_engine,
                 tradable_symbols=tradable,
                 dry_run=args.dry_run,
                 verbose=args.verbose,
+                excluded_symbols=symbols_to_skip,
             )
             
             print(f"[CYCLE {cycle_count}] Complete:")
@@ -1349,6 +1463,35 @@ def main():
             print(f"  Skipped: {cycle_results['symbols_skipped']}")
             if cycle_results["errors"]:
                 print(f"  Errors: {len(cycle_results['errors'])}")
+            
+            # Update failure tracking based on cycle results
+            # Extract symbols from error messages (format: "SYMBOL: error message")
+            failed_symbols_this_cycle = set()
+            for error_msg in cycle_results.get("errors", []):
+                # Try to extract symbol from error message
+                if ":" in error_msg:
+                    symbol_part = error_msg.split(":")[0].strip()
+                    failed_symbols_this_cycle.add(symbol_part)
+            
+            # Increment failure count for failed symbols
+            for symbol in failed_symbols_this_cycle:
+                symbol_failures[symbol] = symbol_failures.get(symbol, 0) + 1
+                if symbol_failures[symbol] >= MAX_CONSECUTIVE_FAILURES:
+                    print(f"  ⚠️  {symbol}: Reached {symbol_failures[symbol]} consecutive failures - will be skipped in next cycle")
+            
+            # Reset failure count for symbols that succeeded (processed without errors)
+            # Get all symbols that were processed successfully
+            successful_symbols = set()
+            for detail in cycle_results.get("details", []):
+                symbol = detail.get("symbol")
+                status = detail.get("status")
+                if symbol and status not in ["error", "skipped"]:
+                    successful_symbols.add(symbol)
+            
+            for symbol in successful_symbols:
+                if symbol in symbol_failures:
+                    # Reset failure count on success
+                    del symbol_failures[symbol]
             
             # Log cycle summary
             cycle_log_path = Path("logs/trading/cycles.jsonl")

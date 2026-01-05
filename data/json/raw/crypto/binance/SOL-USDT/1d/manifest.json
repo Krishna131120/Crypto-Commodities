@@ -1,0 +1,15 @@
+{
+  "symbol": "SOL-USDT",
+  "timeframe": "1d",
+  "asset_type": "crypto",
+  "generated_at": "2026-01-05T09:24:58.700503Z",
+  "data_file": "data.json",
+  "latest_file": "latest.json",
+  "data_file_info": {
+    "filename": "data.json",
+    "size_bytes": 707221,
+    "candle_count": 1974,
+    "first_timestamp": "2020-08-11T00:00:00Z",
+    "last_timestamp": "2026-01-05T00:00:00Z"
+  }
+}

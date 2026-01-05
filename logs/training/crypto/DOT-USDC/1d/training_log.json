@@ -1,0 +1,57 @@
+{
+  "log_file": "logs\\training\\crypto\\DOT-USDC\\1d\\training_log.json",
+  "total_events": 3,
+  "events": [
+    {
+      "timestamp": "2026-01-05T13:13:11.719410Z",
+      "level": "INFO",
+      "message": "Starting training for crypto/DOT-USDC/1d (intraday horizon)",
+      "category": "TRAIN",
+      "symbol": "DOT-USDC",
+      "asset_type": "crypto",
+      "data": {
+        "timeframe": "1d",
+        "min_rows": 200,
+        "horizon_profile": {
+          "name": "intraday",
+          "label": "Intraday",
+          "description": "Same-day horizon (1-2 bars) suited for quick scalp decisions. Fast entries/exits, small position sizes.",
+          "horizon_bars": 1,
+          "smoothing_window": 2,
+          "directional_threshold": 0.0005,
+          "neutral_band": 0.0002,
+          "quantile_bins": 5,
+          "quantile_window": 90,
+          "trading_style": "Scalping - many small trades, quick in/out",
+          "typical_hold_time": "Hours to 1 day",
+          "position_size_pct": 0.05,
+          "stop_loss_pct": 0.03,
+          "min_confidence": 0.15
+        }
+      }
+    },
+    {
+      "timestamp": "2026-01-05T13:13:11.732447Z",
+      "level": "INFO",
+      "message": "Loaded 740 raw candles",
+      "category": "DATA",
+      "symbol": "DOT-USDC",
+      "asset_type": "crypto",
+      "data": {
+        "rows": 740,
+        "timeframe": "1d"
+      }
+    },
+    {
+      "timestamp": "2026-01-05T13:13:11.888551Z",
+      "level": "INFO",
+      "message": "Computed 131 features",
+      "category": "DATA",
+      "symbol": "DOT-USDC",
+      "asset_type": "crypto",
+      "data": {
+        "feature_count": 131
+      }
+    }
+  ]
+}

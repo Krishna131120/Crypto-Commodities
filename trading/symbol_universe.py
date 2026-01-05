@@ -542,79 +542,106 @@ UNIVERSE: List[AssetMapping] = [
         timeframe="1d",
         horizon_profile="short",
     ),
-    # Commodities - MCX Only (Angel One broker required)
-    # Bullion
+    # ============================================================================
+    # COMMODITIES - MCX Only (Angel One broker required)
+    # ============================================================================
+    # 
+    # BUDGET CONFIGURATION:
+    # Currently configured for ₹5,000 budget - only Gold Petal & Gold Guinea enabled
+    # 
+    # TO ENABLE MORE COMMODITIES:
+    # 1. Find the commodity below (search by name)
+    # 2. Change "enabled=False," to "enabled=True," (or remove the line entirely)
+    # 3. Save the file
+    # 
+    # RECOMMENDED PROGRESSION:
+    # - ₹5,000: Gold Petal, Gold Guinea (current)
+    # - ₹50,000: Add Gold Mini, Crude Oil Mini, Silver Micro
+    # - ₹1,00,000+: Add Natural Gas, Zinc Mini, Copper, etc.
+    # ============================================================================
+    
+    # Bullion (Precious Metals)
+    # Standard contracts - HIGH margin, disabled for budget trading
     AssetMapping(
         logical_name="gold",
         asset_type="commodities",
         data_symbol="GC=F",
-        trading_symbol="GOLD",  # MCX Gold futures (not ETF proxy)
+        trading_symbol="GOLD",  # MCX Gold futures - 1 kg (₹70k-100k margin)
         timeframe="1d",
         horizon_profile="short",
+        enabled=False,  # ← Disabled: Too expensive for ₹5k budget
     ),
     AssetMapping(
         logical_name="gold_mini",
         asset_type="commodities",
         data_symbol="MCX_GOLDM",
-        trading_symbol="GOLDM",  # MCX Gold Mini
+        trading_symbol="GOLDM",  # MCX Gold Mini - 100g (₹7k-10k margin)
         timeframe="1d",
         horizon_profile="short",
+        enabled=False,  # ← Enable when you have ₹50k+ budget
     ),
     AssetMapping(
         logical_name="gold_guinea",
         asset_type="commodities",
         data_symbol="MCX_GOLDGUINEA",
-        trading_symbol="GOLDGUINEA",  # MCX Gold Guinea
+        trading_symbol="GOLDGUINEA",  # MCX Gold Guinea - 8g (₹600-850 margin)
         timeframe="1d",
         horizon_profile="short",
+        enabled=True,  # ✅ ENABLED for ₹5k budget
     ),
     AssetMapping(
         logical_name="gold_petal",
         asset_type="commodities",
         data_symbol="MCX_GOLDPETAL",
-        trading_symbol="GOLDPETAL",  # MCX Gold Petal
+        trading_symbol="GOLDPETAL",  # MCX Gold Petal - 1g (₹700-1k margin)
         timeframe="1d",
         horizon_profile="short",
+        enabled=True,  # ✅ ENABLED for ₹5k budget
     ),
     AssetMapping(
         logical_name="silver",
         asset_type="commodities",
         data_symbol="SI=F",
-        trading_symbol="SILVER",  # MCX Silver futures (not ETF proxy)
+        trading_symbol="SILVER",  # MCX Silver - 30kg (₹2.5L-3.8L margin)
         timeframe="1d",
         horizon_profile="short",
+        enabled=False,  # ← Disabled: Too expensive
     ),
     AssetMapping(
         logical_name="silver_mini",
         asset_type="commodities",
         data_symbol="MCX_SILVERM",
-        trading_symbol="SILVERM",  # MCX Silver Mini
+        trading_symbol="SILVERM",  # MCX Silver Mini - 5kg (₹42k-64k margin)
         timeframe="1d",
         horizon_profile="short",
+        enabled=False,  # ← Enable when you have ₹1L+ budget
     ),
     AssetMapping(
         logical_name="silver_micro",
         asset_type="commodities",
         data_symbol="MCX_SILVERMIC",
-        trading_symbol="SILVERMIC",  # MCX Silver Micro
+        trading_symbol="SILVERMIC",  # MCX Silver Micro - 1kg (₹8.5k-12.7k margin)
         timeframe="1d",
         horizon_profile="short",
+        enabled=False,  # ← Enable when you have ₹50k+ budget
     ),
     AssetMapping(
         logical_name="silver_1000",
         asset_type="commodities",
         data_symbol="MCX_SILVER1000",
-        trading_symbol="SILVER1000",  # MCX Silver 1000
+        trading_symbol="SILVER1000",  # MCX Silver 1000 - 30kg
         timeframe="1d",
         horizon_profile="short",
+        enabled=False,  # ← Disabled: Too expensive
     ),
     AssetMapping(
         logical_name="platinum",
         asset_type="commodities",
         data_symbol="PL=F",
-        trading_symbol="PLATINUM",  # MCX Platinum futures (if available)
+        trading_symbol="PLATINUM",  # MCX Platinum - Low liquidity
         timeframe="1d",
         horizon_profile="short",
+        enabled=False,  # ← Disabled: Rarely traded on MCX
     ),
     
     # Energy
@@ -622,33 +649,37 @@ UNIVERSE: List[AssetMapping] = [
         logical_name="crude_oil",
         asset_type="commodities",
         data_symbol="CL=F",
-        trading_symbol="CRUDEOIL",  # MCX Crude Oil futures (not ETF proxy)
+        trading_symbol="CRUDEOIL",  # MCX Crude Oil - 100 barrels (₹36k-60k margin)
         timeframe="1d",
         horizon_profile="short",
+        enabled=False,  # ← Disabled: Too expensive for ₹5k budget
     ),
     AssetMapping(
         logical_name="crude_oil_mini",
         asset_type="commodities",
         data_symbol="MCX_CRUDEOILM",
-        trading_symbol="CRUDEOILM",  # MCX Crude Oil Mini
+        trading_symbol="CRUDEOILM",  # MCX Crude Oil Mini - 10 barrels (₹3.6k-6k margin)
         timeframe="1d",
         horizon_profile="short",
+        enabled=False,  # ← Enable when you have ₹50k+ budget (good volatility for ML)
     ),
     AssetMapping(
         logical_name="brent_crude",
         asset_type="commodities",
         data_symbol="BZ=F",
-        trading_symbol="BRENTCRUDE",  # MCX Brent Crude
+        trading_symbol="BRENTCRUDE",  # MCX Brent Crude - Similar to Crude Oil
         timeframe="1d",
         horizon_profile="short",
+        enabled=False,  # ← Disabled: Too expensive
     ),
     AssetMapping(
         logical_name="natural_gas",
         asset_type="commodities",
         data_symbol="NG=F",
-        trading_symbol="NATURALGAS",  # MCX Natural Gas futures
+        trading_symbol="NATURALGAS",  # MCX Natural Gas - 1250 MMBtu (₹18k-31k margin)
         timeframe="1d",
         horizon_profile="short",
+        enabled=False,  # ← Enable when you have ₹1L+ budget (high volatility)
     ),
     
     # Base Metals
@@ -656,65 +687,73 @@ UNIVERSE: List[AssetMapping] = [
         logical_name="aluminium",
         asset_type="commodities",
         data_symbol="MCX_ALUMINIUM",
-        trading_symbol="ALUMINIUM",  # MCX Aluminium
+        trading_symbol="ALUMINIUM",  # MCX Aluminium - 5 MT
         timeframe="1d",
         horizon_profile="short",
+        enabled=False,  # ← Disabled: Too expensive
     ),
     AssetMapping(
         logical_name="aluminium_mini",
         asset_type="commodities",
         data_symbol="MCX_ALUMINI",
-        trading_symbol="ALUMINI",  # MCX Aluminium Mini
+        trading_symbol="ALUMINI",  # MCX Aluminium Mini - 1 MT (₹5k-8k margin)
         timeframe="1d",
         horizon_profile="short",
+        enabled=False,  # ← Enable when you have ₹50k+ budget
     ),
     AssetMapping(
         logical_name="copper",
         asset_type="commodities",
         data_symbol="HG=F",
-        trading_symbol="COPPER",  # MCX Copper
+        trading_symbol="COPPER",  # MCX Copper (₹15k-25k margin)
         timeframe="1d",
         horizon_profile="short",
+        enabled=False,  # ← Enable when you have ₹1L+ budget (good economic indicator)
     ),
     AssetMapping(
         logical_name="lead",
         asset_type="commodities",
         data_symbol="MCX_LEAD",
-        trading_symbol="LEAD",  # MCX Lead
+        trading_symbol="LEAD",  # MCX Lead - 5 MT
         timeframe="1d",
         horizon_profile="short",
+        enabled=False,  # ← Disabled: Too expensive
     ),
     AssetMapping(
         logical_name="lead_mini",
         asset_type="commodities",
         data_symbol="MCX_LEADMINI",
-        trading_symbol="LEADMINI",  # MCX Lead Mini
+        trading_symbol="LEADMINI",  # MCX Lead Mini - 1 MT (₹4k-6k margin)
         timeframe="1d",
         horizon_profile="short",
+        enabled=False,  # ← Enable when you have ₹50k+ budget
     ),
     AssetMapping(
         logical_name="nickel",
         asset_type="commodities",
         data_symbol="MCX_NICKEL",
-        trading_symbol="NICKEL",  # MCX Nickel
+        trading_symbol="NICKEL",  # MCX Nickel - 1 MT
         timeframe="1d",
         horizon_profile="short",
+        enabled=False,  # ← Disabled: Expensive & volatile
     ),
     AssetMapping(
         logical_name="zinc",
         asset_type="commodities",
         data_symbol="MCX_ZINC",
-        trading_symbol="ZINC",  # MCX Zinc
+        trading_symbol="ZINC",  # MCX Zinc - 5 MT
         timeframe="1d",
         horizon_profile="short",
+        enabled=False,  # ← Disabled: Too expensive
     ),
     AssetMapping(
         logical_name="zinc_mini",
         asset_type="commodities",
         data_symbol="MCX_ZINCMINI",
-        trading_symbol="ZINCMINI",  # MCX Zinc Mini
+        trading_symbol="ZINCMINI",  # MCX Zinc Mini - 1 MT (₹5k-8k margin)
         timeframe="1d",
         horizon_profile="short",
+        enabled=False,  # ← Enable when you have ₹50k+ budget
     ),
     
     # Agricultural
@@ -722,33 +761,37 @@ UNIVERSE: List[AssetMapping] = [
         logical_name="corn",
         asset_type="commodities",
         data_symbol="ZC=F",
-        trading_symbol="CORN",  # MCX Corn (if available)
+        trading_symbol="CORN",  # MCX Corn - Poor data quality for India
         timeframe="1d",
         horizon_profile="short",
+        enabled=False,  # ← Disabled: Low liquidity on MCX
     ),
     AssetMapping(
         logical_name="soybean",
         asset_type="commodities",
         data_symbol="ZS=F",
-        trading_symbol="SOYBEAN",  # MCX Soybean (if available)
+        trading_symbol="SOYBEAN",  # MCX Soybean - Poor data quality
         timeframe="1d",
         horizon_profile="short",
+        enabled=False,  # ← Disabled: Low liquidity on MCX
     ),
     AssetMapping(
         logical_name="wheat",
         asset_type="commodities",
         data_symbol="ZW=F",
-        trading_symbol="WHEAT",  # MCX Wheat (if available)
+        trading_symbol="WHEAT",  # MCX Wheat - Poor data quality
         timeframe="1d",
         horizon_profile="short",
+        enabled=False,  # ← Disabled: Low liquidity on MCX
     ),
     AssetMapping(
         logical_name="cardamom",
         asset_type="commodities",
         data_symbol="MCX_CARDAMOM",
-        trading_symbol="CARDAMOM",  # MCX Cardamom
+        trading_symbol="CARDAMOM",  # MCX Cardamom - 100kg
         timeframe="1d",
         horizon_profile="short",
+        enabled=False,  # ← Disabled: Very low liquidity, wide spreads
     ),
     AssetMapping(
         logical_name="cotton",
@@ -757,22 +800,25 @@ UNIVERSE: List[AssetMapping] = [
         trading_symbol="COTTON",  # MCX Cotton
         timeframe="1d",
         horizon_profile="short",
+        enabled=False,  # ← Enable for agricultural diversification (₹2L+ budget)
     ),
     AssetMapping(
         logical_name="crude_palm_oil",
         asset_type="commodities",
         data_symbol="MCX_CPO",
-        trading_symbol="CPO",  # MCX Crude Palm Oil
+        trading_symbol="CPO",  # MCX Crude Palm Oil - 10 MT
         timeframe="1d",
         horizon_profile="short",
+        enabled=False,  # ← Enable for agricultural diversification (₹1L+ budget)
     ),
     AssetMapping(
         logical_name="mentha_oil",
         asset_type="commodities",
         data_symbol="MCX_MENTHAOIL",
-        trading_symbol="MENTHAOIL",  # MCX Mentha Oil
+        trading_symbol="MENTHAOIL",  # MCX Mentha Oil - 360kg
         timeframe="1d",
         horizon_profile="short",
+        enabled=False,  # ← Disabled: Very low liquidity
     ),
 ]
 

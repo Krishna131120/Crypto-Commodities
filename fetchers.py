@@ -2446,7 +2446,6 @@ def _download_yahoo_with_yfinance(
                         interval=interval,
                         auto_adjust=False,
                         progress=False,
-                        quiet=True,
                         group_by="ticker",
                         threads=False,
                         session=session
@@ -3159,8 +3158,10 @@ def fetch_crypto_historical_with_fallback(
         incremental: If True, check for existing data and only fetch new data
     """
     if fallback_engine is None:
-        sources = ["alpaca", "binance_rest", "coinbase", "kucoin", "okx", "local_cache"]
-        fallback_engine = FallbackEngine(sources, "alpaca")
+        # PRIORITY: Yahoo Finance and Binance have better altcoin coverage than Alpaca
+        # Alpaca only supports major coins (BTC, ETH, LTC, BCH)
+        sources = ["yahoo", "binance_rest", "alpaca", "coinbase", "kucoin", "okx", "local_cache"]
+        fallback_engine = FallbackEngine(sources, "yahoo")
     
     # Check for existing data if incremental mode is enabled
     incremental_start_date = None
@@ -3409,8 +3410,8 @@ def ingest_all_historical(
     print("=" * 80)
     
     crypto_fallback = FallbackEngine(
-        ["alpaca", "binance_rest", "coinbase", "kucoin", "okx", "local_cache"],
-        "alpaca"  # PRIMARY: Alpaca (free, no keys required for crypto data)
+        ["binance_rest", "alpaca", "coinbase", "kucoin", "okx", "local_cache"],
+        "binance_rest"  # PRIMARY: Binance (excellent altcoin coverage, already implemented)
     )
     commodities_fallback = FallbackEngine(
         ["yahoo", "local_cache"],

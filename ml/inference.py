@@ -739,11 +739,11 @@ class InferencePipeline:
                 is_red_candle = current_price < previous_close
                 
                 # For intraday, use price action to override model predictions
-                # CRITICAL: Strong price movements (>1%) should override model predictions
+                # CRITICAL: Strong price movements (>2%) should override model predictions
                 # Models are trained on historical patterns, but current price action is REAL-TIME
                 SIGNIFICANT_MOVE_THRESHOLD = 0.001  # 0.1% minimum for any override
-                STRONG_MOVE_THRESHOLD = 0.01  # 1% for strong override (70% weight)
-                VERY_STRONG_MOVE_THRESHOLD = 0.03  # 3% for very strong override (90% weight)
+                STRONG_MOVE_THRESHOLD = 0.02  # 2% for strong override (50% weight)
+                VERY_STRONG_MOVE_THRESHOLD = 0.05  # 5% for very strong override (70% weight)
                 
                 abs_price_change = abs(price_change_pct)
                 
@@ -751,13 +751,13 @@ class InferencePipeline:
                     # Green candle - price going UP
                     # Determine override strength based on magnitude
                     if abs_price_change >= VERY_STRONG_MOVE_THRESHOLD:
-                        # VERY STRONG upward move (>3%) - override models strongly (90% price action)
-                        price_action_weight = 0.90
+                        # VERY STRONG upward move (>5%) - override models strongly (70% price action)
+                        price_action_weight = 0.70
                         price_action_confidence = min(0.85 + abs(price_change_pct) * 2, 0.95)
                         override_strength = "VERY STRONG"
                     elif abs_price_change >= STRONG_MOVE_THRESHOLD:
-                        # STRONG upward move (>1%) - override models (70% price action)
-                        price_action_weight = 0.70
+                        # STRONG upward move (>2%) - override models (50% price action)
+                        price_action_weight = 0.50
                         price_action_confidence = min(0.80 + abs(price_change_pct) * 3, 0.92)
                         override_strength = "STRONG"
                     else:
@@ -786,13 +786,13 @@ class InferencePipeline:
                     # Red candle - price going DOWN
                     # Determine override strength based on magnitude
                     if abs_price_change >= VERY_STRONG_MOVE_THRESHOLD:
-                        # VERY STRONG downward move (>3%) - override models strongly (90% price action)
-                        price_action_weight = 0.90
+                        # VERY STRONG downward move (>5%) - override models strongly (70% price action)
+                        price_action_weight = 0.70
                         price_action_confidence = min(0.85 + abs(price_change_pct) * 2, 0.95)
                         override_strength = "VERY STRONG"
                     elif abs_price_change >= STRONG_MOVE_THRESHOLD:
-                        # STRONG downward move (>1%) - override models (70% price action)
-                        price_action_weight = 0.70
+                        # STRONG downward move (>2%) - override models (50% price action)
+                        price_action_weight = 0.50
                         price_action_confidence = min(0.80 + abs(price_change_pct) * 3, 0.92)
                         override_strength = "STRONG"
                     else:
@@ -856,34 +856,92 @@ class InferencePipeline:
             if override_action and override_return is not None:
                 model_return = consensus.get("consensus_return", 0.0)
                 model_action = consensus.get("consensus_action", "hold")
+                model_confidence = consensus.get("consensus_confidence", 0.0)
                 
-                # Use dynamic weight based on price action strength
-                # For VERY STRONG moves (>3%), use 90% price action
-                # For STRONG moves (>1%), use 70% price action
-                # For MODERATE moves (0.1-1%), use 50% price action
+                # Count model actions directly from model_outputs (more accurate than weighted action_scores)
+                action_counts = {"long": 0, "short": 0, "hold": 0}
+                for model_name, model_data in model_outputs.items():
+                    model_action_from_output = model_data.get("action", "hold").lower()
+                    if model_action_from_output in action_counts:
+                        action_counts[model_action_from_output] += 1
+                
+                total_models_count = sum(action_counts.values())
+                if total_models_count > 0:
+                    # Calculate consensus ratio based on model counts (not weighted scores)
+                    max_count = max(action_counts.values())
+                    model_consensus_ratio = max_count / total_models_count
+                    # Determine the model's consensus direction (most common action)
+                    model_consensus_direction = max(action_counts, key=action_counts.get)
+                else:
+                    model_consensus_ratio = 0.0
+                    model_consensus_direction = "hold"
+                
+                # Determine if models have STRONG consensus (>70% of models agree on one direction)
+                strong_model_consensus = model_consensus_ratio > 0.70
+                # Determine if models have VERY STRONG consensus (>80% of models agree)
+                very_strong_model_consensus = model_consensus_ratio > 0.80
+                
+                # Check if models strongly disagree with price action override
+                models_disagree = (override_action == "long" and model_consensus_direction == "short") or \
+                                 (override_action == "short" and model_consensus_direction == "long")
+                
+                # FIXED: For intraday trading, price action should ALWAYS determine direction
+                # Real-time price movement is more reliable than historical model predictions
+                # If price is moving UP (green candle), we should go LONG, not SHORT
+                # If price is moving DOWN (red candle), we should go SHORT, not LONG
+                # Models can still influence confidence and return magnitude, but not the direction
+                should_override_action = True  # Always override action for intraday price action
+                
+                if models_disagree and very_strong_model_consensus:
+                    # Models have VERY STRONG consensus (80%+) that disagrees with price action
+                    # Reduce price action weight significantly to respect model consensus
+                    # This prevents 1-2% price movements from overriding 80%+ model agreement
+                    if override_strength == "VERY STRONG":
+                        # Very strong moves (>5%) - still respect but less reduction
+                        price_action_weight = price_action_weight * 0.7  # 30% reduction
+                    elif override_strength == "STRONG":
+                        # Strong moves (>2%) - significant reduction
+                        price_action_weight = price_action_weight * 0.5  # 50% reduction
+                    else:
+                        # Moderate moves - heavy reduction to respect 80%+ model consensus
+                        price_action_weight = max(price_action_weight * 0.3, 0.25)  # At least 25% weight
+                elif models_disagree and strong_model_consensus:
+                    # Models have STRONG consensus (70-80%) that disagrees with price action
+                    # Reduce price action weight to respect model consensus for return/confidence
+                    # BUT still override the action direction to match price movement
+                    # CRITICAL: Ensure price action has enough weight so return sign matches action
+                    if override_strength == "VERY STRONG":
+                        # Very strong moves - price action gets full weight
+                        price_action_weight = price_action_weight * 0.9  # Slight reduction
+                    elif override_strength == "STRONG":
+                        # Strong moves - reduce weight but ensure return sign matches action
+                        price_action_weight = price_action_weight * 0.7  # Moderate reduction
+                    else:
+                        # Moderate moves - ensure price action has enough weight to keep return sign correct
+                        # Minimum 40% weight to ensure return sign matches action direction
+                        price_action_weight = max(price_action_weight * 0.6, 0.4)  # At least 40% weight
+                
+                # Use dynamic weight based on price action strength (may have been reduced above)
                 model_weight = 1.0 - price_action_weight
                 
-                # If model strongly disagrees with STRONG/VERY STRONG price action, still prioritize price action
-                # (Real-time price action is more reliable than historical patterns for intraday)
-                if (override_action == "long" and model_action == "short") or (override_action == "short" and model_action == "long"):
+                # Blend returns and confidence
+                # Note: We always override action to match price direction, but blend returns/confidence
+                if models_disagree:
                     if override_strength in ["VERY STRONG", "STRONG"]:
-                        # For strong moves, prioritize price action even if models disagree
-                        # Real-time price action is more reliable than historical patterns
+                        # For strong moves, blend but price action gets more weight
                         blended_return = override_return * price_action_weight + model_return * model_weight
-                        blended_confidence = override_confidence * price_action_weight + consensus.get("consensus_confidence", 0.0) * model_weight
-                        consensus["price_action_model_disagreement"] = True
-                        consensus["price_action_prioritized"] = True  # Flag that we prioritized price action
+                        blended_confidence = override_confidence * price_action_weight + model_confidence * model_weight
                     else:
-                        # For moderate moves, reduce weight if models strongly disagree
+                        # For moderate moves, reduce price action weight more when models disagree
                         reduced_weight = price_action_weight * 0.6  # Reduce by 40%
                         reduced_model_weight = 1.0 - reduced_weight
                         blended_return = override_return * reduced_weight + model_return * reduced_model_weight
-                        blended_confidence = override_confidence * reduced_weight + consensus.get("consensus_confidence", 0.0) * reduced_model_weight
-                        consensus["price_action_model_disagreement"] = True
+                        blended_confidence = override_confidence * reduced_weight + model_confidence * reduced_model_weight
                 else:
                     # Agreement or neutral - use dynamic weight
                     blended_return = override_return * price_action_weight + model_return * model_weight
-                    blended_confidence = override_confidence * price_action_weight + consensus.get("consensus_confidence", 0.0) * model_weight
+                    blended_confidence = override_confidence * price_action_weight + model_confidence * model_weight
+                
                 # Cap blended confidence using dynamic cap
                 # Calculate dynamic cap for intraday price action override
                 # Use number of models from self.models if available, otherwise estimate
@@ -897,8 +955,27 @@ class InferencePipeline:
                 )
                 blended_confidence = min(dynamic_cap, max(0.0, blended_confidence))
                 
+                # FIXED: Always override action for intraday price action
+                # Price direction (green/red candle) should determine trade direction
+                # Models can influence confidence/return but not the action direction
+                # CRITICAL: Ensure return sign matches action direction to avoid confusion
+                if override_action == "long" and blended_return < 0:
+                    # Price is moving up but blended return is negative - ensure it's at least slightly positive
+                    # Use a blend that favors price action to keep return sign correct
+                    blended_return = max(override_return * 0.6, 0.001)  # At least 60% of price action or 0.1% minimum
+                elif override_action == "short" and blended_return > 0:
+                    # Price is moving down but blended return is positive - ensure it's at least slightly negative
+                    blended_return = min(override_return * 0.6, -0.001)  # At least 60% of price action or -0.1% minimum
+                
                 consensus["consensus_return"] = blended_return
-                consensus["consensus_action"] = override_action
+                consensus["consensus_action"] = override_action  # Always use price action direction
+                
+                # Flag if models disagreed (for logging/debugging)
+                if models_disagree:
+                    consensus["price_action_model_disagreement"] = True
+                    if strong_model_consensus:
+                        # Models strongly disagreed but we still followed price action
+                        consensus["price_action_prioritized"] = True
                 consensus["consensus_confidence"] = blended_confidence
                 consensus["intraday_price_action_override"] = True
                 consensus["price_action_reasoning"] = intraday_price_action_override.get("reasoning")

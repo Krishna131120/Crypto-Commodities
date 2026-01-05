@@ -1,0 +1,18 @@
+{
+  "log_file": "logs\\training\\crypto\\SHIB-USDC\\1d\\training_log.json",
+  "total_events": 1,
+  "events": [
+    {
+      "timestamp": "2026-01-05T07:31:29.233215Z",
+      "level": "ERROR",
+      "message": "Training skipped: crypto/SHIB-USDC (intraday): No data.json found for crypto/SHIB-USDC/1d",
+      "category": "TRAIN",
+      "symbol": "SHIB-USDC",
+      "asset_type": "crypto",
+      "data": {
+        "error": "No data.json found for crypto/SHIB-USDC/1d",
+        "horizon": "intraday"
+      }
+    }
+  ]
+}
