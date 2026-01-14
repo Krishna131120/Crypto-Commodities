@@ -2,14 +2,14 @@
   "symbol": "DOGE-USDC",
   "timeframe": "1d",
   "asset_type": "crypto",
-  "generated_at": "2026-01-05T12:00:29.060048Z",
+  "generated_at": "2026-01-14T07:18:58.758019Z",
   "data_file": "data.json",
   "latest_file": "latest.json",
   "data_file_info": {
     "filename": "data.json",
-    "size_bytes": 276887,
-    "candle_count": 758,
+    "size_bytes": 280170,
+    "candle_count": 767,
     "first_timestamp": "2019-07-05T00:00:00Z",
-    "last_timestamp": "2026-01-05T00:00:00Z"
+    "last_timestamp": "2026-01-14T00:00:00Z"
   }
 }

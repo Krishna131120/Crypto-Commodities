@@ -14,10 +14,16 @@ from __future__ import annotations
 import argparse
 import json
 import time
+import warnings
 from dataclasses import asdict
 from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, List, Optional
+
+# Suppress sklearn version compatibility warnings (models trained with 1.3.2, running with 1.7.1)
+warnings.filterwarnings("ignore", message=".*InconsistentVersionWarning.*", category=UserWarning)
+warnings.filterwarnings("ignore", message=".*Trying to unpickle.*", category=UserWarning)
+warnings.filterwarnings("ignore", message=".*monotonic_cst.*", category=UserWarning)
 
 import pandas as pd
 
@@ -316,6 +322,7 @@ def run_trading_cycle(
     profit_target_pct: Optional[float] = None,
     user_stop_loss_pct: Optional[float] = None,
     excluded_symbols: Optional[set] = None,
+    all_symbols_for_predictions: Optional[List[Dict[str, Any]]] = None,  # NEW: Show predictions for all symbols, but only trade selected ones
 ) -> Dict[str, Any]:
     """
     Run one complete trading cycle: fetch data -> regenerate features -> predict + execute for all symbols.
@@ -563,17 +570,19 @@ def run_trading_cycle(
                 print(f"[WARN] Failed to regenerate features: {exc}")
             # Continue anyway - we'll use existing features
     
-    # Step 3: Check existing positions for stop-loss triggers BEFORE executing new trades
+    # Step 3: Check existing positions for stop-loss AND profit target triggers BEFORE executing new trades
     # This ensures we exit losing positions immediately, protecting capital
+    # AND exit winning positions when profit target is hit, regardless of PositionManager tracking
     # UNLESS manual_stop_loss mode is enabled - then user manages stop-losses manually
     if verbose:
         manual_mode = getattr(execution_engine.risk, 'manual_stop_loss', False)
         if manual_mode:
-            print(f"\n[STEP 3/4] CHECKING STOP-LOSSES (MANUAL MODE)")
+            print(f"\n[STEP 3/4] CHECKING STOP-LOSSES & PROFIT TARGETS (MANUAL MODE)")
             print("[STOP-LOSS] MANUAL MODE: Skipping automatic stop-loss checking (you manage stop-losses manually)")
         else:
-            print(f"\n[STEP 3/4] CHECKING STOP-LOSSES")
-            print("[STOP-LOSS] Checking existing positions for stop-loss triggers...")
+            print(f"\n[STEP 3/4] CHECKING POSITIONS (Stop-Loss & Profit Targets)")
+            if profit_target_pct is not None:
+                print(f"  Monitoring all positions: Profit target {profit_target_pct:.2f}% | Will sell when profit >= {profit_target_pct:.2f}%")
     
     # Skip automatic stop-loss execution if manual mode is enabled
     manual_stop_loss_mode = getattr(execution_engine.risk, 'manual_stop_loss', False)
@@ -665,22 +674,31 @@ def run_trading_cycle(
                         stop_loss_pct = horizon_risk.get("default_stop_loss_pct", 0.02)
                         slippage_buffer = 0.001  # 0.1% slippage buffer for stop-loss execution
                         
-                        # Calculate stop-loss price with slippage buffer
+                        # Get profit target percentage (use provided value or default)
+                        effective_profit_target_pct = profit_target_pct if profit_target_pct is not None else 1.0  # Default 1% if not specified
+                        
+                        # Calculate stop-loss price and profit target price
                         is_long = position_qty > 0
                         if is_long:
                             # Calculate stop-loss price (with slippage buffer applied at entry)
                             stop_loss_price = avg_entry_price * (1.0 - stop_loss_pct)
+                            # Calculate profit target price
+                            profit_target_price = avg_entry_price * (1.0 + effective_profit_target_pct / 100.0)
                             price_change_pct = ((current_price - avg_entry_price) / avg_entry_price) * 100
                             # Trigger stop-loss slightly before exact price to account for execution slippage
-                            # This ensures we exit before hitting the exact stop-loss level
                             stop_loss_triggered = current_price <= stop_loss_price
+                            # Trigger profit target when price reaches or exceeds target
+                            profit_target_triggered = current_price >= profit_target_price
                         else:
                             # Calculate stop-loss price (with slippage buffer applied at entry)
                             stop_loss_price = avg_entry_price * (1.0 + stop_loss_pct)
+                            # Calculate profit target price (for shorts, profit when price goes down)
+                            profit_target_price = avg_entry_price * (1.0 - effective_profit_target_pct / 100.0)
                             price_change_pct = ((avg_entry_price - current_price) / avg_entry_price) * 100
                             # Trigger stop-loss slightly before exact price to account for execution slippage
-                            # This ensures we exit before hitting the exact stop-loss level
                             stop_loss_triggered = current_price >= stop_loss_price
+                            # Trigger profit target when price reaches or goes below target (for shorts)
+                            profit_target_triggered = current_price <= profit_target_price
                         
                         # Calculate accurate position metrics (ALWAYS recalculate, don't trust Alpaca's values)
                         market_value = float(position.get("market_value", 0) or 0)
@@ -703,43 +721,47 @@ def run_trading_cycle(
                         if market_value == 0 and current_price > 0 and abs(position_qty) > 0:
                             market_value = abs(position_qty) * current_price
                         
-                        print(f"\n[POSITION] {asset_mapping.data_symbol} ({trading_symbol}):")
-                        print(f"  Current Price: ${current_price:.2f}")
-                        print(f"  Entry Price: ${avg_entry_price:.2f}")
-                        print(f"  Quantity: {abs(position_qty):.8f} {'LONG' if is_long else 'SHORT'}")
-                        print(f"  Market Value: ${market_value:.2f}")
-                        print(f"  Unrealized P/L: ${unrealized_pl:.2f} ({unrealized_pl_pct:+.2f}%)")
-                        if unrealized_pl > 0:
-                            print(f"  ✅ IN PROFIT")
-                        elif unrealized_pl < 0:
-                            print(f"  ⚠️  IN LOSS")
-                        else:
-                            print(f"  ➖ Break even")
-                        print(f"  Stop-Loss Price: ${stop_loss_price:.2f} ({stop_loss_pct*100:.2f}% from entry)")
-                        print(f"  Price Change: {price_change_pct:+.2f}%")
-                        
-                        # Check if stop-loss is triggered OR if prediction changed to SHORT (force exit)
-                        # First, check if this symbol has a SHORT prediction (we'll check in the trading cycle)
-                        # For now, just check stop-loss trigger
+                        # Check if stop-loss OR profit target is triggered
                         should_force_exit = False
                         force_exit_reason = None
                         
-                        # Check if prediction is SHORT for this symbol (will be checked in main trading cycle)
-                        # This is a safety check - if position exists and prediction is SHORT, we should exit
-                        # The main trading cycle will handle this, but we add a safety check here too
-                        
-                        if stop_loss_triggered:
+                        # PRIORITY 1: Check profit target FIRST (lock in profits)
+                        # Compare: Current Price vs Entry Price - if profit >= 1%, SELL
+                        if profit_target_triggered:
+                            should_force_exit = True
+                            force_exit_reason = "profit_target_hit"
+                            print(f"\n[POSITION] {asset_mapping.data_symbol} ({trading_symbol}):")
+                            print(f"  Entry: ${avg_entry_price:.2f} → Current: ${current_price:.2f} | P/L: {unrealized_pl_pct:+.2f}% | Target: {effective_profit_target_pct:.2f}%")
+                            print(f"  🎯 PROFIT TARGET HIT! Selling {abs(position_qty):.8f} @ ${current_price:.2f}")
+                        # PRIORITY 2: Check stop-loss (protect capital)
+                        elif stop_loss_triggered:
                             should_force_exit = True
                             force_exit_reason = "stop_loss_triggered"
-                            print(f"  ⚠️  STOP-LOSS TRIGGERED! Current price ${current_price:.2f} {'<=' if is_long else '>='} stop-loss ${stop_loss_price:.2f}")
+                            print(f"\n[POSITION] {asset_mapping.data_symbol} ({trading_symbol}):")
+                            print(f"  Entry: ${avg_entry_price:.2f} → Current: ${current_price:.2f} | P/L: {unrealized_pl_pct:.2f}%")
+                            print(f"  ⚠️  STOP-LOSS TRIGGERED! Closing position @ ${current_price:.2f}")
                         else:
-                            # Position is still active, show distance to stop-loss
-                            distance_to_stop = abs(current_price - stop_loss_price) / current_price * 100
-                            print(f"  ✓ Position active (Distance to stop-loss: {distance_to_stop:.2f}%)")
+                            # Position is still active - concise monitoring
+                            # Calculate progress toward profit target
+                            if is_long:
+                                progress_to_target = ((current_price - avg_entry_price) / (profit_target_price - avg_entry_price)) * 100 if profit_target_price > avg_entry_price else 0
+                            else:
+                                progress_to_target = ((avg_entry_price - current_price) / (avg_entry_price - profit_target_price)) * 100 if profit_target_price < avg_entry_price else 0
+                            
+                            # Smart logging: Only show details if significant change or close to target
+                            if unrealized_pl_pct >= 0:
+                                # Show if close to target (within 20%) or if profit is significant (>0.5%)
+                                if progress_to_target >= 80 or unrealized_pl_pct >= 0.5:
+                                    print(f"[POSITION] {asset_mapping.data_symbol}: Entry ${avg_entry_price:.2f} → Current ${current_price:.2f} | P/L: {unrealized_pl_pct:+.2f}% | Progress: {progress_to_target:.0f}% to {effective_profit_target_pct:.2f}% target")
+                            else:
+                                # Show if loss is significant (>-0.5%) or close to stop-loss
+                                distance_to_stop = abs(current_price - stop_loss_price) / current_price * 100
+                                if unrealized_pl_pct <= -0.5 or distance_to_stop < 1.0:
+                                    print(f"[POSITION] {asset_mapping.data_symbol}: Entry ${avg_entry_price:.2f} → Current ${current_price:.2f} | P/L: {unrealized_pl_pct:.2f}% | Stop-loss: {distance_to_stop:.1f}% away")
                         
                         if should_force_exit and not dry_run:
                             try:
-                                # Execute stop-loss: close the position
+                                # Execute exit: close the position (either profit target or stop-loss)
                                 close_qty = abs(position_qty)
                                 close_side = "sell" if is_long else "buy"
                                 
@@ -751,38 +773,53 @@ def run_trading_cycle(
                                     time_in_force="gtc",
                                 )
                                 
-                                print(f"  ✅ STOP-LOSS EXECUTED: Closed {close_qty:.8f} @ ${current_price:.2f}")
-                                print(f"  💰 Realized {'Loss' if unrealized_pl < 0 else 'P/L'}: ${unrealized_pl:.2f} ({unrealized_pl_pct:+.2f}%)")
-                                
-                                stop_loss_triggered_count += 1
-                                results["details"].append({
-                                    "symbol": asset_mapping.data_symbol,
-                                    "status": "stop_loss_executed",
-                                    "entry_price": avg_entry_price,
-                                    "exit_price": current_price,
-                                    "quantity": close_qty,
-                                    "realized_pl": unrealized_pl,
-                                    "realized_pl_pct": unrealized_pl_pct,
-                                    "exit_reason": force_exit_reason,
-                                })
-                            except Exception as stop_exc:
-                                print(f"  ❌ ERROR executing stop-loss: {stop_exc}")
-                                results["errors"].append(f"{asset_mapping.data_symbol}: Stop-loss execution failed: {stop_exc}")
+                                if force_exit_reason == "profit_target_hit":
+                                    print(f"  ✅ SOLD: {close_qty:.8f} @ ${current_price:.2f} | Profit: ${unrealized_pl:.2f} ({unrealized_pl_pct:+.2f}%)")
+                                    stop_loss_triggered_count += 1  # Reuse counter for tracking
+                                    results["details"].append({
+                                        "symbol": asset_mapping.data_symbol,
+                                        "status": "profit_target_executed",
+                                        "entry_price": avg_entry_price,
+                                        "exit_price": current_price,
+                                        "quantity": close_qty,
+                                        "realized_pl": unrealized_pl,
+                                        "realized_pl_pct": unrealized_pl_pct,
+                                        "exit_reason": force_exit_reason,
+                                    })
+                                else:
+                                    print(f"  ✅ STOP-LOSS: {close_qty:.8f} @ ${current_price:.2f} | Loss: ${unrealized_pl:.2f} ({unrealized_pl_pct:.2f}%)")
+                                    stop_loss_triggered_count += 1
+                                    results["details"].append({
+                                        "symbol": asset_mapping.data_symbol,
+                                        "status": "stop_loss_executed",
+                                        "entry_price": avg_entry_price,
+                                        "exit_price": current_price,
+                                        "quantity": close_qty,
+                                        "realized_pl": unrealized_pl,
+                                        "realized_pl_pct": unrealized_pl_pct,
+                                        "exit_reason": force_exit_reason,
+                                    })
+                            except Exception as exit_exc:
+                                print(f"  ❌ ERROR executing exit: {exit_exc}")
+                                results["errors"].append(f"{asset_mapping.data_symbol}: Exit execution failed: {exit_exc}")
                     except Exception as pos_exc:
                         if verbose:
                             print(f"  [WARN] Error checking position: {pos_exc}")
             
                 if stop_loss_triggered_count > 0:
                     asset_type_label = "commodity" if asset_type == "commodities" else "crypto"
-                    print(f"[STOP-LOSS] Executed {stop_loss_triggered_count} {asset_type_label} stop-loss order(s)")
+                    print(f"[SUMMARY] Closed {stop_loss_triggered_count} {asset_type_label} position(s) | Continuing to process other currencies...")
                 elif relevant_positions:
                     asset_type_label = "commodity" if asset_type == "commodities" else "crypto"
-                    print(f"[STOP-LOSS] Checked {len(relevant_positions)} {asset_type_label} position(s), all within stop-loss limits")
+                    if profit_target_pct is not None:
+                        print(f"[SUMMARY] Monitoring {len(relevant_positions)} {asset_type_label} position(s) | Target: {profit_target_pct:.2f}% profit")
+                    else:
+                        print(f"[SUMMARY] Monitoring {len(relevant_positions)} {asset_type_label} position(s)")
                     if len(all_positions) > len(relevant_positions):
-                        print(f"[PROTECTED] {len(all_positions) - len(relevant_positions)} non-{asset_type_label} position(s) exist but are NOT checked")
+                        print(f"  ⚠️  {len(all_positions) - len(relevant_positions)} non-{asset_type_label} position(s) not checked")
                 else:
                     asset_type_label = "commodity" if asset_type == "commodities" else "crypto"
-                    print(f"[STOP-LOSS] No open {asset_type_label} positions to check")
+                    # Don't print if no positions - keep it quiet
                 
         except Exception as exc:
             if verbose:
@@ -825,9 +862,90 @@ def run_trading_cycle(
     # Step 4: Run predictions and execute trades for each symbol
     if verbose:
         print(f"\n[STEP 4/4] RUNNING PREDICTIONS & EXECUTING TRADES")
+    
+    # CRITICAL STEP 1: Check ALL existing positions for profit targets/stop-losses FIRST
+    # This ensures positions are sold even if the symbol is not in top 5 or being actively traded
+    active_positions = execution_engine.position_manager.get_all_positions()
+    if active_positions:
+        print(f"\n[POSITION MONITORING] Checking {len(active_positions)} open position(s) for exits...")
+        positions_exited = 0
+        for pos in active_positions:
+            try:
+                # Get current price for this position
+                asset_mapping = None
+                for info in (all_symbols_for_predictions or tradable_symbols):
+                    if info["asset"].data_symbol.upper() == pos.data_symbol.upper():
+                        asset_mapping = info["asset"]
+                        break
+                
+                if not asset_mapping:
+                    # Try to find asset by trading symbol
+                    from trading.symbol_universe import find_by_trading_symbol
+                    asset_mapping = find_by_trading_symbol(pos.symbol)
+                
+                if asset_mapping:
+                    # Get current price
+                    current_price = get_current_price_from_features(
+                        pos.asset_type,
+                        pos.data_symbol,
+                        "1d",
+                        force_live=True,
+                        verbose=False
+                    )
+                    
+                    if current_price and current_price > 0:
+                        # Check if position should exit (profit target, stop-loss, trailing stop)
+                        exit_signal = execution_engine.position_manager.update_position(
+                            pos.symbol,
+                            current_price
+                        )
+                        
+                        if exit_signal and exit_signal.get("should_exit"):
+                            # Position should exit - execute the exit
+                            exit_reason = exit_signal.get("exit_reason", "unknown")
+                            exit_price = exit_signal.get("exit_price", current_price)
+                            print(f"  [EXIT] {pos.symbol}: {exit_reason} at ${exit_price:.4f}")
+                            
+                            # Execute exit trade
+                            try:
+                                exit_result = execution_engine.client.close_position(pos.symbol)
+                                if exit_result:
+                                    positions_exited += 1
+                                    print(f"    ✓ Position closed successfully")
+                                    # Update position manager
+                                    execution_engine.position_manager.close_position(pos.symbol, exit_price)
+                            except Exception as exit_err:
+                                print(f"    ✗ Exit execution failed: {exit_err}")
+            except Exception as pos_err:
+                if verbose:
+                    print(f"  [WARN] Could not check position {pos.symbol}: {pos_err}")
+        
+        if positions_exited > 0:
+            print(f"  ✓ Exited {positions_exited} position(s) due to profit targets/stop-losses")
+        else:
+            print(f"  ℹ No positions ready to exit yet")
+    
+    # CRITICAL STEP 2: Now process ALL symbols with trained models to monitor for opportunities
+    # If all_symbols_for_predictions is provided, use it (contains ALL symbols)
+    # Otherwise, use tradable_symbols (fallback - should not happen in normal flow)
+    if all_symbols_for_predictions:
+        symbols_to_process = all_symbols_for_predictions  # Process ALL symbols
+    else:
+        symbols_to_process = tradable_symbols  # Fallback only
+    
+    trading_symbols_set = {info["asset"].data_symbol.upper() for info in tradable_symbols}
+    
+    # Always show monitoring status
+    if all_symbols_for_predictions and len(all_symbols_for_predictions) > len(tradable_symbols):
+        print(f"\n[MONITORING] Processing ALL {len(all_symbols_for_predictions)} symbols with trained models")
+        print(f"  - Will trade: {len(tradable_symbols)} selected symbols + any LONG signals with 60%+ confidence")
+        print(f"  - Monitoring: {len(all_symbols_for_predictions)} symbols for buying opportunities")
+    elif all_symbols_for_predictions:
+        print(f"\n[MONITORING] Processing {len(all_symbols_for_predictions)} symbols (all have trained models)")
+    else:
         print(f"[TRADING] Processing {len(tradable_symbols)} symbol(s)...")
     
-    for symbol_info in tradable_symbols:
+    for symbol_info in symbols_to_process:
         asset = symbol_info["asset"]
         model_dir = symbol_info["model_dir"]
         horizon = symbol_info["horizon"]
@@ -1156,8 +1274,81 @@ def run_trading_cycle(
                     print(f"  Model Agreement:  Single model (no consensus)")
                 else:
                     print(f"  Model Agreement:  No models loaded")
+            
+            # Show mean-reversion information if it was applied or blocked
+            if consensus.get("mean_reversion_applied", False):
+                mean_rev_reason = consensus.get("mean_reversion_reason", "")
+                mean_rev_adj = consensus.get("mean_reversion_adjustment", 0.0)
+                if consensus.get("mean_reversion_flipped_to_long", False):
+                    print(f"\n  [MEAN-REVERSION] ✅ Flipped SHORT → LONG")
+                    print(f"    Adjustment:     {mean_rev_adj*100:+.2f}%")
+                    print(f"    Reason:         {mean_rev_reason}")
+                elif consensus.get("mean_reversion_flipped_to_short", False):
+                    print(f"\n  [MEAN-REVERSION] ✅ Flipped LONG → SHORT")
+                    print(f"    Adjustment:     {mean_rev_adj*100:+.2f}%")
+                    print(f"    Reason:         {mean_rev_reason}")
+                else:
+                    print(f"\n  [MEAN-REVERSION] ⚙️  Adjusted prediction (action unchanged)")
+                    print(f"    Adjustment:     {mean_rev_adj*100:+.2f}%")
+                    print(f"    Reason:         {mean_rev_reason}")
+                if consensus.get("mean_reversion_reduced"):
+                    print(f"    ⚠️  Adjustment reduced: {consensus.get('mean_reversion_reduced')}")
+                if consensus.get("mean_reversion_capped"):
+                    print(f"    ⚠️  Adjustment capped: {consensus.get('mean_reversion_capped')}")
+            elif consensus.get("mean_reversion_blocked"):
+                print(f"\n  [MEAN-REVERSION] ❌ Blocked: {consensus.get('mean_reversion_blocked')}")
             else:
                 print(f"  Model Agreement:  N/A (model info not available)")
+            
+            # Determine if we should trade this symbol
+            # If tradable_symbols includes ALL symbols (no top 5 restriction), trade any that meet criteria
+            # If tradable_symbols is filtered (top 5 mode), trade top 5 + any LONG with 60%+ confidence
+            action = consensus.get("consensus_action", "hold").lower()
+            confidence = consensus.get("consensus_confidence", 0.0)
+            if confidence > 1.0:
+                confidence = confidence / 100.0  # Convert percentage to decimal if needed
+            
+            is_in_tradable_set = data_symbol.upper() in trading_symbols_set
+            is_long_with_good_confidence = (action == "long" and confidence >= 0.60)  # 60%+ confidence for LONG
+            
+            # Determine if we're in top5 mode (tradable_symbols is a subset of all symbols)
+            is_top5_mode = all_symbols_for_predictions and len(trading_symbols_set) < len(all_symbols_for_predictions)
+            
+            # Trading logic:
+            # - If top5 mode: trade if in top5 OR if LONG with 60%+ confidence
+            # - If NOT top5 mode: trade if LONG with 60%+ confidence (all symbols are in tradable_set, so we check criteria)
+            if is_top5_mode:
+                should_trade = is_in_tradable_set or is_long_with_good_confidence
+            else:
+                # Not in top5 mode - trade any symbol that meets criteria (LONG with 60%+ confidence)
+                should_trade = is_long_with_good_confidence
+            
+            if not should_trade:
+                # Show prediction but don't execute trade
+                action_upper = action.upper()
+                confidence_pct = confidence * 100 if confidence <= 1.0 else confidence
+                if is_top5_mode:
+                    print(f"[PREDICTION ONLY] {data_symbol}: {action_upper} ({confidence_pct:.1f}% confidence) - not trading")
+                else:
+                    print(f"[PREDICTION ONLY] {data_symbol}: {action_upper} ({confidence_pct:.1f}% confidence) - not trading")
+                if action == "long" and confidence < 0.60:
+                    print(f"  [INFO] LONG signal detected but confidence too low ({confidence_pct:.1f}% < 60%)")
+                results["symbols_skipped"] += 1
+                results["details"].append({
+                    "symbol": data_symbol,
+                    "status": "prediction_only",
+                    "consensus_action": action,
+                    "confidence": confidence,
+                })
+                continue
+            
+            # If trading due to LONG override (not in tradable set but meets criteria), show message
+            if not is_in_tradable_set and is_long_with_good_confidence:
+                confidence_pct = confidence * 100 if confidence <= 1.0 else confidence
+                expected_move_pct = consensus.get("consensus_return", 0.0) * 100
+                print(f"\n  [OVERRIDE] ✅ Trading {data_symbol} (strong LONG signal)")
+                print(f"    Reason: LONG signal with {confidence_pct:.1f}% confidence (expected move: {expected_move_pct:+.2f}%)")
+                print(f"    Action: System detected buying opportunity based on mean reversion and model consensus")
             
             # Execute trade with horizon-specific risk parameters
             try:
@@ -1191,18 +1382,30 @@ def run_trading_cycle(
             if execution_result:
                 # Check if this is a manual exit signal - stop trading this symbol
                 decision = execution_result.get("decision", "")
-                if decision == "stop_trading_manual_exit":
-                    reason = execution_result.get("reason", "Position manually closed")
-                    print(f"\n[STOP TRADING] {data_symbol}: {reason}")
-                    print(f"  [ACTION] This symbol will be excluded from future trading cycles")
+                exit_reason = execution_result.get("exit_reason", "")
+                
+                # Check for manual exit (both old and new formats)
+                if decision == "stop_trading_manual_exit" or exit_reason == "manually_closed_externally":
+                    if exit_reason == "manually_closed_externally":
+                        # New format: exit_position with manually_closed_externally
+                        print(f"\n[MANUAL EXIT LOGGED] {data_symbol}: Position was manually closed")
+                        print(f"  [ACTION] This symbol will be excluded from future trading cycles")
+                        # Exit trade has already been logged with proper P/L by execution engine
+                    else:
+                        # Old format: stop_trading_manual_exit
+                        reason = execution_result.get("reason", "Position manually closed")
+                        print(f"\n[STOP TRADING] {data_symbol}: {reason}")
+                        print(f"  [ACTION] This symbol will be excluded from future trading cycles")
+                    
                     # Add to results so caller can filter it out
                     results["symbols_stopped"] = results.get("symbols_stopped", [])
                     results["symbols_stopped"].append(data_symbol)
                     results["details"].append({
                         "symbol": data_symbol,
-                        "status": "stopped",
+                        "status": "stopped" if decision == "stop_trading_manual_exit" else "traded",
                         "decision": decision,
-                        "reason": reason,
+                        "exit_reason": exit_reason if exit_reason else None,
+                        "reason": execution_result.get("reason", "Position manually closed"),
                     })
                     continue  # Skip to next symbol, don't process this one further
                 
@@ -1457,10 +1660,24 @@ def main():
                 excluded_symbols=symbols_to_skip,
             )
             
-            print(f"[CYCLE {cycle_count}] Complete:")
-            print(f"  Processed: {cycle_results['symbols_processed']}")
-            print(f"  Traded: {cycle_results['symbols_traded']}")
-            print(f"  Skipped: {cycle_results['symbols_skipped']}")
+            print(f"\n[CYCLE {cycle_count}] Complete:")
+            print(f"  Monitored: {cycle_results['symbols_processed']} symbols (all with trained models)")
+            print(f"  Traded: {cycle_results['symbols_traded']} symbols")
+            print(f"  Skipped: {cycle_results['symbols_skipped']} symbols (not in top 5 + low confidence)")
+            if cycle_results['symbols_traded'] > 0:
+                # Show which symbols were traded and why
+                traded_details = [d for d in cycle_results.get("details", []) if d.get("status") in ["entered_long", "entered_short", "added_to_position", "flip_position"]]
+                if traded_details:
+                    print(f"\n  ✅ Traded Symbols:")
+                    for detail in traded_details:
+                        symbol = detail.get("symbol", "UNKNOWN")
+                        status = detail.get("status", "unknown")
+                        decision = detail.get("decision", "")
+                        is_override = "OVERRIDE" in decision.upper() or status == "override_long"
+                        if is_override:
+                            print(f"    • {symbol}: LONG (OVERRIDE - strong signal)")
+                        else:
+                            print(f"    • {symbol}: {decision}")
             if cycle_results["errors"]:
                 print(f"  Errors: {len(cycle_results['errors'])}")
             

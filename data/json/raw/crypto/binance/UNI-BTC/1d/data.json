@@ -30981,10 +30981,154 @@
     "timeframe": "1d",
     "timestamp": "2026-01-05T00:00:00Z",
     "open": 6.39e-05,
-    "high": 6.48e-05,
-    "low": 6.28e-05,
-    "close": 6.33e-05,
-    "volume": 20542.48,
+    "high": 6.84e-05,
+    "low": 6.14e-05,
+    "close": 6.57e-05,
+    "volume": 90933.35,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "UNI-BTC",
+    "timeframe": "1d",
+    "timestamp": "2026-01-06T00:00:00Z",
+    "open": 6.56e-05,
+    "high": 6.7e-05,
+    "low": 6.39e-05,
+    "close": 6.48e-05,
+    "volume": 71703.74,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "UNI-BTC",
+    "timeframe": "1d",
+    "timestamp": "2026-01-07T00:00:00Z",
+    "open": 6.47e-05,
+    "high": 6.54e-05,
+    "low": 6.21e-05,
+    "close": 6.27e-05,
+    "volume": 29407.79,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "UNI-BTC",
+    "timeframe": "1d",
+    "timestamp": "2026-01-08T00:00:00Z",
+    "open": 6.26e-05,
+    "high": 6.36e-05,
+    "low": 5.97e-05,
+    "close": 6.02e-05,
+    "volume": 43728.97,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "UNI-BTC",
+    "timeframe": "1d",
+    "timestamp": "2026-01-09T00:00:00Z",
+    "open": 6.02e-05,
+    "high": 6.12e-05,
+    "low": 5.95e-05,
+    "close": 6.03e-05,
+    "volume": 43725.66,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "UNI-BTC",
+    "timeframe": "1d",
+    "timestamp": "2026-01-10T00:00:00Z",
+    "open": 6.03e-05,
+    "high": 6.13e-05,
+    "low": 6e-05,
+    "close": 6.05e-05,
+    "volume": 15002.49,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "UNI-BTC",
+    "timeframe": "1d",
+    "timestamp": "2026-01-11T00:00:00Z",
+    "open": 6.05e-05,
+    "high": 6.1e-05,
+    "low": 5.96e-05,
+    "close": 5.99e-05,
+    "volume": 16326.86,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "UNI-BTC",
+    "timeframe": "1d",
+    "timestamp": "2026-01-12T00:00:00Z",
+    "open": 5.99e-05,
+    "high": 6.08e-05,
+    "low": 5.82e-05,
+    "close": 5.88e-05,
+    "volume": 28430.84,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "UNI-BTC",
+    "timeframe": "1d",
+    "timestamp": "2026-01-13T00:00:00Z",
+    "open": 5.88e-05,
+    "high": 6.07e-05,
+    "low": 5.87e-05,
+    "close": 6e-05,
+    "volume": 43072.42,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "UNI-BTC",
+    "timeframe": "1d",
+    "timestamp": "2026-01-14T00:00:00Z",
+    "open": 6.02e-05,
+    "high": 6.07e-05,
+    "low": 5.99e-05,
+    "close": 6.05e-05,
+    "volume": 11606.15,
     "source": "binance_rest",
     "fallback_status": {
       "active": false,

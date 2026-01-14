@@ -3,15 +3,15 @@
   "total_events": 1,
   "events": [
     {
-      "timestamp": "2026-01-05T12:05:17.298414Z",
+      "timestamp": "2026-01-14T08:36:15.844570Z",
       "level": "ERROR",
-      "message": "Training skipped: crypto/USDT-USDT (intraday): No data.json found for crypto/USDT-USDT/1d",
+      "message": "Training skipped: crypto/USDT-USDT (short): No data.json found for crypto/USDT-USDT/1d",
       "category": "TRAIN",
       "symbol": "USDT-USDT",
       "asset_type": "crypto",
       "data": {
         "error": "No data.json found for crypto/USDT-USDT/1d",
-        "horizon": "intraday"
+        "horizon": "short"
       }
     }
   ]

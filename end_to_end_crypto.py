@@ -23,9 +23,15 @@ import argparse
 import json
 import sys
 import time
+import warnings
 from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, List, Set
+
+# Suppress sklearn version compatibility warnings (models trained with 1.3.2, running with 1.7.1)
+warnings.filterwarnings("ignore", message=".*InconsistentVersionWarning.*", category=UserWarning)
+warnings.filterwarnings("ignore", message=".*Trying to unpickle.*", category=UserWarning)
+warnings.filterwarnings("ignore", message=".*monotonic_cst.*", category=UserWarning)
 
 from pipeline_runner import run_ingestion, regenerate_features
 from train_models import train_symbols
@@ -174,9 +180,14 @@ def main():
     parser.add_argument(
         "--top5",
         action="store_true",
-        help="Trade only the top 5 most volatile cryptocurrencies (BTC-USDT, ETH-USDT, SOL-USDT, DOGE-USDT, SHIB-USDT). "
-             "This significantly speeds up execution by processing only 5 symbols instead of all enabled symbols. "
-             "Recommended for faster testing and focused volatile trading.",
+        help="Trade only the top 5 performers based on model performance. "
+             "By default, system trades ALL symbols that meet trading criteria (LONG with 60%+ confidence, mean reversion signals). "
+             "Use this flag to limit trading to top 5 performers only.",
+    )
+    parser.add_argument(
+        "--trade-all",
+        action="store_true",
+        help="[DEPRECATED] This is now the default behavior. All symbols with trained models are traded if they meet criteria.",
     )
 
     args = parser.parse_args()
@@ -192,7 +203,7 @@ def main():
         print("  2. ETH-USDT  (Ethereum - mandatory, high liquidity)")
         print("  3. SOL-USDT  (Solana - high volatility altcoin)")
         print("  4. DOGE-USDT (Dogecoin - high volatility meme coin)")
-        print("  5. SHIB-USDT (Shiba Inu - high volatility meme coin)")
+        print("  5. XRP-USDT  (Ripple - high volatility altcoin)")
         print()
         print("⚡ This mode is MUCH FASTER than processing all 57 symbols!")
         print("⚡ Estimated time: 3-5 minutes instead of 30-60 minutes")
@@ -200,7 +211,7 @@ def main():
         print()
         
         # Override with top 5 volatile symbols
-        raw_symbols = ["BTC-USDT", "ETH-USDT", "SOL-USDT", "DOGE-USDT", "SHIB-USDT"]
+        raw_symbols = ["BTC-USDT", "ETH-USDT", "SOL-USDT", "DOGE-USDT", "XRP-USDT"]
         
         # Skip auto-discovery and user-provided symbols
         # These 5 symbols are already normalized
@@ -588,27 +599,42 @@ def main():
         # Return top N
         return rankings[:top_n]
     
-    # Rank all trained symbols
-    top_performers = rank_crypto_symbols(crypto_symbols, timeframe, horizon, top_n=5)
+    # Rank all trained symbols (but only use top 5 unless --trade-all is set)
+    all_rankings = rank_crypto_symbols(crypto_symbols, timeframe, horizon, top_n=len(crypto_symbols))  # Get all rankings
     
-    if not top_performers:
+    if not all_rankings:
         print("    ✗ No models passed performance criteria. Exiting.")
         print("    Tip: Models need R² > 0 and directional accuracy > 50% to qualify.")
         return
     
     # Display leaderboard
-    print(f"\n🏆 CRYPTO LEADERBOARD (Top {len(top_performers)} Performers)")
+    display_count = len(all_rankings) if args.trade_all else min(10, len(all_rankings))  # Show top 10 if trading all, or all if less
+    print(f"\n🏆 CRYPTO LEADERBOARD (Showing top {display_count} of {len(all_rankings)} Performers)")
     print("=" * 80)
     print(f"{'Rank':<6} {'Symbol':<15} {'Score':<10} {'Accuracy':<12} {'R²':<10}")
     print("-" * 80)
-    for i, perf in enumerate(top_performers, 1):
+    for i, perf in enumerate(all_rankings[:display_count], 1):
         print(f"{i:<6} {perf['symbol']:<15} {perf['score']:.4f}    {perf['directional_accuracy']*100:.2f}%       {perf['r2']:.4f}")
+    if len(all_rankings) > display_count:
+        print(f"  ... and {len(all_rankings) - display_count} more")
     print("=" * 80)
     print()
     
-    # Filter crypto_symbols to only include top performers
-    top_symbols = [p["symbol"] for p in top_performers]
-    print(f"[SELECTION] Trading only the top {len(top_symbols)} performers: {', '.join(top_symbols)}")
+    # Determine which symbols to trade
+    if args.top5:
+        # User explicitly wants top 5 only
+        top_performers = all_rankings[:5]
+        top_symbols = [p["symbol"] for p in top_performers]
+        print(f"[SELECTION] Trading only the top {len(top_symbols)} performers: {', '.join(top_symbols)}")
+        print(f"[INFO] Use without --top5 to trade all symbols that meet trading criteria")
+    else:
+        # Default: Trade ALL symbols with trained models (they will be filtered by trading criteria)
+        top_symbols = [p["symbol"] for p in all_rankings]
+        print(f"[SELECTION] Trading ALL {len(top_symbols)} symbols with trained models (if they meet trading criteria)")
+        if len(top_symbols) > 10:
+            print(f"  Top performers: {', '.join([p['symbol'] for p in all_rankings[:10]])} ... and {len(top_symbols) - 10} more")
+        else:
+            print(f"  Symbols: {', '.join(top_symbols)}")
     print()
 
     # ------------------------------------------------------------------
@@ -625,13 +651,28 @@ def main():
         override_horizon=horizon  # Override asset's default horizon_profile with the trained horizon
     )
     
-    # Restrict to the top-ranked symbols only (not all requested symbols)
-    top_symbols_set = {s.upper() for s in top_symbols}
-    tradable = [
-        info
-        for info in all_tradable
-        if info["asset"].data_symbol.upper() in top_symbols_set
-    ]
+    # Determine which symbols to trade based on --top5 flag
+    if args.top5:
+        # Restrict to the top-ranked symbols only (for trading)
+        top_symbols_set = {s.upper() for s in top_symbols}
+        tradable = [
+            info
+            for info in all_tradable
+            if info["asset"].data_symbol.upper() in top_symbols_set
+        ]
+        print(f"\n[MONITORING] System will monitor ALL {len(all_tradable)} symbols with trained models:")
+        print(f"  - Trading: Top {len(tradable)} performers only")
+        print(f"  - Monitoring: All {len(all_tradable)} symbols for predictions")
+        print(f"  - Override: Any symbol with LONG + 60%+ confidence will be traded even if not in top 5")
+    else:
+        # Default: Trade ALL symbols with trained models (no top 5 restriction)
+        tradable = all_tradable.copy()  # Trade ALL symbols that meet criteria
+        print(f"\n[MONITORING] System will trade ALL {len(tradable)} symbols with trained models:")
+        print(f"  - Trading: All symbols that meet trading criteria (LONG with 60%+ confidence, mean reversion signals)")
+        print(f"  - No top 5 restriction - all currencies are evaluated equally")
+    
+    # For predictions, always use all symbols (for monitoring)
+    all_tradable_for_predictions = all_tradable.copy()  # Monitor ALL symbols with trained models
 
     if not tradable:
         print("    ✗ No tradable symbols found after ranking. Exiting.")
@@ -693,6 +734,50 @@ def main():
         engine = ExecutionEngine(risk_config=risk_config, position_manager=position_manager)
         if args.manual_stop_loss:
             print("    ⚠️  MANUAL STOP-LOSS MODE enabled - you are responsible for managing stop-losses")
+        
+        # CRITICAL: Sync all broker positions to PositionManager on startup/restart
+        # This ensures positions opened externally or before tracking are now monitored
+        print("\n[STARTUP SYNC] Syncing all broker positions to PositionManager...")
+        try:
+            # Build asset mappings dict: trading_symbol -> AssetMapping
+            # Use ALL enabled crypto symbols (not just tradable) to catch any broker positions
+            from trading.symbol_universe import all_enabled
+            asset_mappings = {}
+            for asset in all_enabled():
+                if asset.asset_type == "crypto" and asset.enabled:
+                    trading_symbol = asset.trading_symbol.upper()
+                    asset_mappings[trading_symbol] = asset
+            
+            # Also add assets from tradable symbols (in case they're not in all_enabled)
+            for symbol_info in tradable_filtered:
+                asset = symbol_info.get("asset")
+                if asset:
+                    trading_symbol = asset.trading_symbol.upper()
+                    asset_mappings[trading_symbol] = asset
+            
+            # Get effective stop-loss percentage
+            effective_stop_loss = args.stop_loss_pct if args.stop_loss_pct is not None else 3.5  # Default 3.5% for crypto
+            
+            # Sync all broker positions
+            sync_results = engine.sync_all_broker_positions(
+                asset_mappings=asset_mappings,
+                profit_target_pct=args.profit_target,
+                stop_loss_pct=effective_stop_loss / 100.0,  # Convert percentage to decimal
+                verbose=True,
+            )
+            
+            if sync_results.get("synced"):
+                print(f"  ✅ Successfully synced {len(sync_results['synced'])} position(s) - they will now be monitored")
+            elif sync_results.get("total_broker_positions", 0) > 0:
+                print(f"  ℹ  Found {sync_results['total_broker_positions']} broker position(s), all already tracked")
+            else:
+                print(f"  ℹ  No broker positions found - starting fresh")
+        except Exception as sync_exc:
+            print(f"  ⚠️  WARNING: Position sync failed: {sync_exc}")
+            print(f"  [CONTINUING] Trading will continue, but untracked positions may not be monitored")
+            import traceback
+            if args.verbose:
+                print(f"  [SYNC ERROR] Traceback: {traceback.format_exc()}")
     except Exception as exc:
         print(f"    ✗ Failed to initialize ExecutionEngine: {exc}")
         print("      Make sure ALPACA_API_KEY and ALPACA_SECRET_KEY are set.")
@@ -727,9 +812,10 @@ def main():
         now = datetime.utcnow().isoformat() + "Z"
         print(f"\n[CYCLE {cycle_index}] {now}")
 
+        # Show predictions for ALL symbols, but only trade selected ones
         cycle_results = run_trading_cycle(
             execution_engine=engine,
-            tradable_symbols=tradable_filtered,
+            tradable_symbols=tradable_filtered,  # Only these will be traded
             dry_run=args.dry_run,
             verbose=True,  # Always verbose to see what's happening
             update_data=True,  # Fetch latest live data each cycle
@@ -737,6 +823,7 @@ def main():
             profit_target_pct=args.profit_target,  # REQUIRED - user must specify
             user_stop_loss_pct=args.stop_loss_pct,  # Optional - user override if provided
             excluded_symbols=excluded_symbols,  # Pass excluded symbols to filter them out
+            all_symbols_for_predictions=all_tradable_for_predictions,  # Show predictions for all ranked symbols (but only trade selected ones)
         )
         
         # Update excluded symbols if any were manually closed
@@ -745,22 +832,50 @@ def main():
                 excluded_symbols.add(symbol)
                 print(f"\n[TRACKING] Added {symbol} to excluded list (manually closed)")
 
-        # Concise summary
+        # Concise summary with monitoring info
         print(
-            f"  Processed: {cycle_results['symbols_processed']}, "
-            f"Traded: {cycle_results['symbols_traded']}, "
-            f"Skipped: {cycle_results['symbols_skipped']}, "
-            f"Errors: {len(cycle_results['errors'])}"
+            f"\n[SUMMARY] Cycle {cycle_index} Results:"
         )
+        print(
+            f"  Monitored: {cycle_results['symbols_processed']} symbols (ALL currencies with trained models checked)"
+        )
+        if args.top5:
+            print(
+                f"  Traded: {cycle_results['symbols_traded']} symbols (top 5 + any LONG with 60%+ confidence)"
+            )
+            print(
+                f"  Skipped: {cycle_results['symbols_skipped']} symbols (not in top 5 + low confidence)"
+            )
+        else:
+            print(
+                f"  Traded: {cycle_results['symbols_traded']} symbols (met trading criteria: LONG with 60%+ confidence, mean reversion signals)"
+            )
+            print(
+                f"  Skipped: {cycle_results['symbols_skipped']} symbols (did not meet trading criteria)"
+            )
+        if len(cycle_results['errors']) > 0:
+            print(f"  Errors: {len(cycle_results['errors'])}")
 
-        # Show per-symbol decisions that mattered.
-        for detail in cycle_results.get("details", []):
-            if detail.get("status") == "traded":
+        # Show per-symbol trading decisions
+        traded_symbols = [d for d in cycle_results.get("details", []) 
+                         if d.get("status") in ["entered_long", "entered_short", "added_to_position", "flip_position"]]
+        if traded_symbols:
+            print(f"\n  ✅ Symbols Traded:")
+            for detail in traded_symbols:
                 symbol = detail.get("symbol", "?")
                 decision = detail.get("decision", "?")
-                action = (detail.get("model_action") or "").upper()
-                conf = float(detail.get("confidence") or 0.0) * 100.0
-                print(f"    {symbol}: {action} -> {decision} ({conf:.1f}% confidence)")
+                action = (detail.get("consensus_action") or detail.get("model_action") or "").upper()
+                conf = float(detail.get("confidence") or 0.0)
+                if conf > 1.0:
+                    conf = conf / 100.0
+                conf_pct = conf * 100.0
+                # Check if this was an override (not in tradable set but met criteria)
+                is_override = detail.get("status") == "override_long" or "OVERRIDE" in str(decision).upper()
+                if args.top5 and is_override:
+                    override_msg = " [OVERRIDE - strong signal]"
+                else:
+                    override_msg = ""
+                print(f"    • {symbol}: {action} -> {decision} ({conf_pct:.1f}% confidence){override_msg}")
 
         # Wait and repeat (runs forever with interval)
         print(f"  Waiting {args.interval} seconds before next cycle...")

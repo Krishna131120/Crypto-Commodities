@@ -44853,10 +44853,154 @@
     "timeframe": "1d",
     "timestamp": "2026-01-05T00:00:00Z",
     "open": 2.0908,
-    "high": 2.1665,
+    "high": 2.3695,
     "low": 2.0877,
-    "close": 2.1336,
-    "volume": 59124058.5,
+    "close": 2.3478,
+    "volume": 210318025.3,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "XRP-USDT",
+    "timeframe": "1d",
+    "timestamp": "2026-01-06T00:00:00Z",
+    "open": 2.3479,
+    "high": 2.4172,
+    "low": 2.2046,
+    "close": 2.3042,
+    "volume": 270372108.1,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "XRP-USDT",
+    "timeframe": "1d",
+    "timestamp": "2026-01-07T00:00:00Z",
+    "open": 2.3042,
+    "high": 2.3205,
+    "low": 2.1517,
+    "close": 2.1657,
+    "volume": 115603277.7,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "XRP-USDT",
+    "timeframe": "1d",
+    "timestamp": "2026-01-08T00:00:00Z",
+    "open": 2.1658,
+    "high": 2.1925,
+    "low": 2.0649,
+    "close": 2.1232,
+    "volume": 156536080.5,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "XRP-USDT",
+    "timeframe": "1d",
+    "timestamp": "2026-01-09T00:00:00Z",
+    "open": 2.1232,
+    "high": 2.1622,
+    "low": 2.0727,
+    "close": 2.0958,
+    "volume": 117777092.0,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "XRP-USDT",
+    "timeframe": "1d",
+    "timestamp": "2026-01-10T00:00:00Z",
+    "open": 2.0958,
+    "high": 2.1106,
+    "low": 2.0806,
+    "close": 2.0907,
+    "volume": 31589981.3,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "XRP-USDT",
+    "timeframe": "1d",
+    "timestamp": "2026-01-11T00:00:00Z",
+    "open": 2.0907,
+    "high": 2.11,
+    "low": 2.045,
+    "close": 2.0745,
+    "volume": 50545578.2,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "XRP-USDT",
+    "timeframe": "1d",
+    "timestamp": "2026-01-12T00:00:00Z",
+    "open": 2.0745,
+    "high": 2.1086,
+    "low": 2.035,
+    "close": 2.054,
+    "volume": 110140038.3,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "XRP-USDT",
+    "timeframe": "1d",
+    "timestamp": "2026-01-13T00:00:00Z",
+    "open": 2.0541,
+    "high": 2.185,
+    "low": 2.0474,
+    "close": 2.1655,
+    "volume": 113374006.3,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "XRP-USDT",
+    "timeframe": "1d",
+    "timestamp": "2026-01-14T00:00:00Z",
+    "open": 2.1656,
+    "high": 2.1924,
+    "low": 2.1333,
+    "close": 2.151,
+    "volume": 43487916.1,
     "source": "binance_rest",
     "fallback_status": {
       "active": false,

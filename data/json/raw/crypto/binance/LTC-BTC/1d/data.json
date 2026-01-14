@@ -49559,8 +49559,152 @@
     "open": 0.000899,
     "high": 0.000899,
     "low": 0.000877,
-    "close": 0.000881,
-    "volume": 22125.323,
+    "close": 0.000889,
+    "volume": 28667.779,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "LTC-BTC",
+    "timeframe": "1d",
+    "timestamp": "2026-01-06T00:00:00Z",
+    "open": 0.00089,
+    "high": 0.0009,
+    "low": 0.000885,
+    "close": 0.000896,
+    "volume": 9777.449,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "LTC-BTC",
+    "timeframe": "1d",
+    "timestamp": "2026-01-07T00:00:00Z",
+    "open": 0.000895,
+    "high": 0.000906,
+    "low": 0.000889,
+    "close": 0.000894,
+    "volume": 16307.116,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "LTC-BTC",
+    "timeframe": "1d",
+    "timestamp": "2026-01-08T00:00:00Z",
+    "open": 0.000894,
+    "high": 0.000901,
+    "low": 0.000888,
+    "close": 0.000892,
+    "volume": 7492.928,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "LTC-BTC",
+    "timeframe": "1d",
+    "timestamp": "2026-01-09T00:00:00Z",
+    "open": 0.000893,
+    "high": 0.000901,
+    "low": 0.000884,
+    "close": 0.000899,
+    "volume": 11320.09,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "LTC-BTC",
+    "timeframe": "1d",
+    "timestamp": "2026-01-10T00:00:00Z",
+    "open": 0.000899,
+    "high": 0.00091,
+    "low": 0.000893,
+    "close": 0.000898,
+    "volume": 6200.068,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "LTC-BTC",
+    "timeframe": "1d",
+    "timestamp": "2026-01-11T00:00:00Z",
+    "open": 0.000897,
+    "high": 0.000901,
+    "low": 0.000865,
+    "close": 0.000866,
+    "volume": 12598.167,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "LTC-BTC",
+    "timeframe": "1d",
+    "timestamp": "2026-01-12T00:00:00Z",
+    "open": 0.000866,
+    "high": 0.000876,
+    "low": 0.000827,
+    "close": 0.000834,
+    "volume": 29579.073,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "LTC-BTC",
+    "timeframe": "1d",
+    "timestamp": "2026-01-13T00:00:00Z",
+    "open": 0.000833,
+    "high": 0.000839,
+    "low": 0.000811,
+    "close": 0.00082,
+    "volume": 26468.509,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "LTC-BTC",
+    "timeframe": "1d",
+    "timestamp": "2026-01-14T00:00:00Z",
+    "open": 0.00082,
+    "high": 0.000835,
+    "low": 0.000814,
+    "close": 0.000833,
+    "volume": 14366.291,
     "source": "binance_rest",
     "fallback_status": {
       "active": false,

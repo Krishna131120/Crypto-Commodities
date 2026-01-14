@@ -1,0 +1,307 @@
+{
+  "symbol": "LTC-BTC",
+  "asset_type": "crypto",
+  "timeframe": "1d",
+  "last_updated": "2026-01-08T00:00:00+00:00",
+  "prediction": {
+    "current_price": 0.0009,
+    "predicted_price": 0.0008923778742358158,
+    "predicted_return_pct": -0.8469028626871424,
+    "action": "hold",
+    "confidence": 59.17732629338044,
+    "horizon_days": 4,
+    "explanation": "Price expected to fall from $0.00 to $0.00 (-0.85%) over 4 days"
+  },
+  "model_predictions": {
+    "random_forest": {
+      "predicted_price": 0.0008885287532642782,
+      "predicted_return_pct": -1.274582970635754,
+      "action": "hold",
+      "confidence": 97.23756906077348,
+      "r2_score": 0.7297865266869981,
+      "test_r2_score": 0.7362537777153574,
+      "val_test_gap": -0.006467251028359322,
+      "accuracy": 97.23756906077348,
+      "test_accuracy": 93.07479224376732
+    },
+    "lightgbm": {
+      "predicted_price": 0.0008886175073784011,
+      "predicted_return_pct": -1.264721402399885,
+      "action": "hold",
+      "confidence": 94.7513812154696,
+      "r2_score": 0.7490534265066744,
+      "test_r2_score": 0.7730426888454112,
+      "val_test_gap": -0.023989262338736772,
+      "accuracy": 94.7513812154696,
+      "test_accuracy": 90.30470914127424
+    },
+    "stacked_blend": {
+      "predicted_price": 0.0009002028992990246,
+      "predicted_return_pct": 0.022544366558289446,
+      "action": "hold",
+      "confidence": 88.39779005524862,
+      "r2_score": 0.791724634893276,
+      "test_r2_score": 0.8160891700202747,
+      "val_test_gap": -0.024364535126998654,
+      "accuracy": 88.39779005524862,
+      "test_accuracy": 84.21052631578947
+    },
+    "dqn": {
+      "predicted_price": 0.0009109975494292955,
+      "predicted_return_pct": 1.2219499365883881,
+      "action": "long",
+      "confidence": 50.0,
+      "r2_score": null,
+      "test_r2_score": null,
+      "val_test_gap": null,
+      "accuracy": null,
+      "test_accuracy": null
+    }
+  },
+  "technical": {
+    "training_data": {
+      "total_rows": 2897,
+      "train_rows": 2172,
+      "val_rows": 362,
+      "test_rows": 361,
+      "split_boundaries": {
+        "train": {
+          "start": "2018-01-30T00:00:00+00:00",
+          "end": "2024-01-10T00:00:00+00:00"
+        },
+        "val": {
+          "start": "2024-01-12T00:00:00+00:00",
+          "end": "2025-01-07T00:00:00+00:00"
+        },
+        "test": {
+          "start": "2025-01-09T00:00:00+00:00",
+          "end": "2026-01-04T00:00:00+00:00"
+        }
+      }
+    },
+    "model_config": {
+      "target_profile": {
+        "name": "short",
+        "label": "Short-Term",
+        "description": "Swing horizon of roughly 3-5 days to capture short moves. Medium position sizes, moderate frequency.",
+        "horizon_bars": 4,
+        "smoothing_window": 4,
+        "directional_threshold": 0.0012,
+        "neutral_band": 0.0006,
+        "quantile_bins": 5,
+        "quantile_window": 140,
+        "trading_style": "Swing trading - hold for several days",
+        "typical_hold_time": "3-5 days",
+        "position_size_pct": 0.1,
+        "stop_loss_pct": 0.06,
+        "min_confidence": 0.1
+      },
+      "target_config": {
+        "horizon": 4,
+        "smoothing_window": 4,
+        "directional_threshold": 0.0012,
+        "neutral_band": 0.0006,
+        "quantile_bins": 5,
+        "quantile_window": 140,
+        "include_directional": true,
+        "include_quantiles": true,
+        "include_smoothed_return": true
+      },
+      "model_reference_price": 0.0009
+    },
+    "analysis": {
+      "dynamic_threshold": 0.03,
+      "threshold_details": {
+        "rolling_mad": 0.049214979081371374,
+        "global_mad": 0.046101776723836106,
+        "iqr_based": 0.03270915360696494,
+        "atr_proxy": 0.08553645315741111,
+        "median_candidate": 0.046101776723836106,
+        "clamped": 0.03
+      },
+      "context_signals": {
+        "RSI_14": 50.4797644152689,
+        "MACD_histogram": 4.3313368877394776e-06,
+        "SMA_50": 0.0009182600000000001,
+        "SMA_200": 0.000928975,
+        "ATR_14": 2.250000000000001e-05,
+        "Volume_Ratio": 2.411461268718757
+      },
+      "overfitting_warnings": [
+        "random_forest: Validation accuracy (97.2%) suspiciously high (expected: 55-70%)",
+        "random_forest: Test accuracy (93.1%) suspiciously high (expected: 55-70%)",
+        "lightgbm: Validation accuracy (94.8%) suspiciously high (expected: 55-70%)",
+        "lightgbm: Test accuracy (90.3%) suspiciously high (expected: 55-70%)",
+        "xgboost: Train R\u00b2 (0.936) >> Val R\u00b2 (0.766), gap=0.170",
+        "stacked_blend: Train R\u00b2 (0.893) >> Val R\u00b2 (0.792), gap=0.101"
+      ]
+    },
+    "feature_scaler": {
+      "path": "models\\crypto\\LTC-BTC\\1d\\short\\feature_scaler.joblib"
+    }
+  },
+  "consensus": {
+    "action": "hold",
+    "confidence_pct": 59.17732629338044,
+    "predicted_return_pct": -0.8469028626871424,
+    "predicted_return": -0.008469028626871425,
+    "raw_predicted_return_pct": -0.8469028626871424,
+    "raw_predicted_return": -0.008469028626871425,
+    "reasoning": "Consensus: HOLD (confidence: 63.3%). Expected return: -0.85%. Consensus price: $0.00. Model votes: LONG: 1 model(s), 36.7% weighted vote; HOLD: 3 model(s), 63.3% weighted vote. Individual models: random_forest (hold, -1.27%, R\u00b2=0.730); lightgbm (hold, -1.26%, R\u00b2=0.749); stacked_blend (hold, +0.02%, R\u00b2=0.792); dqn (long, +1.22%, R\u00b2=N/A)",
+    "action_scores": {
+      "long": 0.36683176005309204,
+      "hold": 0.6331682399469081,
+      "short": 0.0
+    },
+    "horizon_profile": "Short-Term",
+    "target_horizon_bars": 4,
+    "action_label": "Short-Term HOLD",
+    "neutral_return_threshold_pct": 3.15,
+    "neutral_guard_triggered": false
+  },
+  "dqn_recommendation": {
+    "action": "long",
+    "predicted_return_pct": 1.2219499365883881,
+    "predicted_price": 0.0009109975494292955,
+    "confidence": 50.0,
+    "reason": "Direct DQN policy decision based on latest features"
+  },
+  "models": {
+    "random_forest": {
+      "action": "hold",
+      "predicted_return": -0.012745829706357542,
+      "r2": 0.7297865266869981,
+      "test_r2": 0.7362537777153574,
+      "mae": 0.01752652331544054,
+      "test_mae": 0.018624537218262505,
+      "directional_accuracy": 0.9723756906077348,
+      "test_directional_accuracy": 0.9307479224376731
+    },
+    "lightgbm": {
+      "action": "hold",
+      "predicted_return": -0.01264721402399885,
+      "r2": 0.7490534265066744,
+      "test_r2": 0.7730426888454112,
+      "mae": 0.017352672516174568,
+      "test_mae": 0.01756959186221145,
+      "directional_accuracy": 0.9475138121546961,
+      "test_directional_accuracy": 0.9030470914127424
+    },
+    "xgboost": {
+      "status": "failed",
+      "reason": "Rejected due to train/val gap 0.170 exceeds 0.15"
+    },
+    "stacked_blend": {
+      "action": "hold",
+      "predicted_return": 0.00022544366558289444,
+      "r2": 0.791724634893276,
+      "test_r2": 0.8160891700202747,
+      "mae": 0.018039296775706263,
+      "test_mae": 0.018229749283552428,
+      "directional_accuracy": 0.8839779005524862,
+      "test_directional_accuracy": 0.8421052631578947
+    },
+    "dqn": {
+      "action": "long",
+      "predicted_return": 0.012219499365883882,
+      "r2": null,
+      "test_r2": null,
+      "mae": null,
+      "test_mae": null,
+      "directional_accuracy": null,
+      "test_directional_accuracy": null
+    }
+  },
+  "tradable": true,
+  "tradability_reasons": [
+    "All robustness checks passed"
+  ],
+  "data_balance": {
+    "train": {
+      "split": "train",
+      "total_samples": 2172,
+      "positive_count": 955,
+      "negative_count": 1215,
+      "neutral_count": 2,
+      "positive_pct": 43.96869244935544,
+      "negative_pct": 55.93922651933701,
+      "neutral_pct": 0.09208103130755065,
+      "mean_return": -0.0022041405169811916,
+      "median_return": -0.0066341901520776125,
+      "std_return": 0.0629431161799317,
+      "imbalance_ratio": 0.7860082304526749,
+      "bias_detected": null,
+      "bias_severity": "none"
+    },
+    "val": {
+      "split": "val",
+      "total_samples": 362,
+      "positive_count": 152,
+      "negative_count": 209,
+      "neutral_count": 1,
+      "positive_pct": 41.988950276243095,
+      "negative_pct": 57.73480662983425,
+      "neutral_pct": 0.2762430939226519,
+      "mean_return": -0.002761645187523383,
+      "median_return": -0.008571708463949945,
+      "std_return": 0.06307347907653651,
+      "imbalance_ratio": 0.7272727272727273,
+      "bias_detected": null,
+      "bias_severity": "none"
+    },
+    "test": {
+      "split": "test",
+      "total_samples": 361,
+      "positive_count": 155,
+      "negative_count": 200,
+      "neutral_count": 6,
+      "positive_pct": 42.93628808864266,
+      "negative_pct": 55.4016620498615,
+      "neutral_pct": 1.662049861495845,
+      "mean_return": -0.0004231093012183693,
+      "median_return": -0.005202913631633721,
+      "std_return": 0.06136917224291603,
+      "imbalance_ratio": 0.775,
+      "bias_detected": null,
+      "bias_severity": "none"
+    }
+  },
+  "feature_scaling_verification": {
+    "train": {
+      "split": "train",
+      "mean_abs_mean": 0.16560828803528535,
+      "mean_abs_median": 2.199973999494876e-17,
+      "mean_std": 0.828147584538718,
+      "mean_abs_min": 1.6056709584754176,
+      "mean_abs_max": 2.771354551067447,
+      "nan_count": 0,
+      "inf_count": 0,
+      "issues": [],
+      "scaling_ok": true
+    },
+    "val": {
+      "split": "val",
+      "mean_abs_mean": 0.27634559668744463,
+      "mean_abs_median": 0.2230079900279341,
+      "mean_std": 0.5049934865412398,
+      "mean_abs_min": 1.165828186881984,
+      "mean_abs_max": 1.7606168280729515,
+      "nan_count": 0,
+      "inf_count": 0,
+      "issues": [],
+      "scaling_ok": true
+    },
+    "test": {
+      "split": "test",
+      "mean_abs_mean": 0.3055876202461668,
+      "mean_abs_median": 0.2539090710257871,
+      "mean_std": 0.5173035402696662,
+      "mean_abs_min": 1.289940421291695,
+      "mean_abs_max": 1.6741629089702719,
+      "nan_count": 0,
+      "inf_count": 0,
+      "issues": [],
+      "scaling_ok": true
+    }
+  }
+}

@@ -37,6 +37,7 @@ from trading.alpaca_client import AlpacaClient
 from trading.execution_engine import ExecutionEngine
 from trading.symbol_universe import all_enabled, find_by_data_symbol, find_by_trading_symbol
 from trading.position_manager import PositionManager
+from trading.trade_logger import TradeLogger
 from core.model_paths import horizon_dir, list_horizon_dirs
 from ml.horizons import (
     DEFAULT_HORIZON_PROFILE,
@@ -607,10 +608,85 @@ def discover_tradable_symbols(asset_type: str = "crypto", timeframe: str = "1d",
     return tradable
 
 
+def display_active_positions(
+    position_manager: PositionManager,
+    client: AlpacaClient,
+    verbose: bool = True,
+) -> None:
+    """Display all active positions with current status."""
+    active_positions = position_manager.get_all_positions()
+    
+    if not active_positions:
+        if verbose:
+            print("[ACTIVE POSITIONS] No active positions")
+        return
+    
+    if verbose:
+        print("\n" + "=" * 80)
+        print(f"ACTIVE POSITIONS ({len(active_positions)} position(s))")
+        print("=" * 80)
+        
+        for pos in active_positions:
+            try:
+                # Try to get current price from Alpaca
+                asset_mapping = find_by_data_symbol(pos.data_symbol)
+                current_price = None
+                if asset_mapping:
+                    alpaca_pos = client.get_position(asset_mapping.trading_symbol)
+                    if alpaca_pos:
+                        market_value = float(alpaca_pos.get("market_value", 0) or 0)
+                        qty = float(alpaca_pos.get("qty", 0) or 0)
+                        if qty != 0:
+                            current_price = abs(market_value / qty)
+                
+                if not current_price:
+                    current_price = get_current_price_from_features(
+                        pos.asset_type,
+                        pos.data_symbol,
+                        "1d",
+                        verbose=False,
+                        force_live=True
+                    )
+                
+                if current_price:
+                    # Calculate P/L
+                    if pos.side == "long":
+                        unrealized_pl = (current_price - pos.entry_price) * pos.quantity
+                        unrealized_pl_pct = ((current_price - pos.entry_price) / pos.entry_price) * 100
+                    else:
+                        unrealized_pl = (pos.entry_price - current_price) * pos.quantity
+                        unrealized_pl_pct = ((pos.entry_price - current_price) / pos.entry_price) * 100
+                    
+                    current_value = pos.quantity * current_price
+                    
+                    print(f"\n{pos.symbol} ({pos.data_symbol}):")
+                    print(f"  Side: {pos.side.upper()}")
+                    print(f"  Quantity: {pos.quantity:.6f}")
+                    print(f"  Entry Price: ${pos.entry_price:.6f}")
+                    print(f"  Current Price: ${current_price:.6f}")
+                    print(f"  Cost Basis: ${pos.total_cost_basis:.2f}")
+                    print(f"  Current Value: ${current_value:.2f}")
+                    print(f"  Unrealized P/L: ${unrealized_pl:+.2f} ({unrealized_pl_pct:+.2f}%)")
+                    print(f"  Profit Target: ${pos.profit_target_price:.6f} ({pos.profit_target_pct}%)")
+                    print(f"  Stop Loss: ${pos.stop_loss_price:.6f} ({pos.stop_loss_pct}%)")
+                    print(f"  Entry Time: {pos.entry_time}")
+                else:
+                    print(f"\n{pos.symbol} ({pos.data_symbol}):")
+                    print(f"  Side: {pos.side.upper()}")
+                    print(f"  Quantity: {pos.quantity:.6f}")
+                    print(f"  Entry Price: ${pos.entry_price:.6f}")
+                    print(f"  [WARN] Could not get current price")
+            except Exception as e:
+                print(f"\n{pos.symbol}: Error displaying position: {e}")
+        
+        print("=" * 80 + "\n")
+
+
 def monitor_positions(
     position_manager: PositionManager,
     execution_engine: ExecutionEngine,
     tradable_symbols: List[Dict[str, Any]],
+    trade_logger: Optional[TradeLogger] = None,
     dry_run: bool = False,
     verbose: bool = True,
 ) -> Dict[str, Any]:
@@ -649,22 +725,47 @@ def monitor_positions(
     client = AlpacaClient()
     
     # CRITICAL: Sync with Alpaca to verify positions are still open
-    # If position was closed in Alpaca but position manager still has it, remove it
+    # If position was closed in Alpaca but position manager still has it, close it properly
     try:
         alpaca_positions = client.list_positions()
         alpaca_symbols = {pos.get("symbol", "").upper() for pos in (alpaca_positions or []) if float(pos.get("qty", 0) or 0) != 0}
         
-        # Remove positions from position manager that no longer exist in Alpaca
-        positions_to_remove = []
+        # Close positions from position manager that no longer exist in Alpaca
+        positions_to_close = []
         for position in active_positions:
             if position.symbol.upper() not in alpaca_symbols:
-                # Position closed in Alpaca but still tracked - remove it
-                positions_to_remove.append(position.symbol)
+                # Position closed in Alpaca but still tracked - close it properly
+                positions_to_close.append(position)
                 if verbose:
-                    print(f"  [SYNC] {position.symbol}: Position closed in Alpaca, removing from tracker")
+                    print(f"  [SYNC] {position.symbol}: Position closed in Alpaca, closing in tracker")
         
-        for symbol in positions_to_remove:
-            position_manager.remove_position(symbol)
+        for position in positions_to_close:
+            # Try to get exit price - use current market price if available
+            exit_price = None
+            try:
+                exit_price = get_current_price_from_features(
+                    position.asset_type,
+                    position.data_symbol,
+                    "1d",
+                    verbose=False,
+                    force_live=True
+                )
+            except:
+                pass
+            
+            # If we can't get current price, use entry price as fallback
+            if not exit_price or exit_price <= 0:
+                exit_price = position.entry_price
+                exit_reason = "closed_externally_unknown_price"
+            else:
+                exit_reason = "closed_externally_alpaca_sync"
+            
+            # Close the position properly (preserves history)
+            position_manager.close_position(
+                position.symbol,
+                exit_price,
+                exit_reason,
+            )
         
         # Update active positions list after cleanup
         active_positions = position_manager.get_all_positions()
@@ -748,6 +849,26 @@ def monitor_positions(
                     results["profit_targets_hit"] += 1
                 elif exit_reason == "stop_loss_hit":
                     results["stop_losses_hit"] += 1
+                
+                # Log position closure
+                if trade_logger:
+                    trade_logger.log_position_closed(
+                        symbol=pos.symbol,
+                        data_symbol=pos.data_symbol,
+                        asset_type=pos.asset_type,
+                        side=pos.side,
+                        quantity=pos.quantity,
+                        entry_price=pos.entry_price,
+                        exit_price=exit_price,
+                        exit_reason=exit_reason,
+                        realized_pl=pos.realized_pl or 0.0,
+                        realized_pl_pct=pos.realized_pl_pct or 0.0,
+                        cost_basis=pos.total_cost_basis or 0.0,
+                        profit_target_pct=pos.profit_target_pct,
+                        stop_loss_pct=pos.stop_loss_pct,
+                        order_id=None,  # Will be filled if available
+                        dry_run=dry_run,
+                    )
             else:
                 # Position still active - check prediction for pyramiding or exit
                 # NEW STRATEGY: Keep buying more as long as prediction stays LONG until profit target is hit
@@ -1210,6 +1331,27 @@ def monitor_positions(
                         for reason in why_not_hit:
                             print(f"  • {reason}")
                     print(f"{'='*80}\n")
+                    
+                    # Log position monitoring
+                    if trade_logger:
+                        trade_logger.log_position_update(
+                            symbol=position.symbol,
+                            data_symbol=position.data_symbol,
+                            asset_type=position.asset_type,
+                            side=position.side,
+                            quantity=position.quantity,
+                            entry_price=position.entry_price,
+                            current_price=current_price,
+                            position_status=position.status,
+                            cost_basis=position.total_cost_basis or 0.0,
+                            profit_target_pct=position.profit_target_pct,
+                            profit_target_price=position.profit_target_price,
+                            stop_loss_pct=position.stop_loss_pct,
+                            stop_loss_price=position.stop_loss_price,
+                            consensus_action=consensus.get("consensus_action") if consensus else None,
+                            consensus_confidence=consensus.get("consensus_confidence") if consensus else None,
+                            dry_run=dry_run,
+                        )
         
         except Exception as pos_exc:
             error_msg = f"{position.symbol}: Error monitoring position: {pos_exc}"
@@ -1232,6 +1374,7 @@ def run_trading_cycle(
     position_manager: PositionManager,
     tradable_symbols: List[Dict[str, Any]],
     profit_target_pct: float,
+    trade_logger: Optional[TradeLogger] = None,
     dry_run: bool = False,
     verbose: bool = True,
     update_data: bool = True,
@@ -1263,6 +1406,11 @@ def run_trading_cycle(
         "monitoring": {},
     }
     
+    # Step 0: Display active positions
+    if verbose:
+        client = AlpacaClient()
+        display_active_positions(position_manager, client, verbose=verbose)
+    
     # Step 1: FIRST - Monitor existing positions for profit targets and stop-loss
     if verbose:
         print("\n" + "=" * 80)
@@ -1273,6 +1421,7 @@ def run_trading_cycle(
         position_manager,
         execution_engine,
         tradable_symbols,
+        trade_logger=trade_logger,
         dry_run=dry_run,
         verbose=verbose,
     )
@@ -1397,11 +1546,15 @@ def run_trading_cycle(
             if verbose:
                 print(f"[WARN] Failed to regenerate features: {exc}")
     
-    # Step 4: Run predictions and execute trades for each symbol
+    # Step 4: Run predictions and rank all symbols (including ones with active positions)
     if verbose:
         print("\n" + "=" * 80)
-        print("STEP 4: RUNNING PREDICTIONS AND EXECUTING TRADES")
+        print("STEP 4: RUNNING PREDICTIONS AND RANKING SYMBOLS")
         print("=" * 80)
+    
+    # Collect predictions for all symbols to enable ranking
+    symbol_predictions = []
+    active_symbols = {pos.symbol.upper() for pos in position_manager.get_all_positions()}
     
     for symbol_info in tradable_symbols:
         asset = symbol_info["asset"]
@@ -1411,97 +1564,151 @@ def run_trading_cycle(
         asset_type = asset.asset_type
         
         try:
-            # Load latest features (with retry in case of timing issues)
+            # Load latest features
             feature_row = None
-            for attempt in range(2):  # Try twice in case of file write timing
+            for attempt in range(2):
                 feature_row = load_feature_row(asset_type, data_symbol, "1d")
                 if feature_row is not None and not feature_row.empty:
                     break
-                if attempt == 0:  # First attempt failed, wait a bit and try again
+                if attempt == 0:
                     import time
                     time.sleep(0.5)
             
             if feature_row is None or feature_row.empty:
-                if verbose:
-                    feature_path = Path("data/features") / asset_type / data_symbol / "1d" / "features.json"
-                    if feature_path.exists():
-                        print(f"[SKIP] {data_symbol}: Features file exists but couldn't be loaded (may be corrupted)")
-                    else:
-                        print(f"[SKIP] {data_symbol}: No features available (file not found)")
-                results["symbols_skipped"] += 1
                 continue
             
-            # Get current price - use force_live=False for predictions (allows fallback)
-            # But we'll update data.json with live prices first in the update step
-            current_price = get_current_price_from_features(asset_type, data_symbol, "1d", verbose=verbose, force_live=False)
+            # Get current price
+            current_price = get_current_price_from_features(asset_type, data_symbol, "1d", verbose=False, force_live=False)
             if current_price is None or current_price <= 0:
-                if verbose:
-                    print(f"[SKIP] {data_symbol}: No valid price available")
-                results["symbols_skipped"] += 1
                 continue
             
-            # Load inference pipeline
+            # Load inference pipeline and get prediction
             risk_config = RiskManagerConfig(paper_trade=True)
             pipeline = InferencePipeline(model_dir, risk_config=risk_config)
             pipeline.load()
             
             if not pipeline.models:
-                if verbose:
-                    print(f"[SKIP] {data_symbol}: No trained models found")
-                results["symbols_skipped"] += 1
                 continue
             
-            # Estimate volatility
-            volatility = 0.01  # Default 1% daily volatility
-            
-            # Run prediction
-            try:
-                prediction_result = pipeline.predict(
-                    feature_row,
-                    current_price=current_price,
-                    volatility=volatility,
-                )
-            except Exception as pred_exc:
-                error_msg = f"{data_symbol}: Prediction failed: {pred_exc}"
-                print(f"[ERROR] {error_msg}")
-                results["errors"].append(error_msg)
-                results["symbols_skipped"] += 1
-                continue
+            volatility = 0.01  # Default
+            prediction_result = pipeline.predict(
+                feature_row,
+                current_price=current_price,
+                volatility=volatility,
+            )
             
             consensus = prediction_result.get("consensus", {})
-            if not consensus:
-                if verbose:
-                    print(f"[SKIP] {data_symbol}: No consensus from models")
-                results["symbols_skipped"] += 1
-                continue
-            
             action = consensus.get("consensus_action", "hold")
             confidence = consensus.get("consensus_confidence", 0.0)
+            predicted_return = consensus.get("consensus_return", 0.0)
+            
+            # Check if we have an active position
+            has_active_position = asset.trading_symbol.upper() in active_symbols
+            
+            symbol_predictions.append({
+                "symbol_info": symbol_info,
+                "asset": asset,
+                "data_symbol": data_symbol,
+                "current_price": current_price,
+                "prediction": consensus,
+                "action": action,
+                "confidence": confidence,
+                "predicted_return": predicted_return,
+                "has_active_position": has_active_position,
+                "pipeline": pipeline,  # Keep pipeline for later use
+                "feature_row": feature_row,
+            })
+        
+        except Exception as e:
+            if verbose:
+                print(f"[WARN] {data_symbol}: Failed to get prediction for ranking: {e}")
+            continue
+    
+    # Rank symbols by confidence and predicted return
+    # Prioritize: high confidence + high predicted return, but also consider active positions
+    def rank_symbol(pred):
+        action = pred["action"]
+        confidence = pred["confidence"]
+        predicted_return = pred["predicted_return"]
+        has_active_position = pred["has_active_position"]
+        
+        # Base score from prediction quality
+        if action == "hold" or action == "flat":
+            base_score = 0
+        elif action in ("long", "short"):
+            # Score = confidence * abs(predicted_return)
+            base_score = confidence * abs(predicted_return) * 100
+        else:
+            base_score = 0
+        
+        # Boost score slightly for symbols with active positions (monitor them closely)
+        if has_active_position:
+            base_score += 10
+        
+        return base_score
+    
+    symbol_predictions.sort(key=rank_symbol, reverse=True)
+    
+    # Display rankings
+    if verbose and symbol_predictions:
+        print(f"\n[RANKING] Ranked {len(symbol_predictions)} symbol(s) by prediction quality:")
+        print("-" * 80)
+        for idx, pred in enumerate(symbol_predictions[:20], 1):  # Show top 20
+            asset = pred["asset"]
+            action = pred["action"]
+            confidence = pred["confidence"]
+            predicted_return = pred["predicted_return"]
+            has_pos = "⭐ ACTIVE" if pred["has_active_position"] else ""
+            score = rank_symbol(pred)
+            
+            print(f"{idx:2d}. {asset.data_symbol:12s} | {action:5s} | Confidence: {confidence*100:5.1f}% | "
+                  f"Pred Return: {predicted_return*100:6.2f}% | Score: {score:6.2f} {has_pos}")
+        print("-" * 80)
+    
+    # Step 5: Execute trades based on rankings (process all, not just top ones)
+    if verbose:
+        print("\n" + "=" * 80)
+        print("STEP 5: EXECUTING TRADES FOR ALL SYMBOLS")
+        print("=" * 80)
+    
+        for pred in symbol_predictions:
+            symbol_info = pred["symbol_info"]
+            asset = pred["asset"]
+            model_dir = symbol_info["model_dir"]
+            data_symbol = pred["data_symbol"]
+            asset_type = asset.asset_type
+            current_price = pred["current_price"]
+            consensus = pred["prediction"]
+            action = pred["action"]
+            confidence = pred["confidence"]
+            
+            # Use cached prediction from ranking step
+            results["symbols_processed"] += 1
             
             if verbose:
                 confidence_pct = confidence * 100 if confidence <= 1.0 else confidence
-                # Expected move is the consensus_return (raw model prediction) converted to percentage
-                # This shows what the models predict the price will do
-                expected_move_raw = consensus.get("consensus_return", 0.0)  # Raw return (e.g., 0.0148 = 1.48%)
-                expected_move_pct = expected_move_raw * 100  # Convert to percentage (1.48%)
+                predicted_return = pred["predicted_return"]
+                expected_move_pct = predicted_return * 100
+                has_pos = "⭐ [ACTIVE]" if pred["has_active_position"] else ""
                 
-                # Show if neutral guard was triggered (which would zero out the return)
+                # Show if neutral guard was triggered
                 neutral_guard = consensus.get("neutral_guard_triggered", False)
                 if neutral_guard:
-                    raw_return = consensus.get("raw_consensus_return", expected_move_raw)
-                    print(f"[PREDICTION] {data_symbol}: {action.upper()} (confidence: {confidence_pct:.1f}%, expected move: {expected_move_pct:+.2f}% [neutral guard engaged, raw: {raw_return*100:+.2f}%])")
+                    raw_return = consensus.get("raw_consensus_return", predicted_return)
+                    print(f"[PREDICTION] {data_symbol}: {action.upper()} {has_pos} (confidence: {confidence_pct:.1f}%, expected move: {expected_move_pct:+.2f}% [neutral guard engaged, raw: {raw_return*100:+.2f}%])")
                 else:
-                    print(f"[PREDICTION] {data_symbol}: {action.upper()} (confidence: {confidence_pct:.1f}%, expected move: {expected_move_pct:+.2f}%)")
+                    print(f"[PREDICTION] {data_symbol}: {action.upper()} {has_pos} (confidence: {confidence_pct:.1f}%, expected move: {expected_move_pct:+.2f}%)")
                 
-                # Show model bias warnings if detected
+                # Show model bias warnings
                 if consensus.get("unanimous_direction"):
                     direction = consensus.get("unanimous_direction")
                     count = consensus.get("unanimous_direction_count", 0)
                     if count >= 3:
                         print(f"  ⚠️  WARNING: All {count} models predict {direction.upper()} - possible model bias/overfitting")
             
-            # Execute trade with profit target
+            # Execute trade with profit target (using cached prediction)
             try:
+                horizon = symbol_info["horizon"]
                 execution_result = execution_engine.execute_from_consensus(
                     asset=asset,
                     consensus=consensus,
@@ -1531,6 +1738,51 @@ def run_trading_cycle(
             if execution_result:
                 results["symbols_traded"] += 1
                 decision = execution_result.get("decision", "unknown")
+                
+                # Log trade execution
+                if trade_logger:
+                    orders = execution_result.get("orders", {})
+                    order_details = execution_result.get("order_details", {})
+                    
+                    # Determine action and side
+                    trade_action = "buy" if decision in ("enter", "pyramid", "increase") else "sell" if decision in ("exit", "close", "reduce") else "hold"
+                    trade_side = consensus.get("consensus_action", "hold")
+                    if trade_side not in ("long", "short"):
+                        # Get side from orders or existing position
+                        existing_side = orders.get("existing_side", "flat")
+                        target_side = orders.get("target_side", "flat")
+                        trade_side = target_side if target_side != "flat" else existing_side
+                    
+                    # Get quantity and price
+                    quantity = orders.get("final_qty", 0) or order_details.get("quantity", 0) or 0
+                    price = current_price
+                    if order_details:
+                        price = order_details.get("price") or order_details.get("filled_avg_price") or current_price
+                    
+                    trade_logger.log_order_execution(
+                        symbol=asset.trading_symbol,
+                        data_symbol=data_symbol,
+                        asset_type=asset.asset_type,
+                        action=trade_action,
+                        side=trade_side,
+                        quantity=abs(quantity) if quantity else 0,
+                        price=price,
+                        decision=decision,
+                        reason=execution_result.get("reason", orders.get("reason", "")),
+                        consensus_action=consensus.get("consensus_action"),
+                        consensus_confidence=consensus.get("consensus_confidence"),
+                        consensus_return=consensus.get("consensus_return"),
+                        predicted_price=consensus.get("consensus_price"),
+                        order_id=order_details.get("id") if order_details else None,
+                        dry_run=dry_run,
+                        metadata={
+                            "equity": orders.get("equity"),
+                            "buying_power": orders.get("buying_power"),
+                            "model_action": consensus.get("consensus_action"),
+                            "predicted_return": consensus.get("consensus_return"),
+                        },
+                    )
+                
                 if verbose:
                     print(f"[TRADE] {data_symbol}: {action.upper()} -> {decision}")
             
@@ -1782,6 +2034,7 @@ def main():
     try:
         position_manager = PositionManager()
         execution_engine = ExecutionEngine(position_manager=position_manager)
+        trade_logger = TradeLogger()  # Initialize trade logger
     except Exception as exc:
         print(f"    ✗ Failed to initialize: {exc}")
         print("      Make sure ALPACA_API_KEY and ALPACA_SECRET_KEY are set.")
@@ -1809,6 +2062,7 @@ def main():
     print(f"Positions will be automatically closed when:")
     print(f"  - Profit target is reached ({args.profit_target}% gain)")
     print(f"  - Stop-loss is triggered (horizon-specific %)")
+    print(f"Trade Logs: data/logs/trades.jsonl")
     print("=" * 80)
     
     cycle_index = 0
@@ -1825,6 +2079,7 @@ def main():
                 position_manager=position_manager,
                 tradable_symbols=all_tradable,
                 profit_target_pct=args.profit_target,
+                trade_logger=trade_logger,
                 dry_run=args.dry_run,
                 verbose=True,
                 update_data=True,

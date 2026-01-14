@@ -2,14 +2,14 @@
   "symbol": "SUSHI-USDC",
   "timeframe": "1d",
   "asset_type": "crypto",
-  "generated_at": "2026-01-05T12:01:10.276172Z",
+  "generated_at": "2026-01-14T07:20:12.334911Z",
   "data_file": "data.json",
   "latest_file": "latest.json",
   "data_file_info": {
     "filename": "data.json",
-    "size_bytes": 72668,
-    "candle_count": 203,
+    "size_bytes": 75898,
+    "candle_count": 212,
     "first_timestamp": "2025-06-17T00:00:00Z",
-    "last_timestamp": "2026-01-05T00:00:00Z"
+    "last_timestamp": "2026-01-14T00:00:00Z"
   }
 }

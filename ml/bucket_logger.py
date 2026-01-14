@@ -30,7 +30,8 @@ class BucketLogger:
         
         # Separate buckets for different event types
         self.prediction_bucket = self.bucket_dir / "predictions.jsonl"
-        self.trade_bucket = self.bucket_dir / "trades.jsonl"
+        # Note: trade_bucket deprecated - trades now logged to data/logs/trades.jsonl via TradeLogger
+        self.trade_bucket = self.bucket_dir / "trades.jsonl"  # Deprecated, kept for backward compatibility
         self.feedback_bucket = self.bucket_dir / "feedback.jsonl"
         
         # Index file for quick lookups
@@ -142,38 +143,15 @@ class BucketLogger:
         metadata: Optional[Dict[str, Any]] = None
     ):
         """
-        Log a trade execution to the bucket.
+        DEPRECATED: Trade logging is now handled by TradeLogger (data/logs/trades.jsonl).
         
-        Args:
-            symbol: Trading symbol
-            asset_type: Asset type
-            timeframe: Timeframe
-            timestamp: ISO timestamp of trade
-            action: Trade action (long/short/hold)
-            entry_price: Entry price
-            predicted_price: Predicted price at time of trade
-            confidence: Confidence level (0-1)
-            quantity: Trade quantity (optional)
-            trade_id: Unique trade identifier (optional)
-            metadata: Additional metadata
+        This method is kept for backward compatibility but does nothing.
+        Use trading.trade_logger.TradeLogger instead which provides comprehensive
+        P/L tracking with realized/unrealized profits, exit prices, and all trade details.
         """
-        entry = {
-            "event_type": "trade",
-            "timestamp": timestamp,
-            "symbol": symbol,
-            "asset_type": asset_type,
-            "timeframe": timeframe,
-            "action": action,
-            "entry_price": float(entry_price),
-            "predicted_price": float(predicted_price),
-            "confidence": float(confidence),
-            "quantity": quantity,
-            "trade_id": trade_id,
-            "metadata": metadata or {}
-        }
-        
-        self._write_jsonl(self.trade_bucket, entry)
-        self._update_index("trades", timestamp)
+        # Disabled: All trade logging now handled by TradeLogger in end_to_end.py
+        # which provides comprehensive P/L tracking in data/logs/trades.jsonl
+        pass
     
     def log_feedback(
         self,

@@ -6325,10 +6325,154 @@
     "timeframe": "1d",
     "timestamp": "2026-01-05T00:00:00Z",
     "open": 0.5439,
-    "high": 0.5626,
+    "high": 0.5635,
     "low": 0.5356,
-    "close": 0.54,
-    "volume": 356227.3,
+    "close": 0.5586,
+    "volume": 868614.9,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "XTZ-USDC",
+    "timeframe": "1d",
+    "timestamp": "2026-01-06T00:00:00Z",
+    "open": 0.5588,
+    "high": 0.5996,
+    "low": 0.5553,
+    "close": 0.5974,
+    "volume": 1561891.9,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "XTZ-USDC",
+    "timeframe": "1d",
+    "timestamp": "2026-01-07T00:00:00Z",
+    "open": 0.5981,
+    "high": 0.5994,
+    "low": 0.5611,
+    "close": 0.5673,
+    "volume": 654648.1,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "XTZ-USDC",
+    "timeframe": "1d",
+    "timestamp": "2026-01-08T00:00:00Z",
+    "open": 0.5683,
+    "high": 0.5976,
+    "low": 0.5476,
+    "close": 0.5873,
+    "volume": 1543475.4,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "XTZ-USDC",
+    "timeframe": "1d",
+    "timestamp": "2026-01-09T00:00:00Z",
+    "open": 0.5872,
+    "high": 0.6041,
+    "low": 0.5728,
+    "close": 0.5809,
+    "volume": 1401540.2,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "XTZ-USDC",
+    "timeframe": "1d",
+    "timestamp": "2026-01-10T00:00:00Z",
+    "open": 0.5804,
+    "high": 0.5994,
+    "low": 0.5782,
+    "close": 0.5812,
+    "volume": 719597.5,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "XTZ-USDC",
+    "timeframe": "1d",
+    "timestamp": "2026-01-11T00:00:00Z",
+    "open": 0.5805,
+    "high": 0.5851,
+    "low": 0.5635,
+    "close": 0.569,
+    "volume": 603070.1,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "XTZ-USDC",
+    "timeframe": "1d",
+    "timestamp": "2026-01-12T00:00:00Z",
+    "open": 0.5695,
+    "high": 0.5842,
+    "low": 0.5513,
+    "close": 0.5557,
+    "volume": 637106.4,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "XTZ-USDC",
+    "timeframe": "1d",
+    "timestamp": "2026-01-13T00:00:00Z",
+    "open": 0.5555,
+    "high": 0.605,
+    "low": 0.5532,
+    "close": 0.5941,
+    "volume": 865402.3,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "XTZ-USDC",
+    "timeframe": "1d",
+    "timestamp": "2026-01-14T00:00:00Z",
+    "open": 0.5944,
+    "high": 0.6014,
+    "low": 0.5845,
+    "close": 0.5886,
+    "volume": 231639.7,
     "source": "binance_rest",
     "fallback_status": {
       "active": false,

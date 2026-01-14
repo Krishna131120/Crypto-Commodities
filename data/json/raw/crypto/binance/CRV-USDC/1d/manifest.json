@@ -2,14 +2,14 @@
   "symbol": "CRV-USDC",
   "timeframe": "1d",
   "asset_type": "crypto",
-  "generated_at": "2026-01-05T12:00:23.865422Z",
+  "generated_at": "2026-01-14T07:18:53.015030Z",
   "data_file": "data.json",
   "latest_file": "latest.json",
   "data_file_info": {
     "filename": "data.json",
-    "size_bytes": 214619,
-    "candle_count": 599,
+    "size_bytes": 217849,
+    "candle_count": 608,
     "first_timestamp": "2024-05-17T00:00:00Z",
-    "last_timestamp": "2026-01-05T00:00:00Z"
+    "last_timestamp": "2026-01-14T00:00:00Z"
   }
 }

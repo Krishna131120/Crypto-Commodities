@@ -1,11 +1,11 @@
 {
   "log_file": "logs\\training\\crypto\\LINK-USDT\\1d\\training_log.json",
-  "total_events": 57,
+  "total_events": 60,
   "events": [
     {
-      "timestamp": "2026-01-05T06:39:50.340589Z",
+      "timestamp": "2026-01-08T05:55:33.464312Z",
       "level": "INFO",
-      "message": "Starting training for crypto/LINK-USDT/1d (intraday horizon)",
+      "message": "Starting training for crypto/LINK-USDT/1d (short horizon)",
       "category": "TRAIN",
       "symbol": "LINK-USDT",
       "asset_type": "crypto",
@@ -13,37 +13,37 @@
         "timeframe": "1d",
         "min_rows": 200,
         "horizon_profile": {
-          "name": "intraday",
-          "label": "Intraday",
-          "description": "Same-day horizon (1-2 bars) suited for quick scalp decisions. Fast entries/exits, small position sizes.",
-          "horizon_bars": 1,
-          "smoothing_window": 2,
-          "directional_threshold": 0.0005,
-          "neutral_band": 0.0002,
+          "name": "short",
+          "label": "Short-Term",
+          "description": "Swing horizon of roughly 3-5 days to capture short moves. Medium position sizes, moderate frequency.",
+          "horizon_bars": 4,
+          "smoothing_window": 4,
+          "directional_threshold": 0.0012,
+          "neutral_band": 0.0006,
           "quantile_bins": 5,
-          "quantile_window": 90,
-          "trading_style": "Scalping - many small trades, quick in/out",
-          "typical_hold_time": "Hours to 1 day",
-          "position_size_pct": 0.05,
-          "stop_loss_pct": 0.03,
-          "min_confidence": 0.15
+          "quantile_window": 140,
+          "trading_style": "Swing trading - hold for several days",
+          "typical_hold_time": "3-5 days",
+          "position_size_pct": 0.1,
+          "stop_loss_pct": 0.06,
+          "min_confidence": 0.1
         }
       }
     },
     {
-      "timestamp": "2026-01-05T06:39:50.372175Z",
+      "timestamp": "2026-01-08T05:55:33.496312Z",
       "level": "INFO",
-      "message": "Loaded 2547 raw candles",
+      "message": "Loaded 2550 raw candles",
       "category": "DATA",
       "symbol": "LINK-USDT",
       "asset_type": "crypto",
       "data": {
-        "rows": 2547,
+        "rows": 2550,
         "timeframe": "1d"
       }
     },
     {
-      "timestamp": "2026-01-05T06:39:50.747698Z",
+      "timestamp": "2026-01-08T05:55:33.862368Z",
       "level": "INFO",
       "message": "Computed 131 features",
       "category": "DATA",
@@ -54,18 +54,18 @@
       }
     },
     {
-      "timestamp": "2026-01-05T06:39:51.849253Z",
+      "timestamp": "2026-01-08T05:55:34.963060Z",
       "level": "INFO",
       "message": "Dataset assembled: 2346 rows, 131 features",
       "category": "DATA",
       "symbol": "LINK-USDT",
       "asset_type": "crypto",
       "data": {
-        "rows_before": 2347,
+        "rows_before": 2350,
         "rows_after": 2346,
-        "rows_dropped": 1,
+        "rows_dropped": 4,
         "feature_count": 131,
-        "initial_nans": 6546,
+        "initial_nans": 6551,
         "residual_rows_dropped": 200,
         "constant_features_removed": [
           "Donchian_Breakout_Flag",
@@ -90,7 +90,7 @@
       }
     },
     {
-      "timestamp": "2026-01-05T06:39:51.851259Z",
+      "timestamp": "2026-01-08T05:55:34.965058Z",
       "level": "INFO",
       "message": "Dataset assembled: 2346 rows",
       "category": "DATA",
@@ -102,7 +102,7 @@
       }
     },
     {
-      "timestamp": "2026-01-05T06:39:51.852253Z",
+      "timestamp": "2026-01-08T05:55:34.966057Z",
       "level": "INFO",
       "message": "Data split: train=1759, val=293, test=292",
       "category": "DATA",
@@ -130,7 +130,7 @@
       }
     },
     {
-      "timestamp": "2026-01-05T06:39:51.853255Z",
+      "timestamp": "2026-01-08T05:55:34.967058Z",
       "level": "INFO",
       "message": "Dataset utilization confirmed",
       "category": "DATA",
@@ -143,7 +143,7 @@
       }
     },
     {
-      "timestamp": "2026-01-05T06:39:51.853255Z",
+      "timestamp": "2026-01-08T05:55:34.968057Z",
       "level": "INFO",
       "message": "Split boundaries confirmed",
       "category": "DATA",
@@ -165,7 +165,7 @@
       }
     },
     {
-      "timestamp": "2026-01-05T06:39:51.864859Z",
+      "timestamp": "2026-01-08T05:55:34.980058Z",
       "level": "WARNING",
       "message": "Found 23 features with zero variance, removing them",
       "category": "DATA",
@@ -187,23 +187,23 @@
       }
     },
     {
-      "timestamp": "2026-01-05T06:39:51.874411Z",
+      "timestamp": "2026-01-08T05:55:34.992057Z",
       "level": "INFO",
       "message": "Target variable validated",
       "category": "DATA",
       "symbol": "LINK-USDT",
       "asset_type": "crypto",
       "data": {
-        "train_mean": 0.0027980030911923305,
-        "train_std": 0.057134147863460355,
-        "val_mean": 0.0003953533181992859,
-        "val_std": 0.05296802512426303,
-        "test_mean": 0.0006704960565564196,
-        "test_std": 0.044923432069855974
+        "train_mean": 0.010652865510230904,
+        "train_std": 0.11039009644791167,
+        "val_mean": 0.001769014712658013,
+        "val_std": 0.10321958955875306,
+        "test_mean": 0.0029090006902715805,
+        "test_std": 0.08516824331198397
       }
     },
     {
-      "timestamp": "2026-01-05T06:39:51.876408Z",
+      "timestamp": "2026-01-08T05:55:34.994057Z",
       "level": "WARNING",
       "message": "Data balance analysis - checking for bearish/bullish bias",
       "category": "DATA",
@@ -213,48 +213,48 @@
         "train_distribution": {
           "split": "train",
           "total_samples": 1759,
-          "positive_count": 918,
-          "negative_count": 835,
-          "neutral_count": 6,
-          "positive_pct": 52.18874360432064,
-          "negative_pct": 47.47015349630472,
-          "neutral_pct": 0.34110289937464466,
-          "mean_return": 0.0027980030911923305,
-          "median_return": 0.003138485680659109,
-          "std_return": 0.05711790503502594,
-          "imbalance_ratio": 1.0994011976047904,
+          "positive_count": 919,
+          "negative_count": 840,
+          "neutral_count": 0,
+          "positive_pct": 52.24559408754974,
+          "negative_pct": 47.75440591245025,
+          "neutral_pct": 0.0,
+          "mean_return": 0.010652865510230904,
+          "median_return": 0.0044584878630054,
+          "std_return": 0.1103587133352809,
+          "imbalance_ratio": 1.0940476190476192,
           "bias_detected": null,
           "bias_severity": "none"
         },
         "val_distribution": {
           "split": "val",
           "total_samples": 293,
-          "positive_count": 138,
-          "negative_count": 152,
-          "neutral_count": 3,
-          "positive_pct": 47.098976109215016,
-          "negative_pct": 51.877133105802045,
-          "neutral_pct": 1.023890784982935,
-          "mean_return": 0.0003953533181992859,
-          "median_return": -0.0020056157240273542,
-          "std_return": 0.05287755874717484,
-          "imbalance_ratio": 0.9078947368421053,
+          "positive_count": 142,
+          "negative_count": 151,
+          "neutral_count": 0,
+          "positive_pct": 48.4641638225256,
+          "negative_pct": 51.5358361774744,
+          "neutral_pct": 0.0,
+          "mean_return": 0.001769014712658013,
+          "median_return": -0.006711409395973034,
+          "std_return": 0.10304329636507623,
+          "imbalance_ratio": 0.9403973509933775,
           "bias_detected": null,
           "bias_severity": "none"
         },
         "test_distribution": {
           "split": "test",
           "total_samples": 292,
-          "positive_count": 144,
-          "negative_count": 145,
-          "neutral_count": 3,
-          "positive_pct": 49.31506849315068,
-          "negative_pct": 49.65753424657534,
-          "neutral_pct": 1.0273972602739725,
-          "mean_return": 0.0006704960565564196,
-          "median_return": 0.0,
-          "std_return": 0.0448464424124707,
-          "imbalance_ratio": 0.993103448275862,
+          "positive_count": 136,
+          "negative_count": 156,
+          "neutral_count": 0,
+          "positive_pct": 46.57534246575342,
+          "negative_pct": 53.42465753424658,
+          "neutral_pct": 0.0,
+          "mean_return": 0.0029090006902715805,
+          "median_return": -0.004681196708728408,
+          "std_return": 0.08502228220503871,
+          "imbalance_ratio": 0.8717948717948718,
           "bias_detected": null,
           "bias_severity": "none"
         },
@@ -262,7 +262,7 @@
       }
     },
     {
-      "timestamp": "2026-01-05T06:39:52.998034Z",
+      "timestamp": "2026-01-08T05:55:36.149546Z",
       "level": "INFO",
       "message": "Feature scaling verified - all features properly normalized",
       "category": "DATA",
@@ -270,7 +270,7 @@
       "asset_type": "crypto"
     },
     {
-      "timestamp": "2026-01-05T06:39:52.999039Z",
+      "timestamp": "2026-01-08T05:55:36.151545Z",
       "level": "INFO",
       "message": "Applied robust feature scaling",
       "category": "DATA",
@@ -278,29 +278,29 @@
       "asset_type": "crypto",
       "data": {
         "scaler": "RobustScaler",
-        "feature_count": 101,
+        "feature_count": 99,
         "center_sample": [
           2.0,
-          0.0014745706243999845,
+          0.006795125336619273,
           1.0,
-          50753.17641599981,
-          0.017999999999999794
+          8.468666666666666,
+          11.923406439592961
         ],
         "scale_sample": [
           2.0,
-          0.04193043711124145,
+          0.10144936800512204,
           2.0,
-          2941609.1827509846,
-          0.5124999999999997
+          11.085333333333335,
+          7.380198156702695
         ],
         "scaling_verification": {
           "train": {
             "split": "train",
-            "mean_abs_mean": 0.17825911065619815,
+            "mean_abs_mean": 0.17346496841086684,
             "mean_abs_median": 0.0,
-            "mean_std": 0.8269484313967035,
-            "mean_abs_min": 1.5515433856579046,
-            "mean_abs_max": 2.7632887620790654,
+            "mean_std": 0.826552987978554,
+            "mean_abs_min": 1.5712556061125331,
+            "mean_abs_max": 2.7417594596817376,
             "nan_count": 0,
             "inf_count": 0,
             "issues": [],
@@ -308,11 +308,11 @@
           },
           "val": {
             "split": "val",
-            "mean_abs_mean": 0.3116825552862291,
-            "mean_abs_median": 0.2753077740896079,
-            "mean_std": 0.6677799132323033,
-            "mean_abs_min": 1.0816955978186147,
-            "mean_abs_max": 2.034046410388933,
+            "mean_abs_mean": 0.3042253700957791,
+            "mean_abs_median": 0.27076626514881835,
+            "mean_std": 0.6716929244058384,
+            "mean_abs_min": 1.0933280090569524,
+            "mean_abs_max": 2.0315159403692573,
             "nan_count": 0,
             "inf_count": 0,
             "issues": [],
@@ -320,11 +320,11 @@
           },
           "test": {
             "split": "test",
-            "mean_abs_mean": 0.34424047732057217,
-            "mean_abs_median": 0.3206921974104334,
-            "mean_std": 0.6078386298856963,
-            "mean_abs_min": 1.15324268737161,
-            "mean_abs_max": 1.864885762830871,
+            "mean_abs_mean": 0.33714577042710187,
+            "mean_abs_median": 0.32615779071408274,
+            "mean_std": 0.6124299701406511,
+            "mean_abs_min": 1.1611584092226088,
+            "mean_abs_max": 1.871093467206289,
             "nan_count": 0,
             "inf_count": 0,
             "issues": [],
@@ -334,14 +334,14 @@
       }
     },
     {
-      "timestamp": "2026-01-05T06:39:53.000035Z",
+      "timestamp": "2026-01-08T05:55:36.152546Z",
       "level": "INFO",
-      "message": "Features extracted: 101 features will be used for training",
+      "message": "Features extracted: 99 features will be used for training",
       "category": "DATA",
       "symbol": "LINK-USDT",
       "asset_type": "crypto",
       "data": {
-        "feature_count": 101,
+        "feature_count": 99,
         "train_samples": 1759,
         "val_samples": 293,
         "test_samples": 292,
@@ -349,119 +349,117 @@
           "target_quantile_bin",
           "target_return_smoothed",
           "target_direction",
-          "Force_Index",
-          "Intraday_Range",
-          "Log_Returns",
-          "Ensemble_Feature_Aggregates",
-          "ZScore_returns_30",
-          "Volume_Ratio",
-          "Typical_Price"
+          "Typical_Price",
+          "Session_VWAP",
+          "Pivot_S1",
+          "Pivot_R1",
+          "Fractal_High",
+          "Keltner_Channel_lower",
+          "Hull_MA"
         ],
         "selected_features": [
           "target_quantile_bin",
           "target_return_smoothed",
           "target_direction",
-          "Force_Index",
-          "Intraday_Range",
-          "Log_Returns",
-          "Ensemble_Feature_Aggregates",
-          "ZScore_returns_30",
-          "Volume_Ratio",
           "Typical_Price",
-          "Close_Lag_4",
-          "VWAP",
-          "Donchian_Channel_low",
-          "Volume_Change_1",
-          "ZScore_returns_7",
-          "Fibonacci_Level_0.786",
+          "Session_VWAP",
+          "Pivot_S1",
+          "Pivot_R1",
+          "Fractal_High",
           "Keltner_Channel_lower",
           "Hull_MA",
-          "Fractal_High",
-          "Price_Lag_2",
+          "Donchian_Channel_low",
+          "Fibonacci_Level_0.786",
+          "Ichimoku_Senkou_Span_A",
           "EMA_9",
           "EMA_200",
-          "Ease_of_Movement",
-          "Pivot_R2",
-          "Bollinger_Bands_lower_20_2",
+          "Close_Lag_4",
           "Fibonacci_Level_0.5",
-          "Feature_Interaction_Terms",
-          "Ichimoku_Senkou_Span_A",
-          "Close_Lag_9",
-          "Low_Lag_1",
-          "Close_Lag_7",
           "Close_Lag_6",
-          "RSI_Band_Cross",
-          "SMA_50",
-          "EMA_100",
-          "Keltner_Channel_upper",
-          "SMA_200",
-          "Volume_Change_7",
-          "Close_Lag_10",
-          "Rolling_Kurtosis",
-          "MACD_histogram",
+          "Close_Lag_7",
           "Close_Lag_8",
-          "Volume_Surge_Flag",
-          "SMA_100",
+          "Donchian_Channel_high",
+          "Bollinger_Bands_lower_20_2",
+          "SMA_50",
           "Close_Lag_5",
-          "Bollinger_Bands_upper_20_2",
-          "Gap_Open",
-          "drawdown_lookback_90",
+          "EMA_100",
+          "Close_Lag_9",
+          "Close_Lag_10",
+          "SMA_200",
+          "SMA_100",
+          "Ease_of_Movement",
+          "Ichimoku_Senkou_Span_B",
+          "Price_Range",
+          "Fractal_Low",
           "Accumulation_Distribution",
+          "ATR_14",
+          "RSI_Band_Cross",
+          "ATR_7",
+          "Rolling_Kurtosis",
+          "Price_Channel_Slope",
+          "trend_strength_60",
+          "Drawdown_Duration",
+          "OBV",
+          "MACD_histogram",
+          "Seasonality_Monthly",
+          "ADX_14",
+          "volatility_cluster_20",
+          "drawdown_lookback_90",
+          "MACD_Crossover_Signal",
+          "mean_reversion_flag",
+          "Rolling_Sharpe_30",
+          "MACD",
+          "Volatility_Expansion_Flag",
+          "Feature_Interaction_Terms",
+          "Volume_Change_1",
+          "volatility_regime_state",
+          "Chaikin_Oscillator",
+          "Cumulative_Return_30",
+          "Rolling_Sharpe_90",
+          "Bollinger_%b",
+          "RSI_7",
+          "Stochastic_%K",
+          "CCI_20",
+          "DI_plus",
+          "CMF",
+          "MACD_signal",
+          "ZScore_returns_7",
+          "Stochastic_%D",
+          "MFI",
+          "Rolling_Volatility_14",
+          "RSI_14",
+          "MA_Crossover_Signal",
+          "Gap_Percentage",
+          "Day_of_Week",
+          "Intraday_Range",
+          "Realized_Volatility",
+          "Rate_of_Change",
+          "Bollinger_Bandwidth",
+          "DI_minus",
+          "RSI_21",
+          "Seasonality_DayOfMonth",
+          "Momentum_roc_14",
+          "TRIX",
+          "Volume_Change_7",
+          "Volatility_Clustering",
+          "Rolling_Skew",
+          "Return_1",
+          "Volume_Surge_Flag",
+          "ZScore_returns_30",
+          "Ensemble_Feature_Aggregates",
+          "TSI",
+          "Return_7",
+          "Force_Index",
+          "Gap_Open",
           "Return_3",
           "Rolling_Volatility_7",
           "Volatility_Skew",
-          "Ichimoku_Senkou_Span_B",
-          "Gap_Percentage",
-          "MACD_Crossover_Signal",
-          "volatility_cluster_20",
-          "trend_strength_60",
-          "Volatility_Expansion_Flag",
-          "Fractal_Low",
-          "OBV",
-          "Seasonality_Monthly",
-          "ADX_14",
-          "mean_reversion_flag",
-          "Momentum_roc_14",
-          "MACD",
-          "ATR_14",
-          "Price_Channel_Slope",
-          "Rolling_Sharpe_90",
-          "volatility_regime_state",
-          "Drawdown_Duration",
-          "MFI",
-          "Realized_Volatility",
-          "ATR_7",
-          "DI_plus",
-          "Rate_of_Change",
-          "Return_7",
-          "CCI_20",
-          "Stochastic_%D",
-          "MACD_signal",
           "Historical_Volatility",
-          "Rolling_Skew",
-          "Max_Drawdown_30",
-          "MA_Crossover_Signal",
-          "Rolling_Sharpe_30",
-          "Rolling_Volatility_14",
-          "Volatility_Clustering",
-          "Bollinger_Bandwidth",
-          "DI_minus",
-          "CMF",
-          "Chaikin_Oscillator",
-          "Price_Range",
-          "RSI_21",
-          "Bollinger_%b",
-          "TSI",
-          "Seasonality_DayOfMonth",
-          "Cumulative_Return_30",
-          "Day_of_Week",
-          "RSI_14",
-          "TRIX",
-          "Williams_%R",
-          "RSI_7"
+          "Volume_Ratio",
+          "Max_Drawdown_30"
         ],
         "removed_low_variance": [],
-        "max_abs_corr": 0.8500047319638027,
+        "max_abs_corr": 0.8693894926499426,
         "importance_filter": {
           "method": "lightgbm_importance",
           "selected_features": [
@@ -608,7 +606,7 @@
       }
     },
     {
-      "timestamp": "2026-01-05T06:39:53.003034Z",
+      "timestamp": "2026-01-08T05:55:36.154546Z",
       "level": "INFO",
       "message": "Data splits prepared - test set isolated for final evaluation only",
       "category": "DATA",
@@ -623,7 +621,7 @@
       }
     },
     {
-      "timestamp": "2026-01-05T06:39:53.007034Z",
+      "timestamp": "2026-01-08T05:55:36.158547Z",
       "level": "INFO",
       "message": "Reference price recalibrated",
       "category": "DATA",
@@ -631,11 +629,11 @@
       "asset_type": "crypto",
       "data": {
         "dataset_close": 13.43,
-        "latest_market_price": 13.62
+        "latest_market_price": 13.45
       }
     },
     {
-      "timestamp": "2026-01-05T06:39:53.008034Z",
+      "timestamp": "2026-01-08T05:55:36.159546Z",
       "level": "INFO",
       "message": "Training Random Forest model",
       "category": "MODEL",
@@ -644,18 +642,18 @@
       "data": {
         "model": "RandomForest",
         "training_samples": 1759,
-        "features_count": 101,
+        "features_count": 99,
         "feature_names_sample": [
           "target_quantile_bin",
           "target_return_smoothed",
           "target_direction",
-          "Force_Index",
-          "Intraday_Range"
+          "Typical_Price",
+          "Session_VWAP"
         ]
       }
     },
     {
-      "timestamp": "2026-01-05T06:46:00.389270Z",
+      "timestamp": "2026-01-08T06:00:35.571066Z",
       "level": "INFO",
       "message": "RandomForest hyperparameter search complete",
       "category": "MODEL",
@@ -663,33 +661,33 @@
       "asset_type": "crypto",
       "data": {
         "best_params": {
-          "n_estimators": 269,
+          "n_estimators": 224,
           "max_depth": 7,
-          "min_samples_leaf": 4,
+          "min_samples_leaf": 5,
           "min_samples_split": 6,
-          "max_features": 0.7394884101086415,
-          "max_samples": 0.8519092437804314,
-          "ccp_alpha": 0.0003052072169232441
+          "max_features": 0.6589166401509996,
+          "max_samples": 0.7547953650455546,
+          "ccp_alpha": 0.00030249285496350685
         }
       }
     },
     {
-      "timestamp": "2026-01-05T06:46:19.199876Z",
+      "timestamp": "2026-01-08T06:00:50.967601Z",
       "level": "INFO",
-      "message": "Random Forest prediction made using 101 features",
+      "message": "Random Forest prediction made using 99 features",
       "category": "PREDICTION",
       "symbol": "LINK-USDT",
       "asset_type": "crypto",
       "data": {
         "model": "RandomForest",
-        "features_used": 101,
+        "features_used": 99,
         "test_sample_index": 291,
-        "raw_return": 0.03391773731420574,
-        "clamped_return": 0.03391773731420574
+        "raw_return": -0.00840254009018655,
+        "clamped_return": -0.00840254009018655
       }
     },
     {
-      "timestamp": "2026-01-05T06:46:19.202393Z",
+      "timestamp": "2026-01-08T06:00:50.970601Z",
       "level": "INFO",
       "message": "random_forest metrics computed",
       "category": "MODEL",
@@ -697,29 +695,29 @@
       "asset_type": "crypto",
       "data": {
         "model": "random_forest",
-        "val_r2": 0.7337392979451168,
-        "val_mae": 0.01444944650005278,
-        "val_dir": 0.9078498293515358,
+        "val_r2": 0.8399466893997187,
+        "val_mae": 0.02848621239405943,
+        "val_dir": 0.931740614334471,
         "train_metrics": {
-          "mae": 0.016977618031938164,
-          "rmse": 0.030707097690522645,
-          "r2": 0.7109766029790594,
-          "directional_accuracy": 0.9050596930073905,
-          "mean_predicted_return": 0.0028798539308195997,
-          "mean_actual_return": 0.0027980030911923305
+          "mae": 0.029004064731092547,
+          "rmse": 0.044179487526842094,
+          "r2": 0.8397389105194706,
+          "directional_accuracy": 0.8806139852188744,
+          "mean_predicted_return": 0.01064307356212689,
+          "mean_actual_return": 0.010652865510230904
         },
         "test_metrics": {
-          "mae": 0.012586063982186351,
-          "rmse": 0.01987147465631951,
-          "r2": 0.8036620733661479,
-          "directional_accuracy": 0.9383561643835616,
-          "mean_predicted_return": 0.0031761407737399623,
-          "mean_actual_return": 0.0006704960565564196
+          "mae": 0.020580763214079374,
+          "rmse": 0.029292296111870827,
+          "r2": 0.8813025702846584,
+          "directional_accuracy": 0.9315068493150684,
+          "mean_predicted_return": 0.008880403471231294,
+          "mean_actual_return": 0.0029090006902715805
         }
       }
     },
     {
-      "timestamp": "2026-01-05T06:46:19.203392Z",
+      "timestamp": "2026-01-08T06:00:50.971601Z",
       "level": "INFO",
       "message": "random_forest overfitting analysis",
       "category": "OVERFITTING",
@@ -727,15 +725,28 @@
       "asset_type": "crypto",
       "data": {
         "model": "random_forest",
-        "train_r2": 0.7109766029790594,
-        "val_r2": 0.7337392979451168,
-        "test_r2": 0.8036620733661479,
-        "train_val_gap": -0.02276269496605743,
-        "val_test_gap": -0.06992277542103109
+        "train_r2": 0.8397389105194706,
+        "val_r2": 0.8399466893997187,
+        "test_r2": 0.8813025702846584,
+        "train_val_gap": -0.00020777888024814395,
+        "val_test_gap": -0.04135588088493969
       }
     },
     {
-      "timestamp": "2026-01-05T06:46:19.204393Z",
+      "timestamp": "2026-01-08T06:00:50.972602Z",
+      "level": "WARNING",
+      "message": "random_forest has suspiciously high test R²: 0.881 (expected: 0.3-0.7)",
+      "category": "OVERFITTING",
+      "symbol": "LINK-USDT",
+      "asset_type": "crypto",
+      "data": {
+        "model": "random_forest",
+        "test_r2": 0.8813025702846584,
+        "severity": "WARNING"
+      }
+    },
+    {
+      "timestamp": "2026-01-08T06:00:50.974605Z",
       "level": "SUCCESS",
       "message": "Random Forest training completed",
       "category": "MODEL",
@@ -745,26 +756,26 @@
         "model": "RandomForest",
         "metrics": {
           "model_name": "RandomForest",
-          "mae": 0.01444944650005278,
-          "rmse": 0.0272850612361058,
-          "r2": 0.7337392979451168,
-          "directional_accuracy": 0.9078498293515358,
-          "mean_predicted_return": 0.0015406000973209645,
-          "mean_actual_return": 0.0003953533181992859,
+          "mae": 0.02848621239405943,
+          "rmse": 0.041224184599131145,
+          "r2": 0.8399466893997187,
+          "directional_accuracy": 0.931740614334471,
+          "mean_predicted_return": 0.005701400318615767,
+          "mean_actual_return": 0.001769014712658013,
           "notes": null,
           "precision": null,
           "recall": null,
           "f1": null,
           "roc_auc": null
         },
-        "current_price": 13.62,
-        "predicted_return": 0.03391773731420574,
-        "predicted_price": 14.081959582219481,
-        "features_used": 101
+        "current_price": 13.45,
+        "predicted_return": -0.00840254009018655,
+        "predicted_price": 13.33698583578699,
+        "features_used": 99
       }
     },
     {
-      "timestamp": "2026-01-05T06:46:19.206393Z",
+      "timestamp": "2026-01-08T06:00:50.975607Z",
       "level": "INFO",
       "message": "Training LightGBM model",
       "category": "MODEL",
@@ -773,11 +784,11 @@
       "data": {
         "model": "LightGBM",
         "training_samples": 1759,
-        "features_count": 101
+        "features_count": 99
       }
     },
     {
-      "timestamp": "2026-01-05T06:46:20.934592Z",
+      "timestamp": "2026-01-08T06:00:52.791369Z",
       "level": "INFO",
       "message": "LightGBM hyperparameter search complete",
       "category": "MODEL",
@@ -785,36 +796,36 @@
       "asset_type": "crypto",
       "data": {
         "best_params": {
-          "max_depth": 3,
-          "num_leaves": 8,
-          "n_estimators": 230,
-          "learning_rate": 0.09953004307039176,
-          "subsample": 0.7713008988732749,
-          "colsample_bytree": 0.7998508914155673,
+          "max_depth": 4,
+          "num_leaves": 12,
+          "n_estimators": 175,
+          "learning_rate": 0.07860345153501345,
+          "subsample": 0.7847339796291998,
+          "colsample_bytree": 0.7957116313160443,
           "min_child_samples": 12,
-          "reg_alpha": 2.00969893433155,
-          "reg_lambda": 2.508090628134167,
-          "min_split_gain": 0.010027652870668462
+          "reg_alpha": 2.017371098650694,
+          "reg_lambda": 2.5046102795555703,
+          "min_split_gain": 0.010231340295029909
         }
       }
     },
     {
-      "timestamp": "2026-01-05T06:46:21.363279Z",
+      "timestamp": "2026-01-08T06:00:53.222425Z",
       "level": "INFO",
-      "message": "LightGBM prediction made using 101 features",
+      "message": "LightGBM prediction made using 99 features",
       "category": "PREDICTION",
       "symbol": "LINK-USDT",
       "asset_type": "crypto",
       "data": {
         "model": "LightGBM",
-        "features_used": 101,
+        "features_used": 99,
         "test_sample_index": 291,
-        "raw_return": 0.02185294659764747,
-        "clamped_return": 0.02185294659764747
+        "raw_return": 0.004355612093703653,
+        "clamped_return": 0.004355612093703653
       }
     },
     {
-      "timestamp": "2026-01-05T06:46:21.367284Z",
+      "timestamp": "2026-01-08T06:00:53.225425Z",
       "level": "INFO",
       "message": "lightgbm metrics computed",
       "category": "MODEL",
@@ -822,29 +833,29 @@
       "asset_type": "crypto",
       "data": {
         "model": "lightgbm",
-        "val_r2": 0.7701711415122117,
-        "val_mae": 0.014145613181924067,
-        "val_dir": 0.9010238907849829,
+        "val_r2": 0.8385502387961132,
+        "val_mae": 0.027761156623597013,
+        "val_dir": 0.9078498293515358,
         "train_metrics": {
-          "mae": 0.015354908196446306,
-          "rmse": 0.028042223561499952,
-          "r2": 0.7589648641733789,
-          "directional_accuracy": 0.923820352472996,
-          "mean_predicted_return": 0.0030352307185204084,
-          "mean_actual_return": 0.0027980030911923305
+          "mae": 0.02476857300240016,
+          "rmse": 0.04069384833683781,
+          "r2": 0.8640296337148716,
+          "directional_accuracy": 0.9289368959636157,
+          "mean_predicted_return": 0.010753239677584984,
+          "mean_actual_return": 0.010652865510230904
         },
         "test_metrics": {
-          "mae": 0.01187316553093086,
-          "rmse": 0.018152618585182006,
-          "r2": 0.8361590070991335,
-          "directional_accuracy": 0.9075342465753424,
-          "mean_predicted_return": 0.0027023979954556546,
-          "mean_actual_return": 0.0006704960565564196
+          "mae": 0.021044989704238307,
+          "rmse": 0.030120352768609273,
+          "r2": 0.8744968600892492,
+          "directional_accuracy": 0.8698630136986302,
+          "mean_predicted_return": 0.010510547076180564,
+          "mean_actual_return": 0.0029090006902715805
         }
       }
     },
     {
-      "timestamp": "2026-01-05T06:46:21.369283Z",
+      "timestamp": "2026-01-08T06:00:53.228424Z",
       "level": "INFO",
       "message": "lightgbm overfitting analysis",
       "category": "OVERFITTING",
@@ -852,15 +863,28 @@
       "asset_type": "crypto",
       "data": {
         "model": "lightgbm",
-        "train_r2": 0.7589648641733789,
-        "val_r2": 0.7701711415122117,
-        "test_r2": 0.8361590070991335,
-        "train_val_gap": -0.011206277338832726,
-        "val_test_gap": -0.06598786558692182
+        "train_r2": 0.8640296337148716,
+        "val_r2": 0.8385502387961132,
+        "test_r2": 0.8744968600892492,
+        "train_val_gap": 0.02547939491875839,
+        "val_test_gap": -0.03594662129313597
       }
     },
     {
-      "timestamp": "2026-01-05T06:46:21.371284Z",
+      "timestamp": "2026-01-08T06:00:53.230425Z",
+      "level": "WARNING",
+      "message": "lightgbm has suspiciously high test R²: 0.874 (expected: 0.3-0.7)",
+      "category": "OVERFITTING",
+      "symbol": "LINK-USDT",
+      "asset_type": "crypto",
+      "data": {
+        "model": "lightgbm",
+        "test_r2": 0.8744968600892492,
+        "severity": "WARNING"
+      }
+    },
+    {
+      "timestamp": "2026-01-08T06:00:53.232425Z",
       "level": "SUCCESS",
       "message": "LightGBM training completed",
       "category": "MODEL",
@@ -870,26 +894,26 @@
         "model": "LightGBM",
         "metrics": {
           "model_name": "LightGBM",
-          "mae": 0.014145613181924067,
-          "rmse": 0.02534974975255741,
-          "r2": 0.7701711415122117,
-          "directional_accuracy": 0.9010238907849829,
-          "mean_predicted_return": 0.0016906554753687787,
-          "mean_actual_return": 0.0003953533181992859,
+          "mae": 0.027761156623597013,
+          "rmse": 0.04140363266609686,
+          "r2": 0.8385502387961132,
+          "directional_accuracy": 0.9078498293515358,
+          "mean_predicted_return": 0.0056401943852840844,
+          "mean_actual_return": 0.001769014712658013,
           "notes": null,
           "precision": null,
           "recall": null,
           "f1": null,
           "roc_auc": null
         },
-        "current_price": 13.62,
-        "predicted_return": 0.02185294659764747,
-        "predicted_price": 13.917637132659957,
-        "features_used": 101
+        "current_price": 13.45,
+        "predicted_return": 0.004355612093703653,
+        "predicted_price": 13.508582982660313,
+        "features_used": 99
       }
     },
     {
-      "timestamp": "2026-01-05T06:46:21.373283Z",
+      "timestamp": "2026-01-08T06:00:53.234425Z",
       "level": "INFO",
       "message": "Training XGBoost model",
       "category": "MODEL",
@@ -898,11 +922,11 @@
       "data": {
         "model": "XGBoost",
         "training_samples": 1759,
-        "features_count": 101
+        "features_count": 99
       }
     },
     {
-      "timestamp": "2026-01-05T06:46:26.656823Z",
+      "timestamp": "2026-01-08T06:00:58.478309Z",
       "level": "INFO",
       "message": "XGBoost hyperparameter search complete",
       "category": "MODEL",
@@ -910,35 +934,35 @@
       "asset_type": "crypto",
       "data": {
         "best_params": {
-          "n_estimators": 228,
-          "learning_rate": 0.07203171244563755,
+          "n_estimators": 242,
+          "learning_rate": 0.06037824763961582,
           "max_depth": 3,
-          "subsample": 0.7854461985936425,
-          "colsample_bytree": 0.6816397392035505,
-          "min_child_weight": 4.25075585664919,
-          "gamma": 0.10171499113131989,
-          "reg_alpha": 3.3060227551493786,
-          "reg_lambda": 5.619252814858888
+          "subsample": 0.7997301031583051,
+          "colsample_bytree": 0.7196660644989137,
+          "min_child_weight": 5.963757433143216,
+          "gamma": 0.1015643750138882,
+          "reg_alpha": 3.0891003958005063,
+          "reg_lambda": 5.313602404331248
         }
       }
     },
     {
-      "timestamp": "2026-01-05T06:46:28.038596Z",
+      "timestamp": "2026-01-08T06:00:59.809492Z",
       "level": "INFO",
-      "message": "XGBoost prediction made using 101 features",
+      "message": "XGBoost prediction made using 99 features",
       "category": "PREDICTION",
       "symbol": "LINK-USDT",
       "asset_type": "crypto",
       "data": {
         "model": "XGBoost",
-        "features_used": 101,
+        "features_used": 99,
         "test_sample_index": 291,
-        "raw_return": 0.025430751964449883,
-        "clamped_return": 0.025430751964449883
+        "raw_return": 0.012315958738327026,
+        "clamped_return": 0.012315958738327026
       }
     },
     {
-      "timestamp": "2026-01-05T06:46:28.041598Z",
+      "timestamp": "2026-01-08T06:00:59.812492Z",
       "level": "INFO",
       "message": "xgboost metrics computed",
       "category": "MODEL",
@@ -946,29 +970,29 @@
       "asset_type": "crypto",
       "data": {
         "model": "xgboost",
-        "val_r2": 0.9202133233853023,
-        "val_mae": 0.009037014437732119,
-        "val_dir": 0.9215017064846417,
+        "val_r2": 0.8672305457797368,
+        "val_mae": 0.025497617615318293,
+        "val_dir": 0.9385665529010239,
         "train_metrics": {
-          "mae": 0.007775165281565009,
-          "rmse": 0.009785111730229742,
-          "r2": 0.9706514237423616,
-          "directional_accuracy": 0.9357589539511085,
-          "mean_predicted_return": 0.0028306343592703342,
-          "mean_actual_return": 0.0027980030911923305
+          "mae": 0.018759566237518847,
+          "rmse": 0.025670600785065268,
+          "r2": 0.9458923329609495,
+          "directional_accuracy": 0.9425810119386014,
+          "mean_predicted_return": 0.010633612051606178,
+          "mean_actual_return": 0.010652865510230904
         },
         "test_metrics": {
-          "mae": 0.007922661077126015,
-          "rmse": 0.01034585622038284,
-          "r2": 0.9467797533110947,
-          "directional_accuracy": 0.9212328767123288,
-          "mean_predicted_return": 0.0010098781203851104,
-          "mean_actual_return": 0.0006704960565564196
+          "mae": 0.01846055312005781,
+          "rmse": 0.026027818122201597,
+          "r2": 0.906284805692262,
+          "directional_accuracy": 0.928082191780822,
+          "mean_predicted_return": 0.005406983196735382,
+          "mean_actual_return": 0.0029090006902715805
         }
       }
     },
     {
-      "timestamp": "2026-01-05T06:46:28.043103Z",
+      "timestamp": "2026-01-08T06:00:59.815492Z",
       "level": "INFO",
       "message": "xgboost overfitting analysis",
       "category": "OVERFITTING",
@@ -976,41 +1000,41 @@
       "asset_type": "crypto",
       "data": {
         "model": "xgboost",
-        "train_r2": 0.9706514237423616,
-        "val_r2": 0.9202133233853023,
-        "test_r2": 0.9467797533110947,
-        "train_val_gap": 0.05043810035705931,
-        "val_test_gap": -0.02656642992579239
+        "train_r2": 0.9458923329609495,
+        "val_r2": 0.8672305457797368,
+        "test_r2": 0.906284805692262,
+        "train_val_gap": 0.07866178718121275,
+        "val_test_gap": -0.0390542599125252
       }
     },
     {
-      "timestamp": "2026-01-05T06:46:28.046110Z",
+      "timestamp": "2026-01-08T06:00:59.817492Z",
       "level": "WARNING",
-      "message": "xgboost has suspiciously high validation R²: 0.920 (expected: 0.3-0.7)",
+      "message": "xgboost has suspiciously high validation R²: 0.867 (expected: 0.3-0.7)",
       "category": "OVERFITTING",
       "symbol": "LINK-USDT",
       "asset_type": "crypto",
       "data": {
         "model": "xgboost",
-        "val_r2": 0.9202133233853023,
+        "val_r2": 0.8672305457797368,
         "severity": "WARNING"
       }
     },
     {
-      "timestamp": "2026-01-05T06:46:28.048109Z",
+      "timestamp": "2026-01-08T06:00:59.819492Z",
       "level": "WARNING",
-      "message": "xgboost has suspiciously high test R²: 0.947 (expected: 0.3-0.7)",
+      "message": "xgboost has suspiciously high test R²: 0.906 (expected: 0.3-0.7)",
       "category": "OVERFITTING",
       "symbol": "LINK-USDT",
       "asset_type": "crypto",
       "data": {
         "model": "xgboost",
-        "test_r2": 0.9467797533110947,
+        "test_r2": 0.906284805692262,
         "severity": "WARNING"
       }
     },
     {
-      "timestamp": "2026-01-05T06:46:28.050623Z",
+      "timestamp": "2026-01-08T06:00:59.821494Z",
       "level": "SUCCESS",
       "message": "XGBoost training completed",
       "category": "MODEL",
@@ -1020,26 +1044,26 @@
         "model": "XGBoost",
         "metrics": {
           "model_name": "XGBoost",
-          "mae": 0.009037014437732119,
-          "rmse": 0.014936078388023962,
-          "r2": 0.9202133233853023,
-          "directional_accuracy": 0.9215017064846417,
-          "mean_predicted_return": 0.0013748782221227884,
-          "mean_actual_return": 0.0003953533181992859,
+          "mae": 0.025497617615318293,
+          "rmse": 0.037546445454527996,
+          "r2": 0.8672305457797368,
+          "directional_accuracy": 0.9385665529010239,
+          "mean_predicted_return": 0.006370438728481531,
+          "mean_actual_return": 0.001769014712658013,
           "notes": null,
           "precision": null,
           "recall": null,
           "f1": null,
           "roc_auc": null
         },
-        "current_price": 13.62,
-        "predicted_return": 0.025430751964449883,
-        "predicted_price": 13.966366841755807,
-        "features_used": 101
+        "current_price": 13.45,
+        "predicted_return": 0.012315958738327026,
+        "predicted_price": 13.615649645030498,
+        "features_used": 99
       }
     },
     {
-      "timestamp": "2026-01-05T06:46:28.120643Z",
+      "timestamp": "2026-01-08T06:00:59.890997Z",
       "level": "INFO",
       "message": "stacked_blend metrics computed",
       "category": "MODEL",
@@ -1047,29 +1071,29 @@
       "asset_type": "crypto",
       "data": {
         "model": "stacked_blend",
-        "val_r2": 0.8601290059905049,
-        "val_mae": 0.010747626776347892,
-        "val_dir": 0.9180887372013652,
+        "val_r2": 0.8668416498080744,
+        "val_mae": 0.02567760822465452,
+        "val_dir": 0.9351535836177475,
         "train_metrics": {
-          "mae": 0.011209660826285165,
-          "rmse": 0.017822549644870057,
-          "r2": 0.9026367356839726,
-          "directional_accuracy": 0.9334849346219443,
-          "mean_predicted_return": 0.002798003091192337,
-          "mean_actual_return": 0.0027980030911923305
+          "mae": 0.020996412926964948,
+          "rmse": 0.030066770907353924,
+          "r2": 0.9257732714190777,
+          "directional_accuracy": 0.9431495167708925,
+          "mean_predicted_return": 0.0106528655102309,
+          "mean_actual_return": 0.010652865510230904
         },
         "test_metrics": {
-          "mae": 0.009147354671221925,
-          "rmse": 0.013094764237340944,
-          "r2": 0.9147411690520082,
-          "directional_accuracy": 0.9178082191780822,
-          "mean_predicted_return": 0.0018017806465516922,
-          "mean_actual_return": 0.0006704960565564196
+          "mae": 0.018552804195065886,
+          "rmse": 0.026267889269294006,
+          "r2": 0.9045480429537702,
+          "directional_accuracy": 0.9315068493150684,
+          "mean_predicted_return": 0.007097174483533786,
+          "mean_actual_return": 0.0029090006902715805
         }
       }
     },
     {
-      "timestamp": "2026-01-05T06:46:28.123642Z",
+      "timestamp": "2026-01-08T06:00:59.893001Z",
       "level": "INFO",
       "message": "stacked_blend overfitting analysis",
       "category": "OVERFITTING",
@@ -1077,41 +1101,41 @@
       "asset_type": "crypto",
       "data": {
         "model": "stacked_blend",
-        "train_r2": 0.9026367356839726,
-        "val_r2": 0.8601290059905049,
-        "test_r2": 0.9147411690520082,
-        "train_val_gap": 0.04250772969346772,
-        "val_test_gap": -0.054612163061503294
+        "train_r2": 0.9257732714190777,
+        "val_r2": 0.8668416498080744,
+        "test_r2": 0.9045480429537702,
+        "train_val_gap": 0.05893162161100329,
+        "val_test_gap": -0.037706393145695793
       }
     },
     {
-      "timestamp": "2026-01-05T06:46:28.125642Z",
+      "timestamp": "2026-01-08T06:00:59.896001Z",
       "level": "WARNING",
-      "message": "stacked_blend has suspiciously high validation R²: 0.860 (expected: 0.3-0.7)",
+      "message": "stacked_blend has suspiciously high validation R²: 0.867 (expected: 0.3-0.7)",
       "category": "OVERFITTING",
       "symbol": "LINK-USDT",
       "asset_type": "crypto",
       "data": {
         "model": "stacked_blend",
-        "val_r2": 0.8601290059905049,
+        "val_r2": 0.8668416498080744,
         "severity": "WARNING"
       }
     },
     {
-      "timestamp": "2026-01-05T06:46:28.128647Z",
+      "timestamp": "2026-01-08T06:00:59.898001Z",
       "level": "WARNING",
-      "message": "stacked_blend has suspiciously high test R²: 0.915 (expected: 0.3-0.7)",
+      "message": "stacked_blend has suspiciously high test R²: 0.905 (expected: 0.3-0.7)",
       "category": "OVERFITTING",
       "symbol": "LINK-USDT",
       "asset_type": "crypto",
       "data": {
         "model": "stacked_blend",
-        "test_r2": 0.9147411690520082,
+        "test_r2": 0.9045480429537702,
         "severity": "WARNING"
       }
     },
     {
-      "timestamp": "2026-01-05T06:46:28.130649Z",
+      "timestamp": "2026-01-08T06:00:59.901004Z",
       "level": "SUCCESS",
       "message": "Stacked blender created",
       "category": "MODEL",
@@ -1124,16 +1148,16 @@
           "xgboost"
         ],
         "weights": [
-          0.22700093288039722,
-          0.18669451549185465,
-          0.5360323446637534
+          0.2421036349756541,
+          0.17787036405342163,
+          0.6090747180166194
         ],
         "alpha": 2.0,
-        "latest_return": 0.02208210036350248
+        "latest_return": -0.0002797568371878887
       }
     },
     {
-      "timestamp": "2026-01-05T06:46:28.133648Z",
+      "timestamp": "2026-01-08T06:00:59.903001Z",
       "level": "INFO",
       "message": "Training DQN model",
       "category": "MODEL",
@@ -1142,11 +1166,11 @@
       "data": {
         "model": "DQN",
         "training_samples": 1759,
-        "features_count": 101
+        "features_count": 99
       }
     },
     {
-      "timestamp": "2026-01-05T06:46:34.885125Z",
+      "timestamp": "2026-01-08T06:01:06.830950Z",
       "level": "SUCCESS",
       "message": "DQN training completed",
       "category": "MODEL",
@@ -1155,122 +1179,130 @@
       "data": {
         "model": "DQN",
         "action": "long",
-        "current_price": 13.62,
-        "features_used": 101,
+        "current_price": 13.45,
+        "features_used": 99,
         "validation_policy": {
-          "total_return": 10.606116290543794,
-          "avg_return": 0.036322316063506145,
-          "sharpe": 15.145046273908735,
-          "hit_rate": 0.8835616438356164,
-          "max_drawdown": -0.03128193525931078
+          "total_return": 7.57774063297162,
+          "avg_return": 0.02595116655127267,
+          "sharpe": 9.211661682230552,
+          "hit_rate": 0.6678082191780822,
+          "max_drawdown": -0.10927895281673106
         },
         "test_policy": {
-          "total_return": 9.199713593571541,
-          "avg_return": 0.031614136060383304,
-          "sharpe": 15.971481498715699,
-          "hit_rate": 0.8934707903780069,
-          "max_drawdown": -0.016908212560386104
+          "total_return": 6.197784377751438,
+          "avg_return": 0.021298228102238616,
+          "sharpe": 8.673570632321464,
+          "hit_rate": 0.6838487972508591,
+          "max_drawdown": -0.09455267338394924
         }
       }
     },
     {
-      "timestamp": "2026-01-05T06:46:34.887128Z",
+      "timestamp": "2026-01-08T06:01:06.833950Z",
       "level": "WARNING",
-      "message": "random_forest: Validation accuracy (90.8%) suspiciously high (expected: 55-70%)",
+      "message": "random_forest: Test R² (0.881) suspiciously high for financial data (WARNING)",
       "category": "OVERFITTING",
       "symbol": "LINK-USDT",
       "asset_type": "crypto"
     },
     {
-      "timestamp": "2026-01-05T06:46:34.890123Z",
+      "timestamp": "2026-01-08T06:01:06.835950Z",
       "level": "WARNING",
-      "message": "random_forest: Test accuracy (93.8%) suspiciously high (expected: 55-70%)",
+      "message": "random_forest: Validation accuracy (93.2%) suspiciously high (expected: 55-70%)",
       "category": "OVERFITTING",
       "symbol": "LINK-USDT",
       "asset_type": "crypto"
     },
     {
-      "timestamp": "2026-01-05T06:46:34.892123Z",
+      "timestamp": "2026-01-08T06:01:06.838950Z",
       "level": "WARNING",
-      "message": "lightgbm: Validation accuracy (90.1%) suspiciously high (expected: 55-70%)",
+      "message": "random_forest: Test accuracy (93.2%) suspiciously high (expected: 55-70%)",
       "category": "OVERFITTING",
       "symbol": "LINK-USDT",
       "asset_type": "crypto"
     },
     {
-      "timestamp": "2026-01-05T06:46:34.894631Z",
+      "timestamp": "2026-01-08T06:01:06.841950Z",
       "level": "WARNING",
-      "message": "lightgbm: Test accuracy (90.8%) suspiciously high (expected: 55-70%)",
+      "message": "lightgbm: Test R² (0.874) suspiciously high for financial data (WARNING)",
       "category": "OVERFITTING",
       "symbol": "LINK-USDT",
       "asset_type": "crypto"
     },
     {
-      "timestamp": "2026-01-05T06:46:34.897631Z",
+      "timestamp": "2026-01-08T06:01:06.843950Z",
       "level": "WARNING",
-      "message": "xgboost: Validation R² (0.920) suspiciously high for financial data (WARNING)",
+      "message": "lightgbm: Validation accuracy (90.8%) suspiciously high (expected: 55-70%)",
       "category": "OVERFITTING",
       "symbol": "LINK-USDT",
       "asset_type": "crypto"
     },
     {
-      "timestamp": "2026-01-05T06:46:34.900154Z",
+      "timestamp": "2026-01-08T06:01:06.845950Z",
       "level": "WARNING",
-      "message": "xgboost: Test R² (0.947) suspiciously high for financial data (WARNING)",
+      "message": "xgboost: Validation R² (0.867) suspiciously high for financial data (WARNING)",
       "category": "OVERFITTING",
       "symbol": "LINK-USDT",
       "asset_type": "crypto"
     },
     {
-      "timestamp": "2026-01-05T06:46:34.903158Z",
+      "timestamp": "2026-01-08T06:01:06.848950Z",
       "level": "WARNING",
-      "message": "xgboost: Validation accuracy (92.2%) suspiciously high (expected: 55-70%)",
+      "message": "xgboost: Test R² (0.906) suspiciously high for financial data (WARNING)",
       "category": "OVERFITTING",
       "symbol": "LINK-USDT",
       "asset_type": "crypto"
     },
     {
-      "timestamp": "2026-01-05T06:46:34.905161Z",
+      "timestamp": "2026-01-08T06:01:06.850950Z",
       "level": "WARNING",
-      "message": "xgboost: Test accuracy (92.1%) suspiciously high (expected: 55-70%)",
+      "message": "xgboost: Validation accuracy (93.9%) suspiciously high (expected: 55-70%)",
       "category": "OVERFITTING",
       "symbol": "LINK-USDT",
       "asset_type": "crypto"
     },
     {
-      "timestamp": "2026-01-05T06:46:34.908160Z",
+      "timestamp": "2026-01-08T06:01:06.853950Z",
       "level": "WARNING",
-      "message": "stacked_blend: Validation R² (0.860) suspiciously high for financial data (WARNING)",
+      "message": "xgboost: Test accuracy (92.8%) suspiciously high (expected: 55-70%)",
       "category": "OVERFITTING",
       "symbol": "LINK-USDT",
       "asset_type": "crypto"
     },
     {
-      "timestamp": "2026-01-05T06:46:34.910160Z",
+      "timestamp": "2026-01-08T06:01:06.856950Z",
       "level": "WARNING",
-      "message": "stacked_blend: Test R² (0.915) suspiciously high for financial data (WARNING)",
+      "message": "stacked_blend: Validation R² (0.867) suspiciously high for financial data (WARNING)",
       "category": "OVERFITTING",
       "symbol": "LINK-USDT",
       "asset_type": "crypto"
     },
     {
-      "timestamp": "2026-01-05T06:46:34.913673Z",
+      "timestamp": "2026-01-08T06:01:06.858951Z",
       "level": "WARNING",
-      "message": "stacked_blend: Validation accuracy (91.8%) suspiciously high (expected: 55-70%)",
+      "message": "stacked_blend: Test R² (0.905) suspiciously high for financial data (WARNING)",
       "category": "OVERFITTING",
       "symbol": "LINK-USDT",
       "asset_type": "crypto"
     },
     {
-      "timestamp": "2026-01-05T06:46:34.916199Z",
+      "timestamp": "2026-01-08T06:01:06.861950Z",
       "level": "WARNING",
-      "message": "stacked_blend: Test accuracy (91.8%) suspiciously high (expected: 55-70%)",
+      "message": "stacked_blend: Validation accuracy (93.5%) suspiciously high (expected: 55-70%)",
       "category": "OVERFITTING",
       "symbol": "LINK-USDT",
       "asset_type": "crypto"
     },
     {
-      "timestamp": "2026-01-05T06:46:34.919205Z",
+      "timestamp": "2026-01-08T06:01:06.863950Z",
+      "level": "WARNING",
+      "message": "stacked_blend: Test accuracy (93.2%) suspiciously high (expected: 55-70%)",
+      "category": "OVERFITTING",
+      "symbol": "LINK-USDT",
+      "asset_type": "crypto"
+    },
+    {
+      "timestamp": "2026-01-08T06:01:06.867950Z",
       "level": "INFO",
       "message": "Consensus action computed: HOLD",
       "category": "CONSENSUS",
@@ -1278,25 +1310,25 @@
       "asset_type": "crypto",
       "data": {
         "consensus_action": "hold",
-        "consensus_confidence": 0.5342282833328891,
-        "consensus_price": 13.816723655915768,
-        "consensus_return": 0.014443733914520506,
+        "consensus_confidence": 0.6754686169052894,
+        "consensus_price": 13.477338876871098,
+        "consensus_return": 0.0020326302506393015,
         "action_scores": {
-          "long": 0.46577171666711087,
-          "hold": 0.5342282833328891,
+          "long": 0.3245313830947106,
+          "hold": 0.6754686169052894,
           "short": 0.0
         }
       }
     },
     {
-      "timestamp": "2026-01-05T06:46:35.049180Z",
+      "timestamp": "2026-01-08T06:01:06.987562Z",
       "level": "SUCCESS",
       "message": "Training completed for LINK-USDT",
       "category": "TRAIN",
       "symbol": "LINK-USDT",
       "asset_type": "crypto",
       "data": {
-        "summary_file": "models\\crypto\\LINK-USDT\\1d\\intraday\\summary.json",
+        "summary_file": "models\\crypto\\LINK-USDT\\1d\\short\\summary.json",
         "log_file": "logs\\training\\crypto\\LINK-USDT\\1d\\training_log.json",
         "models_trained": 5,
         "models_failed": 0

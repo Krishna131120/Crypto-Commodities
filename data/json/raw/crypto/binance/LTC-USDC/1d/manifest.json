@@ -2,14 +2,14 @@
   "symbol": "LTC-USDC",
   "timeframe": "1d",
   "asset_type": "crypto",
-  "generated_at": "2026-01-05T12:00:55.775824Z",
+  "generated_at": "2026-01-14T07:19:45.532335Z",
   "data_file": "data.json",
   "latest_file": "latest.json",
   "data_file_info": {
     "filename": "data.json",
-    "size_bytes": 707468,
-    "candle_count": 1988,
+    "size_bytes": 710656,
+    "candle_count": 1997,
     "first_timestamp": "2019-01-24T00:00:00Z",
-    "last_timestamp": "2026-01-05T00:00:00Z"
+    "last_timestamp": "2026-01-14T00:00:00Z"
   }
 }

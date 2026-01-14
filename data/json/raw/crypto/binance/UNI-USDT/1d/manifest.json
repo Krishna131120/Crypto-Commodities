@@ -2,14 +2,14 @@
   "symbol": "UNI-USDT",
   "timeframe": "1d",
   "asset_type": "crypto",
-  "generated_at": "2026-01-05T11:59:01.221088Z",
+  "generated_at": "2026-01-14T07:16:27.044611Z",
   "data_file": "data.json",
   "latest_file": "latest.json",
   "data_file_info": {
     "filename": "data.json",
-    "size_bytes": 689397,
-    "candle_count": 1937,
+    "size_bytes": 692594,
+    "candle_count": 1946,
     "first_timestamp": "2020-09-17T00:00:00Z",
-    "last_timestamp": "2026-01-05T00:00:00Z"
+    "last_timestamp": "2026-01-14T00:00:00Z"
   }
 }

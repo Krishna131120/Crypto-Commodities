@@ -1,0 +1,308 @@
+{
+  "symbol": "DOT-USDC",
+  "asset_type": "crypto",
+  "timeframe": "1d",
+  "last_updated": "2026-01-05T00:00:00+00:00",
+  "prediction": {
+    "current_price": 2.114,
+    "predicted_price": 2.1088855095231214,
+    "predicted_return_pct": -0.24193427042944585,
+    "action": "hold",
+    "confidence": 89.55223880597015,
+    "horizon_days": 1,
+    "explanation": "Price expected to fall from $2.11 to $2.11 (-0.24%) over 1 days"
+  },
+  "model_predictions": {
+    "random_forest": {
+      "predicted_price": 2.1053775511926083,
+      "predicted_return_pct": -0.4078736427337583,
+      "action": "hold",
+      "confidence": 89.55223880597015,
+      "r2_score": 0.46161760767468074,
+      "test_r2_score": 0.5256714929416224,
+      "val_test_gap": -0.06405388526694167,
+      "accuracy": 89.55223880597015,
+      "test_accuracy": 93.93939393939394
+    },
+    "lightgbm": {
+      "predicted_price": 2.11152095806232,
+      "predicted_return_pct": -0.11726783054302752,
+      "action": "hold",
+      "confidence": 89.55223880597015,
+      "r2_score": 0.1613215730919192,
+      "test_r2_score": 0.15430467717714502,
+      "val_test_gap": 0.007016895914774168,
+      "accuracy": 89.55223880597015,
+      "test_accuracy": 93.93939393939394
+    },
+    "stacked_blend": {
+      "predicted_price": 2.1067903959463905,
+      "predicted_return_pct": -0.3410408729238036,
+      "action": "hold",
+      "confidence": 89.55223880597015,
+      "r2_score": 0.37518269311848407,
+      "test_r2_score": 0.38923649073637034,
+      "val_test_gap": -0.014053797617886277,
+      "accuracy": 89.55223880597015,
+      "test_accuracy": 92.42424242424242
+    },
+    "dqn": {
+      "predicted_price": 2.114,
+      "predicted_return_pct": 0.0,
+      "action": "hold",
+      "confidence": 50.0,
+      "r2_score": null,
+      "test_r2_score": null,
+      "val_test_gap": null,
+      "accuracy": null,
+      "test_accuracy": null
+    }
+  },
+  "technical": {
+    "training_data": {
+      "total_rows": 539,
+      "train_rows": 404,
+      "val_rows": 67,
+      "test_rows": 66,
+      "split_boundaries": {
+        "train": {
+          "start": "2024-07-15T00:00:00+00:00",
+          "end": "2025-08-22T00:00:00+00:00"
+        },
+        "val": {
+          "start": "2025-08-24T00:00:00+00:00",
+          "end": "2025-10-29T00:00:00+00:00"
+        },
+        "test": {
+          "start": "2025-10-31T00:00:00+00:00",
+          "end": "2026-01-04T00:00:00+00:00"
+        }
+      }
+    },
+    "model_config": {
+      "target_profile": {
+        "name": "intraday",
+        "label": "Intraday",
+        "description": "Same-day horizon (1-2 bars) suited for quick scalp decisions. Fast entries/exits, small position sizes.",
+        "horizon_bars": 1,
+        "smoothing_window": 2,
+        "directional_threshold": 0.0005,
+        "neutral_band": 0.0002,
+        "quantile_bins": 5,
+        "quantile_window": 90,
+        "trading_style": "Scalping - many small trades, quick in/out",
+        "typical_hold_time": "Hours to 1 day",
+        "position_size_pct": 0.05,
+        "stop_loss_pct": 0.03,
+        "min_confidence": 0.15
+      },
+      "target_config": {
+        "horizon": 1,
+        "smoothing_window": 2,
+        "directional_threshold": 0.0005,
+        "neutral_band": 0.0002,
+        "quantile_bins": 5,
+        "quantile_window": 90,
+        "include_directional": true,
+        "include_quantiles": true,
+        "include_smoothed_return": true
+      },
+      "model_reference_price": 2.114
+    },
+    "analysis": {
+      "dynamic_threshold": 0.03,
+      "threshold_details": {
+        "rolling_mad": 0.03777709647278925,
+        "global_mad": 0.03714510172143946,
+        "iqr_based": 0.02253318674291499,
+        "atr_proxy": 0.04085888183771686,
+        "median_candidate": 0.03714510172143946,
+        "clamped": 0.03
+      },
+      "context_signals": {
+        "RSI_14": 58.78471126713818,
+        "MACD_histogram": 0.06605662689619128,
+        "SMA_50": 2.11058,
+        "SMA_200": 3.296375,
+        "ATR_14": 0.1122142857142857,
+        "Volume_Ratio": 0.8948345306945775
+      },
+      "overfitting_warnings": [
+        "random_forest: Train R\u00b2 (0.582) >> Val R\u00b2 (0.462), gap=0.121",
+        "random_forest: Test accuracy (93.9%) suspiciously high (expected: 55-70%)",
+        "lightgbm: Test accuracy (93.9%) suspiciously high (expected: 55-70%)",
+        "xgboost: Train R\u00b2 (0.948) >> Val R\u00b2 (0.735), gap=0.213",
+        "xgboost: Validation accuracy (95.5%) suspiciously high (expected: 55-70%)",
+        "stacked_blend: Train R\u00b2 (0.483) >> Val R\u00b2 (0.375), gap=0.108",
+        "stacked_blend: Test accuracy (92.4%) suspiciously high (expected: 55-70%)"
+      ]
+    },
+    "feature_scaler": {
+      "path": "models\\crypto\\DOT-USDC\\1d\\intraday\\feature_scaler.joblib"
+    }
+  },
+  "consensus": {
+    "action": "hold",
+    "confidence_pct": 89.55223880597015,
+    "predicted_return_pct": -0.24193427042944585,
+    "predicted_return": -0.0024193427042944584,
+    "raw_predicted_return_pct": -0.24193427042944585,
+    "raw_predicted_return": -0.0024193427042944584,
+    "reasoning": "Consensus: HOLD (confidence: 100.0%). Expected return: -0.24%. Consensus price: $2.11. Model votes: HOLD: 4 model(s), 100.0% weighted vote. Individual models: random_forest (hold, -0.41%, R\u00b2=0.462); lightgbm (hold, -0.12%, R\u00b2=0.161); stacked_blend (hold, -0.34%, R\u00b2=0.375); dqn (hold, +0.00%, R\u00b2=N/A)",
+    "action_scores": {
+      "long": 0.0,
+      "hold": 1.0,
+      "short": 0.0
+    },
+    "horizon_profile": "Intraday",
+    "target_horizon_bars": 1,
+    "action_label": "Intraday HOLD",
+    "neutral_return_threshold_pct": 3.15,
+    "neutral_guard_triggered": false
+  },
+  "dqn_recommendation": {
+    "action": "hold",
+    "predicted_return_pct": 0.0,
+    "predicted_price": 2.114,
+    "confidence": 50.0,
+    "reason": "Direct DQN policy decision based on latest features"
+  },
+  "models": {
+    "random_forest": {
+      "action": "hold",
+      "predicted_return": -0.004078736427337583,
+      "r2": 0.46161760767468074,
+      "test_r2": 0.5256714929416224,
+      "mae": 0.01686220100638859,
+      "test_mae": 0.020268803425367906,
+      "directional_accuracy": 0.8955223880597015,
+      "test_directional_accuracy": 0.9393939393939394
+    },
+    "lightgbm": {
+      "action": "hold",
+      "predicted_return": -0.0011726783054302752,
+      "r2": 0.1613215730919192,
+      "test_r2": 0.15430467717714502,
+      "mae": 0.027043406981433312,
+      "test_mae": 0.03128453120411339,
+      "directional_accuracy": 0.8955223880597015,
+      "test_directional_accuracy": 0.9393939393939394
+    },
+    "xgboost": {
+      "status": "failed",
+      "reason": "Rejected due to train/val gap 0.213 exceeds 0.15"
+    },
+    "stacked_blend": {
+      "action": "hold",
+      "predicted_return": -0.0034104087292380356,
+      "r2": 0.37518269311848407,
+      "test_r2": 0.38923649073637034,
+      "mae": 0.02207978903924924,
+      "test_mae": 0.02629727874876349,
+      "directional_accuracy": 0.8955223880597015,
+      "test_directional_accuracy": 0.9242424242424242
+    },
+    "dqn": {
+      "action": null,
+      "predicted_return": null,
+      "r2": null,
+      "test_r2": null,
+      "mae": null,
+      "test_mae": null,
+      "directional_accuracy": null,
+      "test_directional_accuracy": null
+    }
+  },
+  "tradable": true,
+  "tradability_reasons": [
+    "All robustness checks passed"
+  ],
+  "data_balance": {
+    "train": {
+      "split": "train",
+      "total_samples": 404,
+      "positive_count": 192,
+      "negative_count": 211,
+      "neutral_count": 1,
+      "positive_pct": 47.524752475247524,
+      "negative_pct": 52.22772277227723,
+      "neutral_pct": 0.24752475247524752,
+      "mean_return": -7.796762729770473e-05,
+      "median_return": -0.001484969848551898,
+      "std_return": 0.044559869956651926,
+      "imbalance_ratio": 0.909952606635071,
+      "bias_detected": null,
+      "bias_severity": "none"
+    },
+    "val": {
+      "split": "val",
+      "total_samples": 67,
+      "positive_count": 35,
+      "negative_count": 32,
+      "neutral_count": 0,
+      "positive_pct": 52.23880597014925,
+      "negative_pct": 47.76119402985074,
+      "neutral_pct": 0.0,
+      "mean_return": -0.004063161209746915,
+      "median_return": 0.003572588502760432,
+      "std_return": 0.047728904364656134,
+      "imbalance_ratio": 1.09375,
+      "bias_detected": null,
+      "bias_severity": "none"
+    },
+    "test": {
+      "split": "test",
+      "total_samples": 66,
+      "positive_count": 21,
+      "negative_count": 45,
+      "neutral_count": 0,
+      "positive_pct": 31.818181818181817,
+      "negative_pct": 68.18181818181817,
+      "neutral_pct": 0.0,
+      "mean_return": -0.003401016364716793,
+      "median_return": -0.013200276018275892,
+      "std_return": 0.051759842536469744,
+      "imbalance_ratio": 0.4666666666666667,
+      "bias_detected": "bearish",
+      "bias_severity": "moderate"
+    }
+  },
+  "feature_scaling_verification": {
+    "train": {
+      "split": "train",
+      "mean_abs_mean": 0.2150394415311003,
+      "mean_abs_median": 7.170005585595841e-17,
+      "mean_std": 0.8977941459750028,
+      "mean_abs_min": 1.3288983498523153,
+      "mean_abs_max": 2.796142976764913,
+      "nan_count": 0,
+      "inf_count": 0,
+      "issues": [],
+      "scaling_ok": true
+    },
+    "val": {
+      "split": "val",
+      "mean_abs_mean": 0.3849407873685741,
+      "mean_abs_median": 0.32265703506337745,
+      "mean_std": 0.5799952906592519,
+      "mean_abs_min": 1.3861826183408295,
+      "mean_abs_max": 1.099472986044611,
+      "nan_count": 0,
+      "inf_count": 0,
+      "issues": [],
+      "scaling_ok": true
+    },
+    "test": {
+      "split": "test",
+      "mean_abs_mean": 0.895488510995831,
+      "mean_abs_median": 0.9596171320571334,
+      "mean_std": 0.509832405577324,
+      "mean_abs_min": 1.558772845533581,
+      "mean_abs_max": 1.3658379772583071,
+      "nan_count": 0,
+      "inf_count": 0,
+      "issues": [],
+      "scaling_ok": true
+    }
+  }
+}

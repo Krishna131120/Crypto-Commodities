@@ -11829,10 +11829,154 @@
     "timeframe": "1d",
     "timestamp": "2026-01-05T00:00:00Z",
     "open": 14.23,
-    "high": 14.53,
-    "low": 14.09,
-    "close": 14.2,
-    "volume": 322767.79,
+    "high": 14.72,
+    "low": 13.91,
+    "close": 14.45,
+    "volume": 757132.35,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AVAX-USDC",
+    "timeframe": "1d",
+    "timestamp": "2026-01-06T00:00:00Z",
+    "open": 14.46,
+    "high": 14.83,
+    "low": 14.24,
+    "close": 14.6,
+    "volume": 810101.63,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AVAX-USDC",
+    "timeframe": "1d",
+    "timestamp": "2026-01-07T00:00:00Z",
+    "open": 14.59,
+    "high": 14.59,
+    "low": 13.87,
+    "close": 14.11,
+    "volume": 517407.36,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AVAX-USDC",
+    "timeframe": "1d",
+    "timestamp": "2026-01-08T00:00:00Z",
+    "open": 14.11,
+    "high": 14.23,
+    "low": 13.58,
+    "close": 13.88,
+    "volume": 523972.22,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AVAX-USDC",
+    "timeframe": "1d",
+    "timestamp": "2026-01-09T00:00:00Z",
+    "open": 13.87,
+    "high": 14.21,
+    "low": 13.6,
+    "close": 13.76,
+    "volume": 467144.17,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AVAX-USDC",
+    "timeframe": "1d",
+    "timestamp": "2026-01-10T00:00:00Z",
+    "open": 13.77,
+    "high": 13.93,
+    "low": 13.63,
+    "close": 13.72,
+    "volume": 218200.87,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AVAX-USDC",
+    "timeframe": "1d",
+    "timestamp": "2026-01-11T00:00:00Z",
+    "open": 13.73,
+    "high": 13.97,
+    "low": 13.46,
+    "close": 13.68,
+    "volume": 345959.92,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AVAX-USDC",
+    "timeframe": "1d",
+    "timestamp": "2026-01-12T00:00:00Z",
+    "open": 13.69,
+    "high": 14.2,
+    "low": 13.38,
+    "close": 13.51,
+    "volume": 559901.86,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AVAX-USDC",
+    "timeframe": "1d",
+    "timestamp": "2026-01-13T00:00:00Z",
+    "open": 13.5,
+    "high": 14.86,
+    "low": 13.46,
+    "close": 14.74,
+    "volume": 896257.51,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AVAX-USDC",
+    "timeframe": "1d",
+    "timestamp": "2026-01-14T00:00:00Z",
+    "open": 14.74,
+    "high": 14.79,
+    "low": 14.66,
+    "close": 14.69,
+    "volume": 152970.59,
     "source": "binance_rest",
     "fallback_status": {
       "active": false,

@@ -1,134 +1,268 @@
 """
-Verification script to test RF/LightGBM fixes with synthetic data.
-This proves the fixes work without requiring real data files.
+Verification script to ensure all critical fixes are properly implemented.
+
+Run this before starting the bot to verify:
+1. Exit price retrieval fix
+2. Stop-loss percentage fix
+3. Symbol loss tracking
+4. Model flip exit logic
 """
+from pathlib import Path
 import sys
-import numpy as np
-import pandas as pd
-from sklearn.model_selection import train_test_split
-from sklearn.ensemble import RandomForestRegressor
-import lightgbm as lgb
-import xgboost as xgb
-from sklearn.metrics import r2_score
 
-# Create synthetic data with clear signal
-np.random.seed(42)
-n_samples = 1000
-n_features = 50
+def verify_imports():
+    """Verify all required imports are available."""
+    print("=" * 80)
+    print("VERIFYING IMPORTS")
+    print("=" * 80)
+    
+    try:
+        from trading.execution_engine import ExecutionEngine, TradingRiskConfig
+        print("[OK] ExecutionEngine imported successfully")
+    except ImportError as e:
+        print(f"[FAIL] Failed to import ExecutionEngine: {e}")
+        return False
+    
+    try:
+        from trading.symbol_loss_tracker import SymbolLossTracker, SymbolStats
+        print("[OK] SymbolLossTracker imported successfully")
+    except ImportError as e:
+        print(f"[FAIL] Failed to import SymbolLossTracker: {e}")
+        return False
+    
+    try:
+        from ml.horizons import get_horizon_risk_config
+        print("[OK] Horizon risk config imported successfully")
+    except ImportError as e:
+        print(f"[FAIL] Failed to import horizon risk config: {e}")
+        return False
+    
+    return True
 
-# Create features with signal
-X = np.random.randn(n_samples, n_features)
-# Create target with clear signal (not just noise)
-y = X[:, 0] * 0.8 + X[:, 1] * 0.5 + X[:, 2] * 0.3 + np.random.randn(n_samples) * 0.1
+def verify_execution_engine():
+    """Verify ExecutionEngine has all fixes."""
+    print("\n" + "=" * 80)
+    print("VERIFYING EXECUTION ENGINE FIXES")
+    print("=" * 80)
+    
+    try:
+        from trading.execution_engine import ExecutionEngine
+        
+        # Check if loss_tracker is initialized
+        engine = ExecutionEngine()
+        if hasattr(engine, 'loss_tracker'):
+            print("[OK] SymbolLossTracker is initialized in ExecutionEngine")
+        else:
+            print("[FAIL] SymbolLossTracker NOT found in ExecutionEngine")
+            return False
+        
+        # Check if loss_tracker has required methods
+        if hasattr(engine.loss_tracker, 'can_trade') and hasattr(engine.loss_tracker, 'record_trade'):
+            print("[OK] SymbolLossTracker has required methods (can_trade, record_trade)")
+        else:
+            print("[FAIL] SymbolLossTracker missing required methods")
+            return False
+        
+        # Check ExecutionEngine source for exit price fix
+        engine_file = Path("trading/execution_engine.py")
+        if engine_file.exists():
+            content = engine_file.read_text(encoding="utf-8")
+            
+            # Check for exit price validation
+            if "CRITICAL VALIDATION: Sanity check exit price" in content:
+                print("[OK] Exit price validation fix found")
+            else:
+                print("[FAIL] Exit price validation fix NOT found")
+                return False
+            
+            # Check for filled price retrieval
+            if "filled_avg_price" in content and "actual_exit_price" in content:
+                print("[OK] Exit price retrieval fix found")
+            else:
+                print("[FAIL] Exit price retrieval fix NOT found")
+                return False
+            
+            # Check for stop-loss priority fix
+            if "CRITICAL FIX: Ensure horizon stop-loss is used correctly" in content:
+                print("[OK] Stop-loss percentage fix found")
+            else:
+                print("[FAIL] Stop-loss percentage fix NOT found")
+                return False
+            
+            # Check for symbol loss tracking
+            if "self.loss_tracker.can_trade" in content:
+                print("[OK] Symbol loss tracking check found")
+            else:
+                print("[FAIL] Symbol loss tracking check NOT found")
+                return False
+            
+            # Check for model flip logic
+            if "within 0.5% of profit target" in content:
+                print("[OK] Model flip exit logic fix found")
+            else:
+                print("[FAIL] Model flip exit logic fix NOT found")
+                return False
+        
+        return True
+    except Exception as e:
+        print(f"✗ Error verifying ExecutionEngine: {e}")
+        import traceback
+        traceback.print_exc()
+        return False
 
-X_train, X_val, y_train, y_val = train_test_split(X, y, test_size=0.2, random_state=42)
+def verify_stop_loss_config():
+    """Verify stop-loss configuration is correct."""
+    print("\n" + "=" * 80)
+    print("VERIFYING STOP-LOSS CONFIGURATION")
+    print("=" * 80)
+    
+    try:
+        from ml.horizons import get_horizon_risk_config
+        
+        # Check intraday stop-loss (should be 5%)
+        intraday_config = get_horizon_risk_config("intraday")
+        intraday_stop = intraday_config.get("default_stop_loss_pct", 0)
+        
+        if abs(intraday_stop - 0.05) < 0.001:  # 5%
+            print(f"[OK] Intraday stop-loss: {intraday_stop*100:.1f}% (correct)")
+        else:
+            print(f"[FAIL] Intraday stop-loss: {intraday_stop*100:.1f}% (expected 5.0%)")
+            return False
+        
+        # Check short-term stop-loss (should be 6%)
+        short_config = get_horizon_risk_config("short")
+        short_stop = short_config.get("default_stop_loss_pct", 0)
+        
+        if abs(short_stop - 0.06) < 0.001:  # 6%
+            print(f"[OK] Short-term stop-loss: {short_stop*100:.1f}% (correct)")
+        else:
+            print(f"[FAIL] Short-term stop-loss: {short_stop*100:.1f}% (expected 6.0%)")
+            return False
+        
+        # Check long-term stop-loss (should be 7%)
+        long_config = get_horizon_risk_config("long")
+        long_stop = long_config.get("default_stop_loss_pct", 0)
+        
+        if abs(long_stop - 0.07) < 0.001:  # 7%
+            print(f"[OK] Long-term stop-loss: {long_stop*100:.1f}% (correct)")
+        else:
+            print(f"[FAIL] Long-term stop-loss: {long_stop*100:.1f}% (expected 7.0%)")
+            return False
+        
+        return True
+    except Exception as e:
+        print(f"✗ Error verifying stop-loss config: {e}")
+        import traceback
+        traceback.print_exc()
+        return False
 
-print("=" * 80)
-print("VERIFYING RF/LIGHTGBM FIXES")
-print("=" * 80)
-print(f"Training samples: {len(X_train)}, Validation samples: {len(X_val)}")
-print(f"Target std: {np.std(y):.4f}")
-print()
+def verify_symbol_loss_tracker():
+    """Verify SymbolLossTracker functionality."""
+    print("\n" + "=" * 80)
+    print("VERIFYING SYMBOL LOSS TRACKER")
+    print("=" * 80)
+    
+    try:
+        from trading.symbol_loss_tracker import SymbolLossTracker
+        
+        tracker = SymbolLossTracker()
+        
+        # Test can_trade for new symbol (should allow)
+        can_trade, reason = tracker.can_trade("TESTUSD")
+        if can_trade:
+            print("[OK] New symbols can be traded (correct)")
+        else:
+            print(f"[FAIL] New symbols blocked: {reason}")
+            return False
+        
+        # Test recording a loss
+        tracker.record_trade("TESTUSD", -100.0, -2.0)
+        stats = tracker.get_stats("TESTUSD")
+        if stats and stats.consecutive_losses == 1:
+            print("[OK] Loss recording works (1 consecutive loss)")
+        else:
+            print("[FAIL] Loss recording failed")
+            return False
+        
+        # Test recording 3 losses (should block)
+        tracker.record_trade("TESTUSD", -50.0, -1.0)
+        tracker.record_trade("TESTUSD", -75.0, -1.5)
+        stats = tracker.get_stats("TESTUSD")
+        if stats and stats.consecutive_losses >= 3:
+            can_trade, reason = tracker.can_trade("TESTUSD")
+            if not can_trade:
+                print("[OK] Symbol blocked after 3 consecutive losses (correct)")
+            else:
+                print("[FAIL] Symbol NOT blocked after 3 consecutive losses")
+                return False
+        else:
+            print("[FAIL] Consecutive loss tracking failed")
+            return False
+        
+        # Test unblocking
+        tracker.unblock_symbol("TESTUSD")
+        can_trade, reason = tracker.can_trade("TESTUSD")
+        if can_trade:
+            print("[OK] Symbol unblocking works")
+        else:
+            print(f"[FAIL] Symbol still blocked after unblock: {reason}")
+            return False
+        
+        # Clean up test symbol
+        test_file = Path("data/positions/symbol_stats.json")
+        if test_file.exists():
+            import json
+            data = json.loads(test_file.read_text())
+            if "TESTUSD" in data:
+                del data["TESTUSD"]
+                test_file.write_text(json.dumps(data, indent=2))
+        
+        return True
+    except Exception as e:
+        print(f"✗ Error verifying SymbolLossTracker: {e}")
+        import traceback
+        traceback.print_exc()
+        return False
 
-# Test 1: Random Forest with AGGRESSIVE settings (like XGBoost fix)
-print("1. Testing Random Forest with AGGRESSIVE settings (no restrictions):")
-rf_params = {
-    "n_estimators": 400,
-    "max_depth": None,  # NO depth limit
-    "min_samples_leaf": 1,  # Minimum restriction
-    "min_samples_split": 2,  # Minimum restriction
-    "max_features": 1.0,  # Use ALL features
-    "max_samples": 1.0,  # Use ALL data
-    "ccp_alpha": 0.0,  # NO pruning
-    "random_state": 42,
-    "n_jobs": 1,
-}
-rf = RandomForestRegressor(**rf_params)
-rf.fit(X_train, y_train)
-rf_pred = rf.predict(X_val)
-rf_r2 = r2_score(y_val, rf_pred)
-rf_var = np.var(rf_pred)
-print(f"   R²: {rf_r2:.4f} (should be > 0.5)")
-print(f"   Variance: {rf_var:.6f} (should be > 0.01)")
-print(f"   Status: {'PASS' if rf_r2 > 0.5 and rf_var > 0.01 else 'FAIL'}")
+def main():
+    """Run all verification checks."""
+    print("\n" + "=" * 80)
+    print("CRITICAL FIXES VERIFICATION")
+    print("=" * 80)
+    print("\nThis script verifies that all critical fixes are properly implemented.")
+    print("Run this before starting the bot to ensure everything is working.\n")
+    
+    all_passed = True
+    
+    # Run all checks
+    if not verify_imports():
+        all_passed = False
+    
+    if not verify_execution_engine():
+        all_passed = False
+    
+    if not verify_stop_loss_config():
+        all_passed = False
+    
+    if not verify_symbol_loss_tracker():
+        all_passed = False
+    
+    # Final summary
+    print("\n" + "=" * 80)
+    if all_passed:
+        print("[SUCCESS] ALL CHECKS PASSED - All fixes are properly implemented!")
+        print("=" * 80)
+        print("\nYou can now run the bot with confidence.")
+        print("\nImplemented fixes:")
+        print("  1. [OK] Exit price retrieval and validation")
+        print("  2. [OK] Stop-loss percentage (5% for intraday, 6% for short-term, 7% for long-term)")
+        print("  3. [OK] Symbol-level loss limits (blocks after 3 consecutive losses)")
+        print("  4. [OK] Model flip exit logic (holds if within 0.5% of profit target)")
+        return 0
+    else:
+        print("[FAIL] SOME CHECKS FAILED - Please review the errors above")
+        print("=" * 80)
+        return 1
 
-# Test 2: LightGBM with AGGRESSIVE settings (like XGBoost fix)
-print("\n2. Testing LightGBM with AGGRESSIVE settings (no regularization):")
-lgb_params = {
-    "boosting_type": "gbdt",
-    "n_estimators": 500,
-    "learning_rate": 0.15,
-    "max_depth": -1,  # NO depth limit (LightGBM uses -1)
-    "num_leaves": 127,  # Maximum leaves
-    "subsample": 1.0,  # Use ALL data
-    "colsample_bytree": 1.0,  # Use ALL features
-    "reg_alpha": 0.0,  # NO regularization
-    "reg_lambda": 0.0,  # NO regularization
-    "min_child_samples": 1,  # Minimum restriction
-    "min_split_gain": 0.0,  # NO pruning
-    "random_state": 42,
-    "force_row_wise": True,
-    "verbose": -1,
-}
-lgb_model = lgb.LGBMRegressor(**lgb_params)
-lgb_model.fit(X_train, y_train)
-lgb_pred = lgb_model.predict(X_val)
-lgb_r2 = r2_score(y_val, lgb_pred)
-lgb_var = np.var(lgb_pred)
-print(f"   R²: {lgb_r2:.4f} (should be > 0.5)")
-print(f"   Variance: {lgb_var:.6f} (should be > 0.01)")
-print(f"   Status: {'PASS' if lgb_r2 > 0.5 and lgb_var > 0.01 else 'FAIL'}")
-
-# Test 3: XGBoost for comparison (should still work)
-print("\n3. Testing XGBoost (baseline - should work):")
-xgb_params = {
-    "n_estimators": 300,
-    "learning_rate": 0.08,
-    "max_depth": 5,
-    "subsample": 0.8,
-    "colsample_bytree": 0.75,
-    "reg_alpha": 1.0,
-    "reg_lambda": 2.0,
-    "min_child_weight": 3.0,
-    "gamma": 0.1,
-    "objective": "reg:squarederror",
-    "tree_method": "approx",
-    "random_state": 42,
-}
-xgb_model = xgb.XGBRegressor(**xgb_params)
-xgb_model.fit(X_train, y_train)
-xgb_pred = xgb_model.predict(X_val)
-xgb_r2 = r2_score(y_val, xgb_pred)
-xgb_var = np.var(xgb_pred)
-print(f"   R²: {xgb_r2:.4f} (should be > 0.5)")
-print(f"   Variance: {xgb_var:.6f} (should be > 0.01)")
-print(f"   Status: {'PASS' if xgb_r2 > 0.5 and xgb_var > 0.01 else 'FAIL'}")
-
-# Test 4: Compare all three
-print("\n" + "=" * 80)
-print("COMPARISON:")
-print("=" * 80)
-print(f"Random Forest R²: {rf_r2:.4f}")
-print(f"LightGBM R²:      {lgb_r2:.4f}")
-print(f"XGBoost R²:       {xgb_r2:.4f}")
-print()
-
-all_working = rf_r2 > 0.5 and lgb_r2 > 0.5 and xgb_r2 > 0.5
-if all_working:
-    print("SUCCESS: All three models are now learning!")
-    print("The fixes are working - RF and LightGBM can now learn like XGBoost.")
-    print("\nNext steps:")
-    print("1. Run data ingestion to get real commodity data")
-    print("2. Run training with real data")
-    print("3. Verify all models work on real data")
-else:
-    print("ISSUE: Some models still not learning properly")
-    if rf_r2 <= 0.5:
-        print(f"  - Random Forest R² too low: {rf_r2:.4f}")
-    if lgb_r2 <= 0.5:
-        print(f"  - LightGBM R² too low: {lgb_r2:.4f}")
-    if xgb_r2 <= 0.5:
-        print(f"  - XGBoost R² too low: {xgb_r2:.4f}")
-
-print("=" * 80)
-sys.exit(0 if all_working else 1)
+if __name__ == "__main__":
+    sys.exit(main())

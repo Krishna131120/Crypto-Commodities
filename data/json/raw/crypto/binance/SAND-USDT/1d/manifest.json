@@ -2,14 +2,14 @@
   "symbol": "SAND-USDT",
   "timeframe": "1d",
   "asset_type": "crypto",
-  "generated_at": "2026-01-05T11:59:52.956274Z",
+  "generated_at": "2026-01-14T07:17:34.739342Z",
   "data_file": "data.json",
   "latest_file": "latest.json",
   "data_file_info": {
     "filename": "data.json",
-    "size_bytes": 712438,
-    "candle_count": 1971,
+    "size_bytes": 715680,
+    "candle_count": 1980,
     "first_timestamp": "2020-08-14T00:00:00Z",
-    "last_timestamp": "2026-01-05T00:00:00Z"
+    "last_timestamp": "2026-01-14T00:00:00Z"
   }
 }

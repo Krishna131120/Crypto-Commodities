@@ -29525,10 +29525,26 @@
     "timeframe": "1d",
     "timestamp": "2026-01-05T00:00:00Z",
     "open": 0.04075,
-    "high": 0.04165,
-    "low": 0.04004,
-    "close": 0.04065,
-    "volume": 13669193.0,
+    "high": 0.0422,
+    "low": 0.03973,
+    "close": 0.0417,
+    "volume": 69751132.0,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "GRT-USDT",
+    "timeframe": "1d",
+    "timestamp": "2026-01-06T00:00:00Z",
+    "open": 0.04171,
+    "high": 0.04282,
+    "low": 0.04107,
+    "close": 0.04268,
+    "volume": 29709817.0,
     "source": "binance_rest",
     "fallback_status": {
       "active": false,

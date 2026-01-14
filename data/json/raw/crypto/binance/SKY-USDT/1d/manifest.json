@@ -2,14 +2,14 @@
   "symbol": "SKY-USDT",
   "timeframe": "1d",
   "asset_type": "crypto",
-  "generated_at": "2026-01-05T11:59:32.279953Z",
+  "generated_at": "2026-01-14T07:17:00.679856Z",
   "data_file": "data.json",
   "latest_file": "latest.json",
   "data_file_info": {
     "filename": "data.json",
-    "size_bytes": 40353,
-    "candle_count": 111,
+    "size_bytes": 43614,
+    "candle_count": 120,
     "first_timestamp": "2025-09-17T00:00:00Z",
-    "last_timestamp": "2026-01-05T00:00:00Z"
+    "last_timestamp": "2026-01-14T00:00:00Z"
   }
 }

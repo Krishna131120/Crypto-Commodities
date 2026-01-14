@@ -43,6 +43,9 @@ class Position:
     stop_loss_order_id: Optional[str] = None  # Alpaca order ID for stop-loss (broker-level protection)
     take_profit_order_id: Optional[str] = None  # Alpaca order ID for take-profit (broker-level protection)
     short_prediction_cycles: int = 0  # Track cycles with SHORT prediction while holding LONG (for commodities when shorting disabled)
+    highest_price: Optional[float] = None  # Track highest price for trailing stop (LONG positions)
+    lowest_price: Optional[float] = None  # Track lowest price for trailing stop (SHORT positions)
+    trailing_stop_triggered: bool = False  # Flag if trailing stop has been triggered
 
 
 class PositionManager:
@@ -184,6 +187,8 @@ class PositionManager:
                 total_cost_basis=entry_price * abs(quantity),
                 stop_loss_order_id=stop_loss_order_id,
                 take_profit_order_id=take_profit_order_id,
+                highest_price=entry_price if side == "long" else None,  # Initialize for trailing stop
+                lowest_price=entry_price if side == "short" else None,  # Initialize for trailing stop
             )
             
             self._positions[symbol] = position
@@ -234,6 +239,52 @@ class PositionManager:
         
         if current_time is None:
             current_time = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
+        
+        # Update highest/lowest prices for trailing stop
+        price_updated = False
+        if position.side == "long":
+            if position.highest_price is None or current_price > position.highest_price:
+                position.highest_price = current_price
+                price_updated = True
+            # Check if price has dropped from peak (trailing stop)
+            if position.highest_price is not None:
+                drawdown_from_peak = ((current_price - position.highest_price) / position.highest_price) * 100
+                # FIX 2: Exit when price drops from peak (trailing stop)
+                # This captures profit near highs instead of waiting for prediction to turn
+                # Use asset-specific threshold (commodities: 1.5%, crypto: 1.2%)
+                trailing_stop_pct = 1.5 if position.asset_type == "commodities" else 1.2
+                if drawdown_from_peak < -trailing_stop_pct and not position.trailing_stop_triggered:
+                    position.trailing_stop_triggered = True
+                    self._save_positions()  # Save before exiting
+                    # Return exit signal due to trailing stop
+                    return {
+                        "should_exit": True,
+                        "exit_reason": f"trailing_stop_from_peak",
+                        "exit_price": current_price,
+                        "position": position,
+                    }
+        else:  # short
+            if position.lowest_price is None or current_price < position.lowest_price:
+                position.lowest_price = current_price
+                price_updated = True
+            # Check if price has risen from bottom (trailing stop for shorts)
+            if position.lowest_price is not None:
+                rise_from_bottom = ((current_price - position.lowest_price) / position.lowest_price) * 100
+                # Use asset-specific threshold (commodities: 1.5%, crypto: 1.2%)
+                trailing_stop_pct = 1.5 if position.asset_type == "commodities" else 1.2
+                if rise_from_bottom > trailing_stop_pct and not position.trailing_stop_triggered:
+                    position.trailing_stop_triggered = True
+                    self._save_positions()  # Save before exiting
+                    return {
+                        "should_exit": True,
+                        "exit_reason": f"trailing_stop_from_bottom",
+                        "exit_price": current_price,
+                        "position": position,
+                    }
+        
+        # Save position if peak/valley was updated
+        if price_updated:
+            self._save_positions()
         
         # Check profit target
         profit_target_hit = False
@@ -314,37 +365,41 @@ class PositionManager:
         realized_pl_pct: Optional[float] = None,
     ) -> Optional[Position]:
         """
-        Close a position (mark as closed).
+        Close a position (mark as closed) with clear entry/exit prices and P/L.
         
         Args:
             symbol: Trading symbol
-            exit_price: Exit price
-            exit_reason: Reason for exit (e.g., "manual", "model_changed")
+            exit_price: Exit price (actual filled price)
+            exit_reason: Reason for exit (e.g., "profit_target_hit", "stop_loss_hit")
             realized_pl: Realized profit/loss (calculated if not provided)
             realized_pl_pct: Realized profit/loss percentage (calculated if not provided)
         
         Returns:
-            Updated Position object, or None if position not found
+            Updated Position object with exit_price, realized_pl, and realized_pl_pct, or None if position not found
         """
         position = self.get_position(symbol)
         if not position:
             return None
         
+        # Calculate P/L if not provided
         if realized_pl is None or realized_pl_pct is None:
-            # Calculate P/L
             if position.side == "long":
-                realized_pl = (exit_price - position.entry_price) * position.quantity
-                realized_pl_pct = ((exit_price - position.entry_price) / position.entry_price) * 100
+                realized_pl = (exit_price - position.entry_price) * abs(position.quantity)
+                realized_pl_pct = ((exit_price - position.entry_price) / position.entry_price) * 100 if position.entry_price > 0 else 0
             else:  # short
-                realized_pl = (position.entry_price - exit_price) * position.quantity
-                realized_pl_pct = ((position.entry_price - exit_price) / position.entry_price) * 100
+                realized_pl = (position.entry_price - exit_price) * abs(position.quantity)
+                realized_pl_pct = ((position.entry_price - exit_price) / position.entry_price) * 100 if position.entry_price > 0 else 0
         
+        # Update position with exit details
         position.status = "closed"
-        position.exit_price = exit_price
+        position.exit_price = exit_price  # Clear exit price for easy P/L calculation
         position.exit_time = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
         position.exit_reason = exit_reason
-        position.realized_pl = realized_pl
-        position.realized_pl_pct = realized_pl_pct
+        position.realized_pl = realized_pl  # Clear P/L in currency
+        position.realized_pl_pct = realized_pl_pct  # Clear P/L percentage
+        
+        # ENHANCED: Add P/L summary for easy reference
+        # This makes it easy to calculate: entry_price, exit_price, quantity, realized_pl are all available
         
         self._save_positions()
         return position

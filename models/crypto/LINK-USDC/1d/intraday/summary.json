@@ -1,0 +1,328 @@
+{
+  "symbol": "LINK-USDC",
+  "asset_type": "crypto",
+  "timeframe": "1d",
+  "last_updated": "2026-01-05T00:00:00+00:00",
+  "prediction": {
+    "current_price": 13.58,
+    "predicted_price": 13.778308494418322,
+    "predicted_return_pct": 1.4602981915929483,
+    "action": "hold",
+    "confidence": 73.2948026882004,
+    "horizon_days": 1,
+    "explanation": "Price expected to rise from $13.58 to $13.78 (+1.46%) over 1 days"
+  },
+  "model_predictions": {
+    "random_forest": {
+      "predicted_price": 13.85144702597347,
+      "predicted_return_pct": 1.9988735344143649,
+      "action": "long",
+      "confidence": 89.69957081545064,
+      "r2_score": 0.7793568678186265,
+      "test_r2_score": 0.8140992732789871,
+      "val_test_gap": -0.03474240546036067,
+      "accuracy": 89.69957081545064,
+      "test_accuracy": 91.8103448275862
+    },
+    "lightgbm": {
+      "predicted_price": 13.831410477086576,
+      "predicted_return_pct": 1.8513289918010007,
+      "action": "hold",
+      "confidence": 90.12875536480686,
+      "r2_score": 0.7680724530135544,
+      "test_r2_score": 0.8245675306478879,
+      "val_test_gap": -0.05649507763433348,
+      "accuracy": 90.12875536480686,
+      "test_accuracy": 92.67241379310344
+    },
+    "xgboost": {
+      "predicted_price": 13.810640992100536,
+      "predicted_return_pct": 1.6983872761453287,
+      "action": "hold",
+      "confidence": 92.27467811158799,
+      "r2_score": 0.8984008637753154,
+      "test_r2_score": 0.8935986057452376,
+      "val_test_gap": 0.004802258030077722,
+      "accuracy": 92.27467811158799,
+      "test_accuracy": 89.65517241379311
+    },
+    "stacked_blend": {
+      "predicted_price": 13.801316267463415,
+      "predicted_return_pct": 1.6297221462696208,
+      "action": "hold",
+      "confidence": 93.56223175965665,
+      "r2_score": 0.8549715519643919,
+      "test_r2_score": 0.8839406953452396,
+      "val_test_gap": -0.02896914338084766,
+      "accuracy": 93.56223175965665,
+      "test_accuracy": 93.10344827586206
+    },
+    "dqn": {
+      "predicted_price": 13.58,
+      "predicted_return_pct": 0.0,
+      "action": "hold",
+      "confidence": 50.0,
+      "r2_score": null,
+      "test_r2_score": null,
+      "val_test_gap": null,
+      "accuracy": null,
+      "test_accuracy": null
+    }
+  },
+  "technical": {
+    "training_data": {
+      "total_rows": 1865,
+      "train_rows": 1398,
+      "val_rows": 233,
+      "test_rows": 232,
+      "split_boundaries": {
+        "train": {
+          "start": "2019-08-04T00:00:00+00:00",
+          "end": "2024-09-24T00:00:00+00:00"
+        },
+        "val": {
+          "start": "2024-09-26T00:00:00+00:00",
+          "end": "2025-05-16T00:00:00+00:00"
+        },
+        "test": {
+          "start": "2025-05-18T00:00:00+00:00",
+          "end": "2026-01-04T00:00:00+00:00"
+        }
+      }
+    },
+    "model_config": {
+      "target_profile": {
+        "name": "intraday",
+        "label": "Intraday",
+        "description": "Same-day horizon (1-2 bars) suited for quick scalp decisions. Fast entries/exits, small position sizes.",
+        "horizon_bars": 1,
+        "smoothing_window": 2,
+        "directional_threshold": 0.0005,
+        "neutral_band": 0.0002,
+        "quantile_bins": 5,
+        "quantile_window": 90,
+        "trading_style": "Scalping - many small trades, quick in/out",
+        "typical_hold_time": "Hours to 1 day",
+        "position_size_pct": 0.05,
+        "stop_loss_pct": 0.03,
+        "min_confidence": 0.15
+      },
+      "target_config": {
+        "horizon": 1,
+        "smoothing_window": 2,
+        "directional_threshold": 0.0005,
+        "neutral_band": 0.0002,
+        "quantile_bins": 5,
+        "quantile_window": 90,
+        "include_directional": true,
+        "include_quantiles": true,
+        "include_smoothed_return": true
+      },
+      "model_reference_price": 13.58
+    },
+    "analysis": {
+      "dynamic_threshold": 0.03,
+      "threshold_details": {
+        "rolling_mad": 0.034595838024204933,
+        "global_mad": 0.04874673080757733,
+        "iqr_based": 0.033047457757078465,
+        "atr_proxy": 0.02823564946746899,
+        "median_candidate": 0.033047457757078465,
+        "clamped": 0.03
+      },
+      "context_signals": {
+        "RSI_14": 57.26288006593108,
+        "MACD_histogram": 0.1762334825210266,
+        "SMA_50": 13.040799999999999,
+        "SMA_200": 17.5597,
+        "ATR_14": 0.49357142857142805,
+        "Volume_Ratio": 0.9484544657284518
+      },
+      "overfitting_warnings": [
+        "random_forest: Test accuracy (91.8%) suspiciously high (expected: 55-70%)",
+        "lightgbm: Validation accuracy (90.1%) suspiciously high (expected: 55-70%)",
+        "lightgbm: Test accuracy (92.7%) suspiciously high (expected: 55-70%)",
+        "xgboost: Validation R\u00b2 (0.898) suspiciously high for financial data (WARNING)",
+        "xgboost: Test R\u00b2 (0.894) suspiciously high for financial data (WARNING)",
+        "xgboost: Validation accuracy (92.3%) suspiciously high (expected: 55-70%)",
+        "stacked_blend: Validation R\u00b2 (0.855) suspiciously high for financial data (WARNING)",
+        "stacked_blend: Test R\u00b2 (0.884) suspiciously high for financial data (WARNING)",
+        "stacked_blend: Validation accuracy (93.6%) suspiciously high (expected: 55-70%)",
+        "stacked_blend: Test accuracy (93.1%) suspiciously high (expected: 55-70%)"
+      ]
+    },
+    "feature_scaler": {
+      "path": "models\\crypto\\LINK-USDC\\1d\\intraday\\feature_scaler.joblib"
+    }
+  },
+  "consensus": {
+    "action": "hold",
+    "confidence_pct": 73.2948026882004,
+    "predicted_return_pct": 1.4602981915929483,
+    "predicted_return": 0.014602981915929483,
+    "raw_predicted_return_pct": 1.4602981915929483,
+    "raw_predicted_return": 0.014602981915929483,
+    "reasoning": "Consensus: HOLD (confidence: 80.2%). Expected return: +1.46%. Consensus price: $13.78. Model votes: LONG: 1 model(s), 19.8% weighted vote; HOLD: 4 model(s), 80.2% weighted vote. Individual models: random_forest (long, +2.00%, R\u00b2=0.779); lightgbm (hold, +1.85%, R\u00b2=0.768); xgboost (hold, +1.70%, R\u00b2=0.898); stacked_blend (hold, +1.63%, R\u00b2=0.855); dqn (hold, +0.00%, R\u00b2=N/A)",
+    "action_scores": {
+      "long": 0.19823056214316004,
+      "hold": 0.80176943785684,
+      "short": 0.0
+    },
+    "horizon_profile": "Intraday",
+    "target_horizon_bars": 1,
+    "action_label": "Intraday HOLD",
+    "neutral_return_threshold_pct": 3.15,
+    "neutral_guard_triggered": false
+  },
+  "dqn_recommendation": {
+    "action": "hold",
+    "predicted_return_pct": 0.0,
+    "predicted_price": 13.58,
+    "confidence": 50.0,
+    "reason": "Direct DQN policy decision based on latest features"
+  },
+  "models": {
+    "random_forest": {
+      "action": "long",
+      "predicted_return": 0.019988735344143648,
+      "r2": 0.7793568678186265,
+      "test_r2": 0.8140992732789871,
+      "mae": 0.01562906766800624,
+      "test_mae": 0.013325823562762433,
+      "directional_accuracy": 0.8969957081545065,
+      "test_directional_accuracy": 0.9181034482758621
+    },
+    "lightgbm": {
+      "action": "hold",
+      "predicted_return": 0.018513289918010007,
+      "r2": 0.7680724530135544,
+      "test_r2": 0.8245675306478879,
+      "mae": 0.015197177034223762,
+      "test_mae": 0.012342193278673337,
+      "directional_accuracy": 0.9012875536480687,
+      "test_directional_accuracy": 0.9267241379310345
+    },
+    "xgboost": {
+      "action": "hold",
+      "predicted_return": 0.016983872761453286,
+      "r2": 0.8984008637753154,
+      "test_r2": 0.8935986057452376,
+      "mae": 0.012072547811289299,
+      "test_mae": 0.011322581840968859,
+      "directional_accuracy": 0.9227467811158798,
+      "test_directional_accuracy": 0.896551724137931
+    },
+    "stacked_blend": {
+      "action": "hold",
+      "predicted_return": 0.01629722146269621,
+      "r2": 0.8549715519643919,
+      "test_r2": 0.8839406953452396,
+      "mae": 0.012836626127799226,
+      "test_mae": 0.01086481430846414,
+      "directional_accuracy": 0.9356223175965666,
+      "test_directional_accuracy": 0.9310344827586207
+    },
+    "dqn": {
+      "action": null,
+      "predicted_return": null,
+      "r2": null,
+      "test_r2": null,
+      "mae": null,
+      "test_mae": null,
+      "directional_accuracy": null,
+      "test_directional_accuracy": null
+    }
+  },
+  "tradable": true,
+  "tradability_reasons": [
+    "All robustness checks passed"
+  ],
+  "data_balance": {
+    "train": {
+      "split": "train",
+      "total_samples": 1398,
+      "positive_count": 723,
+      "negative_count": 669,
+      "neutral_count": 6,
+      "positive_pct": 51.716738197424895,
+      "negative_pct": 47.85407725321888,
+      "neutral_pct": 0.4291845493562232,
+      "mean_return": 0.003164918816729388,
+      "median_return": 0.0025058453984027063,
+      "std_return": 0.06453450013316968,
+      "imbalance_ratio": 1.0807174887892377,
+      "bias_detected": null,
+      "bias_severity": "none"
+    },
+    "val": {
+      "split": "val",
+      "total_samples": 233,
+      "positive_count": 113,
+      "negative_count": 119,
+      "neutral_count": 1,
+      "positive_pct": 48.497854077253216,
+      "negative_pct": 51.072961373390555,
+      "neutral_pct": 0.4291845493562232,
+      "mean_return": 0.00243837551410927,
+      "median_return": -0.0009372071227741197,
+      "std_return": 0.05727915484791377,
+      "imbalance_ratio": 0.9495798319327731,
+      "bias_detected": null,
+      "bias_severity": "none"
+    },
+    "test": {
+      "split": "test",
+      "total_samples": 232,
+      "positive_count": 114,
+      "negative_count": 117,
+      "neutral_count": 1,
+      "positive_pct": 49.137931034482754,
+      "negative_pct": 50.43103448275862,
+      "neutral_pct": 0.43103448275862066,
+      "mean_return": 0.0003185093788972688,
+      "median_return": -0.0006648543459946699,
+      "std_return": 0.04437127399000229,
+      "imbalance_ratio": 0.9743589743589743,
+      "bias_detected": null,
+      "bias_severity": "none"
+    }
+  },
+  "feature_scaling_verification": {
+    "train": {
+      "split": "train",
+      "mean_abs_mean": 0.09308306981603728,
+      "mean_abs_median": 2.439627756114553e-17,
+      "mean_std": 0.768783319628009,
+      "mean_abs_min": 1.5398864307917512,
+      "mean_abs_max": 2.4801095636842936,
+      "nan_count": 0,
+      "inf_count": 0,
+      "issues": [],
+      "scaling_ok": true
+    },
+    "val": {
+      "split": "val",
+      "mean_abs_mean": 0.1800140312665653,
+      "mean_abs_median": 0.122583243170696,
+      "mean_std": 0.6202468216313067,
+      "mean_abs_min": 0.9406224967026086,
+      "mean_abs_max": 1.768210821259235,
+      "nan_count": 0,
+      "inf_count": 0,
+      "issues": [],
+      "scaling_ok": true
+    },
+    "test": {
+      "split": "test",
+      "mean_abs_mean": 0.19793815231451997,
+      "mean_abs_median": 0.22265054775900353,
+      "mean_std": 0.5790693466178127,
+      "mean_abs_min": 0.9807699523927048,
+      "mean_abs_max": 1.541017996160915,
+      "nan_count": 0,
+      "inf_count": 0,
+      "issues": [],
+      "scaling_ok": true
+    }
+  }
+}

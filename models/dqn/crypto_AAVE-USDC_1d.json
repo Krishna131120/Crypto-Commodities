@@ -10,27 +10,27 @@
     "target_return_smoothed",
     "target_direction",
     "Session_VWAP",
-    "OBV",
-    "Parabolic_SAR",
-    "Pivot_S2",
     "SMA_100",
-    "Low_Lag_1",
+    "OBV",
     "EMA_100",
-    "Median_Price",
-    "Pivot_Point",
-    "Ichimoku_Senkou_Span_B",
+    "Bollinger_Bandwidth",
     "EMA_200",
+    "Ichimoku_Senkou_Span_B",
     "EMA_50",
     "Ichimoku_Senkou_Span_A",
-    "High_Lag_1",
-    "Bollinger_Bandwidth",
-    "Volatility_Clustering",
     "SMA_50",
+    "Typical_Price",
     "Bollinger_Bands_lower_20_2",
+    "EMA_26",
+    "Pivot_R1",
+    "Pivot_R2",
+    "Close_Lag_1",
     "Keltner_Channel_lower",
-    "SMA_5",
     "EMA_9",
-    "EMA_26"
+    "SMA_5",
+    "Fractal_Low",
+    "Parabolic_SAR",
+    "Keltner_Channel_upper"
   ],
   "config": {
     "learning_rate": 0.0005,
@@ -58,20 +58,20 @@
     "action": "long",
     "action_reason": "Action selected directly by DQN policy on latest state; reward history tracked separately.",
     "validation_policy_metrics": {
-      "total_return": 1.2589983755020375,
-      "avg_return": 0.037029363985354044,
-      "sharpe": 16.23968791283637,
-      "hit_rate": 0.8529411764705882,
-      "max_drawdown": -0.02387000700770847
+      "total_return": 0.4785119923499784,
+      "avg_return": 0.014073882127940541,
+      "sharpe": 4.454619535394694,
+      "hit_rate": 0.6470588235294118,
+      "max_drawdown": -0.23061670580908472
     },
     "test_policy_metrics": {
-      "total_return": 1.072150416684055,
-      "avg_return": 0.031533835784825145,
-      "sharpe": 16.729147862347293,
-      "hit_rate": 0.8823529411764706,
-      "max_drawdown": -0.01419098143236086
+      "total_return": 0.0698295837085175,
+      "avg_return": 0.002053811285544632,
+      "sharpe": 0.7860368972023818,
+      "hit_rate": 0.5294117647058824,
+      "max_drawdown": -0.23185668987827002
     },
-    "predicted_return": 0.031533835784825145,
-    "predicted_price": 171.33777012385946
+    "predicted_return": 0.002053811285544632,
+    "predicted_price": 168.10454738126296
   }
 }

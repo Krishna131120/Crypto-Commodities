@@ -4,33 +4,33 @@
   "timeframe": "1d",
   "training_samples": 1661,
   "validation_samples": 276,
-  "feature_count": 90,
+  "feature_count": 91,
   "feature_sample": [
     "target_quantile_bin",
     "target_return_smoothed",
     "target_direction",
-    "Log_Returns",
-    "Force_Index",
-    "Gap_Percentage",
     "DI_plus",
-    "Gap_Open",
-    "Volume_Change_1",
-    "Intraday_Range",
-    "ZScore_returns_30",
-    "Volatility_Expansion_Flag",
-    "Bollinger_Bandwidth",
     "RSI_Band_Cross",
-    "ZScore_returns_7",
-    "volatility_cluster_20",
-    "Ease_of_Movement",
-    "Fractal_Low",
     "MFI",
-    "ADX_14",
+    "Rolling_Sharpe_30",
+    "Fractal_Low",
     "SMA_100",
+    "Bollinger_Bandwidth",
     "EMA_200",
-    "EMA_100",
+    "CMF",
     "Ichimoku_Senkou_Span_B",
-    "SMA_200"
+    "EMA_100",
+    "Ichimoku_Senkou_Span_A",
+    "SMA_200",
+    "SMA_50",
+    "DI_minus",
+    "Bollinger_Bands_lower_20_2",
+    "RSI_14",
+    "RSI_21",
+    "Fractal_High",
+    "Keltner_Channel_lower",
+    "RSI_7",
+    "volatility_cluster_20"
   ],
   "config": {
     "learning_rate": 0.0005,
@@ -58,20 +58,20 @@
     "action": "long",
     "action_reason": "Action selected directly by DQN policy on latest state; reward history tracked separately.",
     "validation_policy_metrics": {
-      "total_return": 4.9886312163655315,
-      "avg_return": 0.018140477150420116,
-      "sharpe": 14.53507788928999,
-      "hit_rate": 0.850909090909091,
-      "max_drawdown": -0.011672055644126544
+      "total_return": 3.8824219960017454,
+      "avg_return": 0.014117898167279075,
+      "sharpe": 9.741310292475212,
+      "hit_rate": 0.7163636363636363,
+      "max_drawdown": -0.051139850837413015
     },
     "test_policy_metrics": {
-      "total_return": 3.3283996221225283,
-      "avg_return": 0.01210327135317283,
-      "sharpe": 12.568680770983658,
-      "hit_rate": 0.7890909090909091,
-      "max_drawdown": -0.020500190982304822
+      "total_return": 2.0973659226692614,
+      "avg_return": 0.007626785173342769,
+      "sharpe": 6.622978931207841,
+      "hit_rate": 0.6836363636363636,
+      "max_drawdown": -0.05610547362479701
     },
-    "predicted_return": 0.01210327135317283,
-    "predicted_price": 94253.86808342366
+    "predicted_return": 0.007626785173342769,
+    "predicted_price": 91773.03539073178
   }
 }

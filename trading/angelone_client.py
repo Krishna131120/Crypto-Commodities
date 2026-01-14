@@ -187,8 +187,13 @@ class AngelOneClient(BrokerClient):
         if self.config.totp_secret:
             try:
                 import pyotp
-                # Clean TOTP secret (remove spaces, convert to uppercase)
-                clean_secret = self.config.totp_secret.strip().replace(" ", "").upper()
+                # Clean TOTP secret (remove spaces, quotes, comments, convert to uppercase)
+                clean_secret = self.config.totp_secret.strip().replace(" ", "").replace('"', '').replace("'", "").split("#")[0].strip().upper()
+                # Remove any non-base32 characters (keep only A-Z, 2-7)
+                import re
+                clean_secret = re.sub(r'[^A-Z2-7]', '', clean_secret)
+                if not clean_secret:
+                    raise RuntimeError("TOTP secret is empty after cleaning. Check format.")
                 totp = pyotp.TOTP(clean_secret)
                 generated_totp = totp.now()
                 return generated_totp

@@ -2,14 +2,14 @@
   "symbol": "GRT-USDT",
   "timeframe": "1d",
   "asset_type": "crypto",
-  "generated_at": "2026-01-05T09:25:02.240290Z",
+  "generated_at": "2026-01-06T13:04:47.079138Z",
   "data_file": "data.json",
   "latest_file": "latest.json",
   "data_file_info": {
     "filename": "data.json",
-    "size_bytes": 664683,
-    "candle_count": 1846,
+    "size_bytes": 665045,
+    "candle_count": 1847,
     "first_timestamp": "2020-12-17T00:00:00Z",
-    "last_timestamp": "2026-01-05T00:00:00Z"
+    "last_timestamp": "2026-01-06T00:00:00Z"
   }
 }

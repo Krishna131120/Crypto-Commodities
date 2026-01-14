@@ -3,15 +3,15 @@
   "total_events": 1,
   "events": [
     {
-      "timestamp": "2026-01-05T07:31:29.277465Z",
+      "timestamp": "2026-01-14T08:36:17.380921Z",
       "level": "ERROR",
-      "message": "Training skipped: crypto/USDT-USD (intraday): No data.json found for crypto/USDT-USD/1d",
+      "message": "Training skipped: crypto/USDT-USD (short): Missing required feature columns: ['SMA_200']",
       "category": "TRAIN",
       "symbol": "USDT-USD",
       "asset_type": "crypto",
       "data": {
-        "error": "No data.json found for crypto/USDT-USD/1d",
-        "horizon": "intraday"
+        "error": "Missing required feature columns: ['SMA_200']",
+        "horizon": "short"
       }
     }
   ]

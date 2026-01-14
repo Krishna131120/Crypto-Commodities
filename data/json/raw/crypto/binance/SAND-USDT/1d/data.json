@@ -31525,10 +31525,154 @@
     "timeframe": "1d",
     "timestamp": "2026-01-05T00:00:00Z",
     "open": 0.1229,
-    "high": 0.1249,
+    "high": 0.1281,
     "low": 0.1187,
-    "close": 0.1203,
-    "volume": 14429023.0,
+    "close": 0.1262,
+    "volume": 26423497.0,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "SAND-USDT",
+    "timeframe": "1d",
+    "timestamp": "2026-01-06T00:00:00Z",
+    "open": 0.1262,
+    "high": 0.1306,
+    "low": 0.1212,
+    "close": 0.1266,
+    "volume": 26732540.0,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "SAND-USDT",
+    "timeframe": "1d",
+    "timestamp": "2026-01-07T00:00:00Z",
+    "open": 0.1266,
+    "high": 0.1274,
+    "low": 0.1193,
+    "close": 0.121,
+    "volume": 18442035.0,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "SAND-USDT",
+    "timeframe": "1d",
+    "timestamp": "2026-01-08T00:00:00Z",
+    "open": 0.121,
+    "high": 0.1226,
+    "low": 0.1147,
+    "close": 0.118,
+    "volume": 20709023.0,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "SAND-USDT",
+    "timeframe": "1d",
+    "timestamp": "2026-01-09T00:00:00Z",
+    "open": 0.118,
+    "high": 0.1221,
+    "low": 0.1159,
+    "close": 0.1191,
+    "volume": 11303169.0,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "SAND-USDT",
+    "timeframe": "1d",
+    "timestamp": "2026-01-10T00:00:00Z",
+    "open": 0.1191,
+    "high": 0.1221,
+    "low": 0.1176,
+    "close": 0.1193,
+    "volume": 8216846.0,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "SAND-USDT",
+    "timeframe": "1d",
+    "timestamp": "2026-01-11T00:00:00Z",
+    "open": 0.1192,
+    "high": 0.1211,
+    "low": 0.115,
+    "close": 0.1169,
+    "volume": 8221262.0,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "SAND-USDT",
+    "timeframe": "1d",
+    "timestamp": "2026-01-12T00:00:00Z",
+    "open": 0.1169,
+    "high": 0.1194,
+    "low": 0.1117,
+    "close": 0.1138,
+    "volume": 15123156.0,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "SAND-USDT",
+    "timeframe": "1d",
+    "timestamp": "2026-01-13T00:00:00Z",
+    "open": 0.1138,
+    "high": 0.1272,
+    "low": 0.1136,
+    "close": 0.1253,
+    "volume": 22462149.0,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "SAND-USDT",
+    "timeframe": "1d",
+    "timestamp": "2026-01-14T00:00:00Z",
+    "open": 0.1254,
+    "high": 0.1298,
+    "low": 0.1254,
+    "close": 0.1286,
+    "volume": 14125472.0,
     "source": "binance_rest",
     "fallback_status": {
       "active": false,

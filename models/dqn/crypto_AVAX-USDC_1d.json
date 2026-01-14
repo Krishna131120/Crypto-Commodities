@@ -9,28 +9,28 @@
     "target_quantile_bin",
     "target_return_smoothed",
     "target_direction",
-    "Rolling_Volatility_7",
-    "Pivot_S2",
-    "ZScore_returns_7",
+    "Rolling_Skew",
+    "Bollinger_Bands_lower_20_2",
     "SMA_100",
     "EMA_100",
-    "Bollinger_Bands_lower_20_2",
+    "Seasonality_Monthly",
     "Donchian_Channel_low",
-    "MACD_Crossover_Signal",
     "EMA_50",
-    "EMA_200",
-    "Pivot_Point",
-    "Ichimoku_Senkou_Span_B",
-    "Keltner_Channel_lower",
     "Fibonacci_Level_0.786",
-    "Parabolic_SAR",
-    "Open_Lag_1",
-    "Median_Price",
+    "EMA_200",
+    "Close_Lag_10",
+    "Keltner_Channel_lower",
+    "Ichimoku_Senkou_Span_B",
     "SMA_50",
+    "Parabolic_SAR",
+    "Seasonality_DayOfMonth",
+    "Pivot_S2",
+    "Typical_Price",
     "EMA_26",
-    "Volatility_Skew",
-    "SMA_5",
-    "Rolling_Skew"
+    "Close_Lag_1",
+    "Accumulation_Distribution",
+    "Ichimoku_Senkou_Span_A",
+    "EMA_12"
   ],
   "config": {
     "learning_rate": 0.0005,
@@ -58,20 +58,20 @@
     "action": "long",
     "action_reason": "Action selected directly by DQN policy on latest state; reward history tracked separately.",
     "validation_policy_metrics": {
-      "total_return": 1.7569477889861758,
-      "avg_return": 0.026620421045245087,
-      "sharpe": 9.44231229067519,
-      "hit_rate": 0.7878787878787878,
-      "max_drawdown": -0.09576287900975711
+      "total_return": 1.0342149883511407,
+      "avg_return": 0.015669924065926374,
+      "sharpe": 5.35376779793556,
+      "hit_rate": 0.48484848484848486,
+      "max_drawdown": -0.1071891297518065
     },
     "test_policy_metrics": {
-      "total_return": 1.8468577400105082,
-      "avg_return": 0.028413196000161664,
-      "sharpe": 15.032578073998625,
-      "hit_rate": 0.8307692307692308,
-      "max_drawdown": -0.028915662650602414
+      "total_return": 1.177585090271392,
+      "avg_return": 0.018116693696482954,
+      "sharpe": 7.7653784336498095,
+      "hit_rate": 0.6153846153846154,
+      "max_drawdown": -0.1544792964719195
     },
-    "predicted_return": 0.028413196000161664,
-    "predicted_price": 14.603467383202295
+    "predicted_return": 0.018116693696482954,
+    "predicted_price": 14.35544538112041
   }
 }

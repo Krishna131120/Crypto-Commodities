@@ -103,6 +103,7 @@ UNIVERSE: List[AssetMapping] = [
         trading_symbol="SOLUSD",
         timeframe="1d",
         horizon_profile="short",
+        enabled=False,  # ← DISABLED: 0% win rate (7 losses, 0 wins) - strategy doesn't work for this pair
     ),
     # Extended crypto universe (all traded in USD on Alpaca)
     AssetMapping(
@@ -176,6 +177,7 @@ UNIVERSE: List[AssetMapping] = [
         trading_symbol="GRTUSD",
         timeframe="1d",
         horizon_profile="short",
+        enabled=False,  # ← DISABLED: 0% win rate (77 losses, 0 wins, -$3,345 lost) - strategy doesn't work for this pair
     ),
     AssetMapping(
         logical_name="litecoin",
@@ -192,6 +194,7 @@ UNIVERSE: List[AssetMapping] = [
         trading_symbol="MKRUSD",
         timeframe="1d",
         horizon_profile="short",
+        enabled=False,  # ← Disabled: Alpaca API returns 500 errors (not supported on paper trading)
     ),
     AssetMapping(
         logical_name="matic",

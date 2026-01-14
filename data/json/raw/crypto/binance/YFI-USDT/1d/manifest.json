@@ -2,14 +2,14 @@
   "symbol": "YFI-USDT",
   "timeframe": "1d",
   "asset_type": "crypto",
-  "generated_at": "2026-01-05T11:59:12.065578Z",
+  "generated_at": "2026-01-14T07:16:38.724639Z",
   "data_file": "data.json",
   "latest_file": "latest.json",
   "data_file_info": {
     "filename": "data.json",
-    "size_bytes": 714697,
-    "candle_count": 1975,
+    "size_bytes": 717927,
+    "candle_count": 1984,
     "first_timestamp": "2020-08-10T00:00:00Z",
-    "last_timestamp": "2026-01-05T00:00:00Z"
+    "last_timestamp": "2026-01-14T00:00:00Z"
   }
 }

@@ -217,7 +217,7 @@ def check_existing_positions(
                         ltp = float(pos.get("ltp", 0) or 0)
                         unrealized_pl = float(pos.get("unrealized_pl", 0) or 0)
                         side_str = "LONG" if qty > 0 else "SHORT"
-                        print(f"  - {symbol}: {abs(qty)} {side_str} @ ₹{avg_entry:.2f} → ₹{ltp:.2f} (P/L: ₹{unrealized_pl:+.2f})")
+                        print(f"  - {symbol}: {abs(qty)} {side_str} @ Rs.{avg_entry:.2f} -> Rs.{ltp:.2f} (P/L: Rs.{unrealized_pl:+.2f})")
         
         # Get tracked positions from position manager
         all_tracked = position_manager.get_all_positions()
@@ -225,7 +225,7 @@ def check_existing_positions(
             if pos.asset_type == "commodities" and pos.status == "open":
                 tracked_symbols.append(pos.symbol)
                 if verbose:
-                    print(f"  [TRACKED] {pos.symbol}: {pos.quantity:.2f} {pos.side.upper()} @ ₹{pos.entry_price:.2f}")
+                    print(f"  [TRACKED] {pos.symbol}: {pos.quantity:.2f} {pos.side.upper()} @ Rs.{pos.entry_price:.2f}")
     
     except Exception as exc:
         if verbose:
@@ -318,10 +318,47 @@ def main():
         sys.exit(1)
     
     # Get Angel One credentials
-    api_key = args.angelone_api_key or os.getenv("ANGEL_ONE_API_KEY")
-    client_id = args.angelone_client_id or os.getenv("ANGEL_ONE_CLIENT_ID")
-    password = args.angelone_password or os.getenv("ANGEL_ONE_PASSWORD")
-    totp_secret = args.angelone_totp_secret or os.getenv("ANGEL_ONE_TOTP_SECRET")
+    # PRIORITY 1: Read from .env file FIRST (like AngelOneClient does)
+    api_key = args.angelone_api_key
+    client_id = args.angelone_client_id
+    password = args.angelone_password
+    totp_secret = args.angelone_totp_secret
+    
+    # Read from .env file if not provided as arguments
+    if not api_key or not client_id or not password:
+        if os.path.exists(".env"):
+            try:
+                with open(".env", "r", encoding="utf-8") as fh:
+                    for line in fh:
+                        line = line.strip()
+                        if not line or line.startswith("#"):
+                            continue
+                        if "=" not in line:
+                            continue
+                        key, val = line.split("=", 1)
+                        key = key.strip()
+                        # Remove quotes and comments (everything after #)
+                        val = val.split("#")[0].strip().strip('"').strip("'")
+                        if key == "ANGEL_ONE_API_KEY" and not api_key:
+                            api_key = val
+                        elif key == "ANGEL_ONE_CLIENT_ID" and not client_id:
+                            client_id = val
+                        elif key == "ANGEL_ONE_PASSWORD" and not password:
+                            password = val
+                        elif key == "ANGEL_ONE_TOTP_SECRET" and not totp_secret:
+                            totp_secret = val
+            except Exception:
+                pass
+    
+    # PRIORITY 2: Fallback to environment variables
+    if not api_key:
+        api_key = os.getenv("ANGEL_ONE_API_KEY")
+    if not client_id:
+        client_id = os.getenv("ANGEL_ONE_CLIENT_ID")
+    if not password:
+        password = os.getenv("ANGEL_ONE_PASSWORD")
+    if not totp_secret:
+        totp_secret = os.getenv("ANGEL_ONE_TOTP_SECRET")
     
     if not api_key or not client_id or not password:
         print("[ERROR] Angel One credentials required!")
@@ -362,8 +399,8 @@ def main():
         equity = account.get("equity", 0)
         buying_power = account.get("buying_power", 0)
         print(f"[OK] Account connected")
-        print(f"  Equity: ₹{equity:,.2f}")
-        print(f"  Buying Power: ₹{buying_power:,.2f}")
+        print(f"  Equity: Rs.{equity:,.2f}")
+        print(f"  Buying Power: Rs.{buying_power:,.2f}")
         if equity <= 0:
             print(f"[WARNING] Account equity is zero or negative!")
     except Exception as e:
@@ -583,7 +620,7 @@ def main():
                             stop_loss_pct=args.stop_loss_pct,
                         )
                         synced_count += 1
-                        print(f"  [SYNC] Synced {mcx_symbol} ({data_symbol}): {abs(qty)} {side.upper()} @ ₹{avg_entry:.2f}")
+                        print(f"  [SYNC] Synced {mcx_symbol} ({data_symbol}): {abs(qty)} {side.upper()} @ Rs.{avg_entry:.2f}")
                     except Exception as sync_exc:
                         print(f"  [WARNING] Failed to sync {mcx_symbol}: {sync_exc}")
         
@@ -636,10 +673,10 @@ def main():
         print(f"\n{'='*80}")
         print(f"💰 ACCOUNT & POSITION SIZING (STRICT BUYING POWER LIMITS)")
         print(f"{'='*80}")
-        print(f"  Equity:        ₹{equity:,.2f}")
-        print(f"  Buying Power:  ₹{buying_power:,.2f}")
-        print(f"  Max Position:  10% of equity = ₹{equity * 0.10:,.2f} per commodity")
-        print(f"  Max Total:     50% of equity = ₹{equity * 0.50:,.2f} across all positions")
+        print(f"  Equity:        Rs.{equity:,.2f}")
+        print(f"  Buying Power:  Rs.{buying_power:,.2f}")
+        print(f"  Max Position:  10% of equity = Rs.{equity * 0.10:,.2f} per commodity")
+        print(f"  Max Total:     50% of equity = Rs.{equity * 0.50:,.2f} across all positions")
         print(f"  Position sizing will be STRICTLY based on available buying power")
         print(f"{'='*80}\n")
         
@@ -735,7 +772,7 @@ def main():
                             ltp = float(pos.get("ltp", 0) or 0)
                             unrealized_pl = float(pos.get("unrealized_pl", 0) or 0)
                             side_str = "LONG" if qty > 0 else "SHORT"
-                            print(f"    {symbol}: {abs(qty)} {side_str} @ ₹{avg_entry:.2f} → ₹{ltp:.2f} (P/L: ₹{unrealized_pl:+.2f})")
+                            print(f"    {symbol}: {abs(qty)} {side_str} @ Rs.{avg_entry:.2f} -> Rs.{ltp:.2f} (P/L: Rs.{unrealized_pl:+.2f})")
                 except Exception:
                     pass
                 

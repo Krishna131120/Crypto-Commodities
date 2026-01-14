@@ -9,28 +9,28 @@
     "target_quantile_bin",
     "target_return_smoothed",
     "target_direction",
-    "Volume_Ratio",
-    "ZScore_returns_7",
-    "Return_1",
-    "RSI_Band_Cross",
-    "Ichimoku_Senkou_Span_B",
     "SMA_100",
-    "Ensemble_Feature_Aggregates",
+    "Ichimoku_Senkou_Span_B",
     "EMA_100",
-    "Intraday_Range",
-    "Normalized_Returns",
-    "Stochastic_%K",
-    "Ichimoku_Senkou_Span_A",
-    "Bollinger_Bands_lower_20_2",
-    "Fractal_High",
+    "Seasonality_Monthly",
     "EMA_50",
-    "Donchian_Channel_low",
+    "Fractal_High",
+    "Ichimoku_Senkou_Span_A",
     "SMA_50",
-    "Fractal_Low",
+    "Bollinger_Bands_lower_20_2",
     "VWAP",
     "Volatility_Expansion_Flag",
     "EMA_200",
-    "Fibonacci_Level_0.786"
+    "Fractal_Low",
+    "Donchian_Channel_low",
+    "Keltner_Channel_lower",
+    "Fibonacci_Level_0.786",
+    "Ichimoku_Kijun",
+    "Close_Lag_10",
+    "SMA_20",
+    "Rolling_Sharpe_30",
+    "Fibonacci_Level_0.5",
+    "Seasonality_DayOfMonth"
   ],
   "config": {
     "learning_rate": 0.0005,
@@ -58,20 +58,20 @@
     "action": "short",
     "action_reason": "Action selected directly by DQN policy on latest state; reward history tracked separately.",
     "validation_policy_metrics": {
-      "total_return": 1.8425895939778214,
-      "avg_return": 0.027096905793791492,
-      "sharpe": 10.225366471628924,
-      "hit_rate": 0.7941176470588235,
-      "max_drawdown": -0.15000959614224074
+      "total_return": 1.1880983555517743,
+      "avg_return": 0.01747203464046727,
+      "sharpe": 5.954334971738071,
+      "hit_rate": 0.6029411764705882,
+      "max_drawdown": -0.17015942764960978
     },
     "test_policy_metrics": {
-      "total_return": 1.8442014234633963,
-      "avg_return": 0.02712060916857936,
-      "sharpe": 14.216648441890811,
-      "hit_rate": 0.8088235294117647,
-      "max_drawdown": -0.03488220392653574
+      "total_return": 0.16946656658843257,
+      "avg_return": 0.002492155391006361,
+      "sharpe": 0.965906049658792,
+      "hit_rate": 0.45588235294117646,
+      "max_drawdown": -0.26254530382125774
     },
-    "predicted_return": -0.02712060916857936,
-    "predicted_price": 0.14376238758315904
+    "predicted_return": -0.002492155391006361,
+    "predicted_price": 0.14632442572569326
   }
 }

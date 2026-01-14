@@ -1,11 +1,11 @@
 {
   "log_file": "logs\\training\\crypto\\BTC-USDC\\1d\\training_log.json",
-  "total_events": 52,
+  "total_events": 64,
   "events": [
     {
-      "timestamp": "2026-01-05T13:05:40.669896Z",
+      "timestamp": "2026-01-08T07:11:42.903339Z",
       "level": "INFO",
-      "message": "Starting training for crypto/BTC-USDC/1d (intraday horizon)",
+      "message": "Starting training for crypto/BTC-USDC/1d (short horizon)",
       "category": "TRAIN",
       "symbol": "BTC-USDC",
       "asset_type": "crypto",
@@ -13,37 +13,37 @@
         "timeframe": "1d",
         "min_rows": 200,
         "horizon_profile": {
-          "name": "intraday",
-          "label": "Intraday",
-          "description": "Same-day horizon (1-2 bars) suited for quick scalp decisions. Fast entries/exits, small position sizes.",
-          "horizon_bars": 1,
-          "smoothing_window": 2,
-          "directional_threshold": 0.0005,
-          "neutral_band": 0.0002,
+          "name": "short",
+          "label": "Short-Term",
+          "description": "Swing horizon of roughly 3-5 days to capture short moves. Medium position sizes, moderate frequency.",
+          "horizon_bars": 4,
+          "smoothing_window": 4,
+          "directional_threshold": 0.0012,
+          "neutral_band": 0.0006,
           "quantile_bins": 5,
-          "quantile_window": 90,
-          "trading_style": "Scalping - many small trades, quick in/out",
-          "typical_hold_time": "Hours to 1 day",
-          "position_size_pct": 0.05,
-          "stop_loss_pct": 0.03,
-          "min_confidence": 0.15
+          "quantile_window": 140,
+          "trading_style": "Swing trading - hold for several days",
+          "typical_hold_time": "3-5 days",
+          "position_size_pct": 0.1,
+          "stop_loss_pct": 0.06,
+          "min_confidence": 0.1
         }
       }
     },
     {
-      "timestamp": "2026-01-05T13:05:40.698461Z",
+      "timestamp": "2026-01-08T07:11:42.934847Z",
       "level": "INFO",
-      "message": "Loaded 2416 raw candles",
+      "message": "Loaded 2419 raw candles",
       "category": "DATA",
       "symbol": "BTC-USDC",
       "asset_type": "crypto",
       "data": {
-        "rows": 2416,
+        "rows": 2419,
         "timeframe": "1d"
       }
     },
     {
-      "timestamp": "2026-01-05T13:05:41.055468Z",
+      "timestamp": "2026-01-08T07:11:43.409425Z",
       "level": "INFO",
       "message": "Computed 131 features",
       "category": "DATA",
@@ -54,18 +54,18 @@
       }
     },
     {
-      "timestamp": "2026-01-05T13:05:41.951525Z",
+      "timestamp": "2026-01-08T07:11:44.448711Z",
       "level": "INFO",
       "message": "Dataset assembled: 2215 rows, 131 features",
       "category": "DATA",
       "symbol": "BTC-USDC",
       "asset_type": "crypto",
       "data": {
-        "rows_before": 2216,
+        "rows_before": 2219,
         "rows_after": 2215,
-        "rows_dropped": 1,
+        "rows_dropped": 4,
         "feature_count": 131,
-        "initial_nans": 6315,
+        "initial_nans": 6320,
         "residual_rows_dropped": 200,
         "constant_features_removed": [
           "Donchian_Breakout_Flag",
@@ -90,7 +90,7 @@
       }
     },
     {
-      "timestamp": "2026-01-05T13:05:41.953519Z",
+      "timestamp": "2026-01-08T07:11:44.450710Z",
       "level": "INFO",
       "message": "Dataset assembled: 2215 rows",
       "category": "DATA",
@@ -102,7 +102,7 @@
       }
     },
     {
-      "timestamp": "2026-01-05T13:05:41.954518Z",
+      "timestamp": "2026-01-08T07:11:44.451710Z",
       "level": "INFO",
       "message": "Data split: train=1661, val=276, test=276",
       "category": "DATA",
@@ -130,7 +130,7 @@
       }
     },
     {
-      "timestamp": "2026-01-05T13:05:41.954518Z",
+      "timestamp": "2026-01-08T07:11:44.452710Z",
       "level": "INFO",
       "message": "Dataset utilization confirmed",
       "category": "DATA",
@@ -143,7 +143,7 @@
       }
     },
     {
-      "timestamp": "2026-01-05T13:05:41.955654Z",
+      "timestamp": "2026-01-08T07:11:44.453710Z",
       "level": "INFO",
       "message": "Split boundaries confirmed",
       "category": "DATA",
@@ -165,7 +165,7 @@
       }
     },
     {
-      "timestamp": "2026-01-05T13:05:41.963715Z",
+      "timestamp": "2026-01-08T07:11:44.462711Z",
       "level": "WARNING",
       "message": "Found 23 features with zero variance, removing them",
       "category": "DATA",
@@ -187,23 +187,23 @@
       }
     },
     {
-      "timestamp": "2026-01-05T13:05:41.973255Z",
+      "timestamp": "2026-01-08T07:11:44.473711Z",
       "level": "INFO",
       "message": "Target variable validated",
       "category": "DATA",
       "symbol": "BTC-USDC",
       "asset_type": "crypto",
       "data": {
-        "train_mean": 0.001653248566448069,
-        "train_std": 0.035832033638865564,
-        "val_mean": 0.001380025501592374,
-        "val_std": 0.02717164474896083,
-        "test_mean": 0.0005758613943075447,
-        "test_std": 0.019862202252887637
+        "train_mean": 0.006523358579450731,
+        "train_std": 0.06931619793646131,
+        "val_mean": 0.005851513323553403,
+        "val_std": 0.05303905295427321,
+        "test_mean": 0.0026371383714515056,
+        "test_std": 0.03871620275512181
       }
     },
     {
-      "timestamp": "2026-01-05T13:05:41.975362Z",
+      "timestamp": "2026-01-08T07:11:44.474712Z",
       "level": "WARNING",
       "message": "Data balance analysis - checking for bearish/bullish bias",
       "category": "DATA",
@@ -213,48 +213,48 @@
         "train_distribution": {
           "split": "train",
           "total_samples": 1661,
-          "positive_count": 849,
-          "negative_count": 812,
+          "positive_count": 866,
+          "negative_count": 795,
           "neutral_count": 0,
-          "positive_pct": 51.11378687537628,
-          "negative_pct": 48.88621312462372,
+          "positive_pct": 52.13726670680313,
+          "negative_pct": 47.86273329319687,
           "neutral_pct": 0.0,
-          "mean_return": 0.001653248566448069,
-          "median_return": 0.0005558103297249595,
-          "std_return": 0.03582124573145898,
-          "imbalance_ratio": 1.0455665024630543,
+          "mean_return": 0.006523358579450731,
+          "median_return": 0.002693934996971681,
+          "std_return": 0.06929532899185573,
+          "imbalance_ratio": 1.089308176100629,
           "bias_detected": null,
           "bias_severity": "none"
         },
         "val_distribution": {
           "split": "val",
           "total_samples": 276,
-          "positive_count": 138,
-          "negative_count": 138,
+          "positive_count": 149,
+          "negative_count": 127,
           "neutral_count": 0,
-          "positive_pct": 50.0,
-          "negative_pct": 50.0,
+          "positive_pct": 53.985507246376805,
+          "negative_pct": 46.01449275362319,
           "neutral_pct": 0.0,
-          "mean_return": 0.001380025501592374,
-          "median_return": 4.610886615641352e-05,
-          "std_return": 0.027122376086942367,
-          "imbalance_ratio": 1.0,
+          "mean_return": 0.005851513323553403,
+          "median_return": 0.004747313166747369,
+          "std_return": 0.05294288052165361,
+          "imbalance_ratio": 1.1732283464566928,
           "bias_detected": null,
           "bias_severity": "none"
         },
         "test_distribution": {
           "split": "test",
           "total_samples": 276,
-          "positive_count": 143,
-          "negative_count": 133,
+          "positive_count": 153,
+          "negative_count": 123,
           "neutral_count": 0,
-          "positive_pct": 51.81159420289855,
-          "negative_pct": 48.188405797101446,
+          "positive_pct": 55.434782608695656,
+          "negative_pct": 44.565217391304344,
           "neutral_pct": 0.0,
-          "mean_return": 0.0005758613943075447,
-          "median_return": 0.00090345224147792,
-          "std_return": 0.01982618735063269,
-          "imbalance_ratio": 1.0751879699248121,
+          "mean_return": 0.0026371383714515056,
+          "median_return": 0.0030241208798815755,
+          "std_return": 0.03864600106045799,
+          "imbalance_ratio": 1.2439024390243902,
           "bias_detected": null,
           "bias_severity": "none"
         },
@@ -262,7 +262,7 @@
       }
     },
     {
-      "timestamp": "2026-01-05T13:05:42.932260Z",
+      "timestamp": "2026-01-08T07:11:45.459447Z",
       "level": "INFO",
       "message": "Feature scaling verified - all features properly normalized",
       "category": "DATA",
@@ -270,7 +270,7 @@
       "asset_type": "crypto"
     },
     {
-      "timestamp": "2026-01-05T13:05:42.933261Z",
+      "timestamp": "2026-01-08T07:11:45.460449Z",
       "level": "INFO",
       "message": "Applied robust feature scaling",
       "category": "DATA",
@@ -278,29 +278,29 @@
       "asset_type": "crypto",
       "data": {
         "scaler": "RobustScaler",
-        "feature_count": 90,
+        "feature_count": 91,
         "center_sample": [
           2.0,
-          0.0012267247816540872,
+          0.001764581157406464,
           1.0,
-          0.0005556559243743883,
-          5962.831607499761
+          273.5018666392348,
+          0.0
         ],
         "scale_sample": [
           2.0,
-          0.023903040956517185,
+          0.060132277811036944,
           2.0,
-          0.03180045565658038,
-          1129784.1972642762
+          204.5599532199326,
+          1.0
         ],
         "scaling_verification": {
           "train": {
             "split": "train",
-            "mean_abs_mean": 0.0905597281239645,
+            "mean_abs_mean": 0.09063145843337624,
             "mean_abs_median": 0.0,
-            "mean_std": 0.7493735193702111,
-            "mean_abs_min": 1.6771516053322955,
-            "mean_abs_max": 2.26707670793725,
+            "mean_std": 0.7542808895650872,
+            "mean_abs_min": 1.6972921469649285,
+            "mean_abs_max": 2.2819481736518084,
             "nan_count": 0,
             "inf_count": 0,
             "issues": [],
@@ -308,11 +308,11 @@
           },
           "val": {
             "split": "val",
-            "mean_abs_mean": 0.45264703367815395,
-            "mean_abs_median": 0.40480165429975146,
-            "mean_std": 0.686202901786422,
-            "mean_abs_min": 1.2869364940356394,
-            "mean_abs_max": 2.027803589910227,
+            "mean_abs_mean": 0.4486056195769656,
+            "mean_abs_median": 0.4026564755315261,
+            "mean_std": 0.6979017305657491,
+            "mean_abs_min": 1.3036246569665315,
+            "mean_abs_max": 2.036743421514372,
             "nan_count": 0,
             "inf_count": 0,
             "issues": [],
@@ -320,11 +320,11 @@
           },
           "test": {
             "split": "test",
-            "mean_abs_mean": 0.6562470911300772,
-            "mean_abs_median": 0.6679240633489901,
-            "mean_std": 0.610092223489799,
-            "mean_abs_min": 1.4658718210979407,
-            "mean_abs_max": 1.9311687630335561,
+            "mean_abs_mean": 0.6496184635414004,
+            "mean_abs_median": 0.6627246375565815,
+            "mean_std": 0.6239234587382615,
+            "mean_abs_min": 1.4808147410790673,
+            "mean_abs_max": 1.9459072022228854,
             "nan_count": 0,
             "inf_count": 0,
             "issues": [],
@@ -334,14 +334,14 @@
       }
     },
     {
-      "timestamp": "2026-01-05T13:05:42.934257Z",
+      "timestamp": "2026-01-08T07:11:45.461448Z",
       "level": "INFO",
-      "message": "Features extracted: 90 features will be used for training",
+      "message": "Features extracted: 91 features will be used for training",
       "category": "DATA",
       "symbol": "BTC-USDC",
       "asset_type": "crypto",
       "data": {
-        "feature_count": 90,
+        "feature_count": 91,
         "train_samples": 1661,
         "val_samples": 276,
         "test_samples": 276,
@@ -349,108 +349,109 @@
           "target_quantile_bin",
           "target_return_smoothed",
           "target_direction",
-          "Log_Returns",
-          "Force_Index",
-          "Gap_Percentage",
           "DI_plus",
-          "Gap_Open",
-          "Volume_Change_1",
-          "Intraday_Range"
+          "RSI_Band_Cross",
+          "MFI",
+          "Rolling_Sharpe_30",
+          "Fractal_Low",
+          "SMA_100",
+          "Bollinger_Bandwidth"
         ],
         "selected_features": [
           "target_quantile_bin",
           "target_return_smoothed",
           "target_direction",
-          "Log_Returns",
-          "Force_Index",
-          "Gap_Percentage",
           "DI_plus",
-          "Gap_Open",
-          "Volume_Change_1",
-          "Intraday_Range",
-          "ZScore_returns_30",
-          "Volatility_Expansion_Flag",
-          "Bollinger_Bandwidth",
           "RSI_Band_Cross",
-          "ZScore_returns_7",
-          "volatility_cluster_20",
-          "Ease_of_Movement",
-          "Fractal_Low",
           "MFI",
-          "ADX_14",
-          "SMA_100",
-          "EMA_200",
-          "EMA_100",
-          "Ichimoku_Senkou_Span_B",
-          "SMA_200",
-          "volatility_regime_state",
-          "Ichimoku_Senkou_Span_A",
           "Rolling_Sharpe_30",
-          "Bollinger_Bands_lower_20_2",
+          "Fractal_Low",
+          "SMA_100",
+          "Bollinger_Bandwidth",
+          "EMA_200",
+          "CMF",
+          "Ichimoku_Senkou_Span_B",
+          "EMA_100",
+          "Ichimoku_Senkou_Span_A",
+          "SMA_200",
           "SMA_50",
-          "Volume_Change_7",
-          "Keltner_Channel_lower",
+          "DI_minus",
+          "Bollinger_Bands_lower_20_2",
+          "RSI_14",
+          "RSI_21",
           "Fractal_High",
-          "Close_Lag_6",
+          "Keltner_Channel_lower",
+          "RSI_7",
+          "volatility_cluster_20",
           "TSI",
           "Close_Lag_10",
-          "Realized_Volatility",
-          "Fibonacci_Level_0.618",
-          "Parabolic_SAR",
-          "Rolling_Kurtosis",
-          "Keltner_Channel_upper",
-          "Rolling_Volatility_7",
-          "Close_Lag_3",
-          "CCI_20",
-          "CMF",
-          "Return_3",
-          "RSI_14",
-          "Drawdown_Duration",
-          "VWAP",
-          "Day_of_Week",
-          "Pivot_R2",
-          "RSI_21",
-          "Historical_Volatility",
-          "Rolling_Volatility_14",
-          "DI_minus",
-          "RSI_7",
-          "Seasonality_DayOfMonth",
-          "Donchian_Channel_high",
-          "Price_Range",
-          "Rolling_Sharpe_90",
-          "Feature_Interaction_Terms",
-          "Volume_Ratio",
+          "Close_Lag_4",
+          "Volatility_Expansion_Flag",
           "Bollinger_%b",
-          "MACD_signal",
-          "MACD",
-          "TRIX",
-          "MACD_Crossover_Signal",
-          "Stochastic_%D",
-          "Volume_Surge_Flag",
-          "Cumulative_Return_30",
-          "MA_Crossover_Signal",
-          "trend_strength_60",
-          "Chaikin_Oscillator",
+          "ADX_14",
+          "Close_Lag_7",
           "Momentum_roc_14",
-          "Rolling_Skew",
-          "Volatility_Skew",
-          "ATR_14",
-          "mean_reversion_flag",
-          "Max_Drawdown_30",
-          "drawdown_lookback_90",
-          "Volatility_Clustering",
-          "Accumulation_Distribution",
-          "OBV",
-          "Price_Channel_Slope",
-          "ATR_7",
-          "Rate_of_Change",
-          "Momentum_roc_7",
-          "MACD_histogram",
+          "Keltner_Channel_upper",
+          "Fibonacci_Level_0.618",
+          "CCI_20",
+          "Pivot_S2",
+          "Rolling_Sharpe_90",
+          "High_Lag_1",
+          "Ease_of_Movement",
+          "Session_VWAP",
+          "Cumulative_Return_30",
+          "Donchian_Channel_high",
+          "Return_3",
+          "Stochastic_%D",
+          "Rolling_Kurtosis",
+          "Seasonality_DayOfMonth",
+          "Realized_Volatility",
+          "volatility_regime_state",
+          "TRIX",
+          "MACD",
+          "MACD_signal",
           "Williams_%R",
-          "Seasonality_Monthly"
+          "Rolling_Volatility_30",
+          "ATR_14",
+          "Rate_of_Change",
+          "Gap_Percentage",
+          "Rolling_Skew",
+          "Gap_Open",
+          "ATR_7",
+          "Rolling_Volatility_14",
+          "Rolling_Volatility_7",
+          "Drawdown_Duration",
+          "ROC_Signal",
+          "Day_of_Week",
+          "mean_reversion_flag",
+          "trend_strength_60",
+          "Price_Range",
+          "Volume_Change_1",
+          "MACD_Crossover_Signal",
+          "ZScore_returns_7",
+          "Accumulation_Distribution",
+          "Price_Channel_Slope",
+          "Feature_Interaction_Terms",
+          "Seasonality_Monthly",
+          "Volume_Ratio",
+          "Ensemble_Feature_Aggregates",
+          "Intraday_Range",
+          "OBV",
+          "ZScore_returns_30",
+          "Max_Drawdown_30",
+          "Volume_Change_7",
+          "Force_Index",
+          "Momentum_roc_1",
+          "Chaikin_Oscillator",
+          "drawdown_lookback_90",
+          "MA_Crossover_Signal",
+          "Volatility_Clustering",
+          "Volume_Surge_Flag",
+          "Volatility_Skew",
+          "MACD_histogram"
         ],
         "removed_low_variance": [],
-        "max_abs_corr": 0.8207613823595806,
+        "max_abs_corr": 0.8568105989525582,
         "importance_filter": {
           "method": "lightgbm_importance",
           "selected_features": [
@@ -597,7 +598,7 @@
       }
     },
     {
-      "timestamp": "2026-01-05T13:05:42.937262Z",
+      "timestamp": "2026-01-08T07:11:45.463450Z",
       "level": "INFO",
       "message": "Data splits prepared - test set isolated for final evaluation only",
       "category": "DATA",
@@ -612,7 +613,7 @@
       }
     },
     {
-      "timestamp": "2026-01-05T13:05:42.940270Z",
+      "timestamp": "2026-01-08T07:11:45.467447Z",
       "level": "INFO",
       "message": "Reference price recalibrated",
       "category": "DATA",
@@ -620,11 +621,11 @@
       "asset_type": "crypto",
       "data": {
         "dataset_close": 91515.0,
-        "latest_market_price": 93126.73
+        "latest_market_price": 91078.4
       }
     },
     {
-      "timestamp": "2026-01-05T13:05:42.941271Z",
+      "timestamp": "2026-01-08T07:11:45.468448Z",
       "level": "INFO",
       "message": "Training Random Forest model",
       "category": "MODEL",
@@ -633,18 +634,18 @@
       "data": {
         "model": "RandomForest",
         "training_samples": 1661,
-        "features_count": 90,
+        "features_count": 91,
         "feature_names_sample": [
           "target_quantile_bin",
           "target_return_smoothed",
           "target_direction",
-          "Log_Returns",
-          "Force_Index"
+          "DI_plus",
+          "RSI_Band_Cross"
         ]
       }
     },
     {
-      "timestamp": "2026-01-05T13:10:29.008978Z",
+      "timestamp": "2026-01-08T07:16:28.874817Z",
       "level": "INFO",
       "message": "RandomForest hyperparameter search complete",
       "category": "MODEL",
@@ -652,33 +653,33 @@
       "asset_type": "crypto",
       "data": {
         "best_params": {
-          "n_estimators": 233,
-          "max_depth": 6,
-          "min_samples_leaf": 2,
-          "min_samples_split": 6,
-          "max_features": 0.7614130088882524,
-          "max_samples": 0.8992799522201074,
-          "ccp_alpha": 0.00030955310653432765
+          "n_estimators": 300,
+          "max_depth": 7,
+          "min_samples_leaf": 3,
+          "min_samples_split": 5,
+          "max_features": 0.650580442705369,
+          "max_samples": 0.7537042324791705,
+          "ccp_alpha": 0.000301062774009826
         }
       }
     },
     {
-      "timestamp": "2026-01-05T13:10:43.520418Z",
+      "timestamp": "2026-01-08T07:16:44.556574Z",
       "level": "INFO",
-      "message": "Random Forest prediction made using 90 features",
+      "message": "Random Forest prediction made using 91 features",
       "category": "PREDICTION",
       "symbol": "BTC-USDC",
       "asset_type": "crypto",
       "data": {
         "model": "RandomForest",
-        "features_used": 90,
+        "features_used": 91,
         "test_sample_index": 275,
-        "raw_return": 0.02289963950224745,
-        "clamped_return": 0.02289963950224745
+        "raw_return": -0.0026811782439060184,
+        "clamped_return": -0.0026811782439060184
       }
     },
     {
-      "timestamp": "2026-01-05T13:10:43.522424Z",
+      "timestamp": "2026-01-08T07:16:44.558577Z",
       "level": "INFO",
       "message": "random_forest metrics computed",
       "category": "MODEL",
@@ -686,29 +687,29 @@
       "asset_type": "crypto",
       "data": {
         "model": "random_forest",
-        "val_r2": 0.5991896596256869,
-        "val_mae": 0.011884146661803641,
-        "val_dir": 0.9094202898550725,
+        "val_r2": 0.860388409595382,
+        "val_mae": 0.01447591472753912,
+        "val_dir": 0.855072463768116,
         "train_metrics": {
-          "mae": 0.015686849489104406,
-          "rmse": 0.026158717018822223,
-          "r2": 0.46672464974671213,
-          "directional_accuracy": 0.884406983744732,
-          "mean_predicted_return": 0.0017077842133009131,
-          "mean_actual_return": 0.001653248566448069
+          "mae": 0.021557906426688023,
+          "rmse": 0.03253683702912358,
+          "r2": 0.7795334317225059,
+          "directional_accuracy": 0.8880192655027093,
+          "mean_predicted_return": 0.006553392198770316,
+          "mean_actual_return": 0.006523358579450731
         },
         "test_metrics": {
-          "mae": 0.009783785267271238,
-          "rmse": 0.01271420488979152,
-          "r2": 0.5887555972267854,
-          "directional_accuracy": 0.8840579710144928,
-          "mean_predicted_return": 0.001821848354813839,
-          "mean_actual_return": 0.0005758613943075447
+          "mae": 0.016943451817617555,
+          "rmse": 0.0211918525389241,
+          "r2": 0.6993032572433258,
+          "directional_accuracy": 0.8405797101449275,
+          "mean_predicted_return": 0.0037234686119370104,
+          "mean_actual_return": 0.0026371383714515056
         }
       }
     },
     {
-      "timestamp": "2026-01-05T13:10:43.522424Z",
+      "timestamp": "2026-01-08T07:16:44.559577Z",
       "level": "INFO",
       "message": "random_forest overfitting analysis",
       "category": "OVERFITTING",
@@ -716,15 +717,42 @@
       "asset_type": "crypto",
       "data": {
         "model": "random_forest",
-        "train_r2": 0.46672464974671213,
-        "val_r2": 0.5991896596256869,
-        "test_r2": 0.5887555972267854,
-        "train_val_gap": -0.1324650098789748,
-        "val_test_gap": 0.010434062398901545
+        "train_r2": 0.7795334317225059,
+        "val_r2": 0.860388409595382,
+        "test_r2": 0.6993032572433258,
+        "train_val_gap": -0.0808549778728761,
+        "val_test_gap": 0.16108515235205623
       }
     },
     {
-      "timestamp": "2026-01-05T13:10:43.523927Z",
+      "timestamp": "2026-01-08T07:16:44.560578Z",
+      "level": "WARNING",
+      "message": "random_forest shows generalization failure: val/test gap=0.161",
+      "category": "OVERFITTING",
+      "symbol": "BTC-USDC",
+      "asset_type": "crypto",
+      "data": {
+        "model": "random_forest",
+        "val_r2": 0.860388409595382,
+        "test_r2": 0.6993032572433258,
+        "gap": 0.16108515235205623
+      }
+    },
+    {
+      "timestamp": "2026-01-08T07:16:44.562577Z",
+      "level": "WARNING",
+      "message": "random_forest has suspiciously high validation R²: 0.860 (expected: 0.3-0.7)",
+      "category": "OVERFITTING",
+      "symbol": "BTC-USDC",
+      "asset_type": "crypto",
+      "data": {
+        "model": "random_forest",
+        "val_r2": 0.860388409595382,
+        "severity": "WARNING"
+      }
+    },
+    {
+      "timestamp": "2026-01-08T07:16:44.563577Z",
       "level": "SUCCESS",
       "message": "Random Forest training completed",
       "category": "MODEL",
@@ -734,26 +762,26 @@
         "model": "RandomForest",
         "metrics": {
           "model_name": "RandomForest",
-          "mae": 0.011884146661803641,
-          "rmse": 0.017171063423341452,
-          "r2": 0.5991896596256869,
-          "directional_accuracy": 0.9094202898550725,
-          "mean_predicted_return": 0.002204964215753459,
-          "mean_actual_return": 0.001380025501592374,
+          "mae": 0.01447591472753912,
+          "rmse": 0.019781913749165266,
+          "r2": 0.860388409595382,
+          "directional_accuracy": 0.855072463768116,
+          "mean_predicted_return": 0.003921266802861326,
+          "mean_actual_return": 0.005851513323553403,
           "notes": null,
           "precision": null,
           "recall": null,
           "f1": null,
           "roc_auc": null
         },
-        "current_price": 93126.73,
-        "predicted_return": 0.02289963950224745,
-        "predicted_price": 95259.29854502312,
-        "features_used": 90
+        "current_price": 91078.4,
+        "predicted_return": -0.0026811782439060184,
+        "predicted_price": 90834.20257543023,
+        "features_used": 91
       }
     },
     {
-      "timestamp": "2026-01-05T13:10:43.525932Z",
+      "timestamp": "2026-01-08T07:16:44.564578Z",
       "level": "INFO",
       "message": "Training LightGBM model",
       "category": "MODEL",
@@ -762,11 +790,11 @@
       "data": {
         "model": "LightGBM",
         "training_samples": 1661,
-        "features_count": 90
+        "features_count": 91
       }
     },
     {
-      "timestamp": "2026-01-05T13:10:45.009940Z",
+      "timestamp": "2026-01-08T07:16:46.209345Z",
       "level": "INFO",
       "message": "LightGBM hyperparameter search complete",
       "category": "MODEL",
@@ -774,36 +802,36 @@
       "asset_type": "crypto",
       "data": {
         "best_params": {
-          "max_depth": 3,
-          "num_leaves": 8,
-          "n_estimators": 176,
-          "learning_rate": 0.09268259970007858,
-          "subsample": 0.7702001370028501,
-          "colsample_bytree": 0.7737581945313745,
-          "min_child_samples": 18,
-          "reg_alpha": 2.1227470658954575,
-          "reg_lambda": 3.783965998098251,
-          "min_split_gain": 0.021384551023749924
+          "max_depth": 4,
+          "num_leaves": 16,
+          "n_estimators": 161,
+          "learning_rate": 0.08327167526709524,
+          "subsample": 0.7818496262473129,
+          "colsample_bytree": 0.798516745908324,
+          "min_child_samples": 17,
+          "reg_alpha": 2.5868235584060195,
+          "reg_lambda": 2.837119001478341,
+          "min_split_gain": 0.010496125509625883
         }
       }
     },
     {
-      "timestamp": "2026-01-05T13:10:45.367415Z",
+      "timestamp": "2026-01-08T07:16:46.578399Z",
       "level": "INFO",
-      "message": "LightGBM prediction made using 90 features",
+      "message": "LightGBM prediction made using 91 features",
       "category": "PREDICTION",
       "symbol": "BTC-USDC",
       "asset_type": "crypto",
       "data": {
         "model": "LightGBM",
-        "features_used": 90,
+        "features_used": 91,
         "test_sample_index": 275,
-        "raw_return": 0.03415149221756886,
-        "clamped_return": 0.03415149221756886
+        "raw_return": 0.007496799165327703,
+        "clamped_return": 0.007496799165327703
       }
     },
     {
-      "timestamp": "2026-01-05T13:10:45.370416Z",
+      "timestamp": "2026-01-08T07:16:46.581399Z",
       "level": "INFO",
       "message": "lightgbm metrics computed",
       "category": "MODEL",
@@ -811,29 +839,29 @@
       "asset_type": "crypto",
       "data": {
         "model": "lightgbm",
-        "val_r2": 0.790595586954357,
-        "val_mae": 0.00716167885643786,
-        "val_dir": 0.9202898550724637,
+        "val_r2": 0.8748335625566842,
+        "val_mae": 0.013511724023904244,
+        "val_dir": 0.9347826086956522,
         "train_metrics": {
-          "mae": 0.011207513012316305,
-          "rmse": 0.021604837356842335,
-          "r2": 0.6362352329027974,
-          "directional_accuracy": 0.9102950030102348,
-          "mean_predicted_return": 0.0015978613337624533,
-          "mean_actual_return": 0.001653248566448069
+          "mae": 0.019672829966901534,
+          "rmse": 0.03138064131652944,
+          "r2": 0.794923589266173,
+          "directional_accuracy": 0.9108970499698976,
+          "mean_predicted_return": 0.006472055818670074,
+          "mean_actual_return": 0.006523358579450731
         },
         "test_metrics": {
-          "mae": 0.007069994795623046,
-          "rmse": 0.009903397123537761,
-          "r2": 0.7504888387886772,
+          "mae": 0.014727483907464659,
+          "rmse": 0.01921648371351052,
+          "r2": 0.7527486215960356,
           "directional_accuracy": 0.9130434782608695,
-          "mean_predicted_return": 0.0020467473966745654,
-          "mean_actual_return": 0.0005758613943075447
+          "mean_predicted_return": 0.004046937600692753,
+          "mean_actual_return": 0.0026371383714515056
         }
       }
     },
     {
-      "timestamp": "2026-01-05T13:10:45.372571Z",
+      "timestamp": "2026-01-08T07:16:46.583399Z",
       "level": "INFO",
       "message": "lightgbm overfitting analysis",
       "category": "OVERFITTING",
@@ -841,15 +869,42 @@
       "asset_type": "crypto",
       "data": {
         "model": "lightgbm",
-        "train_r2": 0.6362352329027974,
-        "val_r2": 0.790595586954357,
-        "test_r2": 0.7504888387886772,
-        "train_val_gap": -0.15436035405155968,
-        "val_test_gap": 0.04010674816567983
+        "train_r2": 0.794923589266173,
+        "val_r2": 0.8748335625566842,
+        "test_r2": 0.7527486215960356,
+        "train_val_gap": -0.0799099732905112,
+        "val_test_gap": 0.12208494096064859
       }
     },
     {
-      "timestamp": "2026-01-05T13:10:45.374665Z",
+      "timestamp": "2026-01-08T07:16:46.585399Z",
+      "level": "WARNING",
+      "message": "lightgbm shows generalization failure: val/test gap=0.122",
+      "category": "OVERFITTING",
+      "symbol": "BTC-USDC",
+      "asset_type": "crypto",
+      "data": {
+        "model": "lightgbm",
+        "val_r2": 0.8748335625566842,
+        "test_r2": 0.7527486215960356,
+        "gap": 0.12208494096064859
+      }
+    },
+    {
+      "timestamp": "2026-01-08T07:16:46.588399Z",
+      "level": "WARNING",
+      "message": "lightgbm has suspiciously high validation R²: 0.875 (expected: 0.3-0.7)",
+      "category": "OVERFITTING",
+      "symbol": "BTC-USDC",
+      "asset_type": "crypto",
+      "data": {
+        "model": "lightgbm",
+        "val_r2": 0.8748335625566842,
+        "severity": "WARNING"
+      }
+    },
+    {
+      "timestamp": "2026-01-08T07:16:46.590399Z",
       "level": "SUCCESS",
       "message": "LightGBM training completed",
       "category": "MODEL",
@@ -859,26 +914,26 @@
         "model": "LightGBM",
         "metrics": {
           "model_name": "LightGBM",
-          "mae": 0.00716167885643786,
-          "rmse": 0.012411396461909276,
-          "r2": 0.790595586954357,
-          "directional_accuracy": 0.9202898550724637,
-          "mean_predicted_return": 0.0019380526486319606,
-          "mean_actual_return": 0.001380025501592374,
+          "mae": 0.013511724023904244,
+          "rmse": 0.018730592364889213,
+          "r2": 0.8748335625566842,
+          "directional_accuracy": 0.9347826086956522,
+          "mean_predicted_return": 0.004719294826422776,
+          "mean_actual_return": 0.005851513323553403,
           "notes": null,
           "precision": null,
           "recall": null,
           "f1": null,
           "roc_auc": null
         },
-        "current_price": 93126.73,
-        "predicted_return": 0.03415149221756886,
-        "predicted_price": 96307.14679484264,
-        "features_used": 90
+        "current_price": 91078.4,
+        "predicted_return": 0.007496799165327703,
+        "predicted_price": 91761.19647309936,
+        "features_used": 91
       }
     },
     {
-      "timestamp": "2026-01-05T13:10:45.377129Z",
+      "timestamp": "2026-01-08T07:16:46.592400Z",
       "level": "INFO",
       "message": "Training XGBoost model",
       "category": "MODEL",
@@ -887,11 +942,11 @@
       "data": {
         "model": "XGBoost",
         "training_samples": 1661,
-        "features_count": 90
+        "features_count": 91
       }
     },
     {
-      "timestamp": "2026-01-05T13:10:49.732084Z",
+      "timestamp": "2026-01-08T07:16:51.107009Z",
       "level": "INFO",
       "message": "XGBoost hyperparameter search complete",
       "category": "MODEL",
@@ -899,35 +954,35 @@
       "asset_type": "crypto",
       "data": {
         "best_params": {
-          "n_estimators": 157,
-          "learning_rate": 0.06288953421100577,
+          "n_estimators": 100,
+          "learning_rate": 0.07870662358518847,
           "max_depth": 2,
-          "subsample": 0.7991935399065394,
-          "colsample_bytree": 0.7075241725831702,
-          "min_child_weight": 4.097437722778588,
-          "gamma": 0.10129712569077211,
-          "reg_alpha": 3.0488701428993377,
-          "reg_lambda": 4.290993272457399
+          "subsample": 0.7419772003251238,
+          "colsample_bytree": 0.7223620828999802,
+          "min_child_weight": 4.424835193234721,
+          "gamma": 0.10062160046623227,
+          "reg_alpha": 3.011829383271729,
+          "reg_lambda": 5.953579365479524
         }
       }
     },
     {
-      "timestamp": "2026-01-05T13:10:50.824264Z",
+      "timestamp": "2026-01-08T07:16:52.188667Z",
       "level": "INFO",
-      "message": "XGBoost prediction made using 90 features",
+      "message": "XGBoost prediction made using 91 features",
       "category": "PREDICTION",
       "symbol": "BTC-USDC",
       "asset_type": "crypto",
       "data": {
         "model": "XGBoost",
-        "features_used": 90,
+        "features_used": 91,
         "test_sample_index": 275,
-        "raw_return": 0.022869234904646873,
-        "clamped_return": 0.022869234904646873
+        "raw_return": 0.009235045872628689,
+        "clamped_return": 0.009235045872628689
       }
     },
     {
-      "timestamp": "2026-01-05T13:10:50.827269Z",
+      "timestamp": "2026-01-08T07:16:52.191669Z",
       "level": "INFO",
       "message": "xgboost metrics computed",
       "category": "MODEL",
@@ -935,29 +990,29 @@
       "asset_type": "crypto",
       "data": {
         "model": "xgboost",
-        "val_r2": 0.9044317055870207,
-        "val_mae": 0.005763936051523007,
-        "val_dir": 0.9239130434782609,
+        "val_r2": 0.9161840478049843,
+        "val_mae": 0.01110632846973992,
+        "val_dir": 0.9311594202898551,
         "train_metrics": {
-          "mae": 0.006739830719796944,
-          "rmse": 0.010442274091127735,
-          "r2": 0.9150215496581489,
-          "directional_accuracy": 0.9403973509933775,
-          "mean_predicted_return": 0.0016160266241058707,
-          "mean_actual_return": 0.001653248566448069
+          "mae": 0.014425265497228966,
+          "rmse": 0.020126470489415505,
+          "r2": 0.9156417970329562,
+          "directional_accuracy": 0.9373871161950632,
+          "mean_predicted_return": 0.006599702872335911,
+          "mean_actual_return": 0.006523358579450731
         },
         "test_metrics": {
-          "mae": 0.006880764488491172,
-          "rmse": 0.009408931130173744,
-          "r2": 0.7747824821472761,
-          "directional_accuracy": 0.9239130434782609,
-          "mean_predicted_return": 0.0014463654952123761,
-          "mean_actual_return": 0.0005758613943075447
+          "mae": 0.0142844448655165,
+          "rmse": 0.018391786311110915,
+          "r2": 0.7735153871572353,
+          "directional_accuracy": 0.9456521739130435,
+          "mean_predicted_return": 0.003967951983213425,
+          "mean_actual_return": 0.0026371383714515056
         }
       }
     },
     {
-      "timestamp": "2026-01-05T13:10:50.829268Z",
+      "timestamp": "2026-01-08T07:16:52.193667Z",
       "level": "INFO",
       "message": "xgboost overfitting analysis",
       "category": "OVERFITTING",
@@ -965,42 +1020,42 @@
       "asset_type": "crypto",
       "data": {
         "model": "xgboost",
-        "train_r2": 0.9150215496581489,
-        "val_r2": 0.9044317055870207,
-        "test_r2": 0.7747824821472761,
-        "train_val_gap": 0.010589844071128174,
-        "val_test_gap": 0.1296492234397446
+        "train_r2": 0.9156417970329562,
+        "val_r2": 0.9161840478049843,
+        "test_r2": 0.7735153871572353,
+        "train_val_gap": -0.0005422507720280745,
+        "val_test_gap": 0.14266866064774897
       }
     },
     {
-      "timestamp": "2026-01-05T13:10:50.831790Z",
+      "timestamp": "2026-01-08T07:16:52.196667Z",
       "level": "WARNING",
-      "message": "xgboost shows generalization failure: val/test gap=0.130",
+      "message": "xgboost shows generalization failure: val/test gap=0.143",
       "category": "OVERFITTING",
       "symbol": "BTC-USDC",
       "asset_type": "crypto",
       "data": {
         "model": "xgboost",
-        "val_r2": 0.9044317055870207,
-        "test_r2": 0.7747824821472761,
-        "gap": 0.1296492234397446
+        "val_r2": 0.9161840478049843,
+        "test_r2": 0.7735153871572353,
+        "gap": 0.14266866064774897
       }
     },
     {
-      "timestamp": "2026-01-05T13:10:50.833790Z",
+      "timestamp": "2026-01-08T07:16:52.198667Z",
       "level": "WARNING",
-      "message": "xgboost has suspiciously high validation R²: 0.904 (expected: 0.3-0.7)",
+      "message": "xgboost has suspiciously high validation R²: 0.916 (expected: 0.3-0.7)",
       "category": "OVERFITTING",
       "symbol": "BTC-USDC",
       "asset_type": "crypto",
       "data": {
         "model": "xgboost",
-        "val_r2": 0.9044317055870207,
+        "val_r2": 0.9161840478049843,
         "severity": "WARNING"
       }
     },
     {
-      "timestamp": "2026-01-05T13:10:50.835790Z",
+      "timestamp": "2026-01-08T07:16:52.201667Z",
       "level": "SUCCESS",
       "message": "XGBoost training completed",
       "category": "MODEL",
@@ -1010,26 +1065,26 @@
         "model": "XGBoost",
         "metrics": {
           "model_name": "XGBoost",
-          "mae": 0.005763936051523007,
-          "rmse": 0.008384644455183722,
-          "r2": 0.9044317055870207,
-          "directional_accuracy": 0.9239130434782609,
-          "mean_predicted_return": 0.0015968425432220101,
-          "mean_actual_return": 0.001380025501592374,
+          "mae": 0.01110632846973992,
+          "rmse": 0.01532748530220123,
+          "r2": 0.9161840478049843,
+          "directional_accuracy": 0.9311594202898551,
+          "mean_predicted_return": 0.004943301435559988,
+          "mean_actual_return": 0.005851513323553403,
           "notes": null,
           "precision": null,
           "recall": null,
           "f1": null,
           "roc_auc": null
         },
-        "current_price": 93126.73,
-        "predicted_return": 0.022869234904646873,
-        "predicted_price": 95256.46706427162,
-        "features_used": 90
+        "current_price": 91078.4,
+        "predicted_return": 0.009235045872628689,
+        "predicted_price": 91919.51320200562,
+        "features_used": 91
       }
     },
     {
-      "timestamp": "2026-01-05T13:10:50.904870Z",
+      "timestamp": "2026-01-08T07:16:52.271672Z",
       "level": "INFO",
       "message": "stacked_blend metrics computed",
       "category": "MODEL",
@@ -1037,29 +1092,29 @@
       "asset_type": "crypto",
       "data": {
         "model": "stacked_blend",
-        "val_r2": 0.7925603831261322,
-        "val_mae": 0.007126988127999486,
-        "val_dir": 0.9528985507246377,
+        "val_r2": 0.9030237343534465,
+        "val_mae": 0.011735915365749285,
+        "val_dir": 0.9420289855072463,
         "train_metrics": {
-          "mae": 0.010890481602996924,
-          "rmse": 0.019396290990876558,
-          "r2": 0.7068053698084025,
-          "directional_accuracy": 0.9211318482841662,
-          "mean_predicted_return": 0.0016532485664480687,
-          "mean_actual_return": 0.001653248566448069
+          "mae": 0.01673376503033397,
+          "rmse": 0.02484336297339031,
+          "r2": 0.8714675318084218,
+          "directional_accuracy": 0.9277543648404576,
+          "mean_predicted_return": 0.00652335857945074,
+          "mean_actual_return": 0.006523358579450731
         },
         "test_metrics": {
-          "mae": 0.00514643945567921,
-          "rmse": 0.00835018857747379,
-          "r2": 0.8226161178391331,
-          "directional_accuracy": 0.927536231884058,
-          "mean_predicted_return": 0.0016898491003816357,
-          "mean_actual_return": 0.0005758613943075447
+          "mae": 0.014459078133890621,
+          "rmse": 0.018736046256240358,
+          "r2": 0.7649572947960768,
+          "directional_accuracy": 0.9202898550724637,
+          "mean_predicted_return": 0.003896743272841081,
+          "mean_actual_return": 0.0026371383714515056
         }
       }
     },
     {
-      "timestamp": "2026-01-05T13:10:50.908405Z",
+      "timestamp": "2026-01-08T07:16:52.275181Z",
       "level": "INFO",
       "message": "stacked_blend overfitting analysis",
       "category": "OVERFITTING",
@@ -1067,15 +1122,42 @@
       "asset_type": "crypto",
       "data": {
         "model": "stacked_blend",
-        "train_r2": 0.7068053698084025,
-        "val_r2": 0.7925603831261322,
-        "test_r2": 0.8226161178391331,
-        "train_val_gap": -0.08575501331772972,
-        "val_test_gap": -0.030055734713000937
+        "train_r2": 0.8714675318084218,
+        "val_r2": 0.9030237343534465,
+        "test_r2": 0.7649572947960768,
+        "train_val_gap": -0.03155620254502467,
+        "val_test_gap": 0.13806643955736975
       }
     },
     {
-      "timestamp": "2026-01-05T13:10:50.910404Z",
+      "timestamp": "2026-01-08T07:16:52.277180Z",
+      "level": "WARNING",
+      "message": "stacked_blend shows generalization failure: val/test gap=0.138",
+      "category": "OVERFITTING",
+      "symbol": "BTC-USDC",
+      "asset_type": "crypto",
+      "data": {
+        "model": "stacked_blend",
+        "val_r2": 0.9030237343534465,
+        "test_r2": 0.7649572947960768,
+        "gap": 0.13806643955736975
+      }
+    },
+    {
+      "timestamp": "2026-01-08T07:16:52.280181Z",
+      "level": "WARNING",
+      "message": "stacked_blend has suspiciously high validation R²: 0.903 (expected: 0.3-0.7)",
+      "category": "OVERFITTING",
+      "symbol": "BTC-USDC",
+      "asset_type": "crypto",
+      "data": {
+        "model": "stacked_blend",
+        "val_r2": 0.9030237343534465,
+        "severity": "WARNING"
+      }
+    },
+    {
+      "timestamp": "2026-01-08T07:16:52.283179Z",
       "level": "SUCCESS",
       "message": "Stacked blender created",
       "category": "MODEL",
@@ -1088,16 +1170,16 @@
           "xgboost"
         ],
         "weights": [
-          0.2018931524161587,
-          0.13597226896095307,
-          0.409852932241457
+          0.2598488171095469,
+          0.241649441103325,
+          0.4987558995641167
         ],
         "alpha": 2.0,
-        "latest_return": 0.023577264322547746
+        "latest_return": 4.974788241598438e-05
       }
     },
     {
-      "timestamp": "2026-01-05T13:10:50.912912Z",
+      "timestamp": "2026-01-08T07:16:52.285179Z",
       "level": "INFO",
       "message": "Training DQN model",
       "category": "MODEL",
@@ -1106,11 +1188,11 @@
       "data": {
         "model": "DQN",
         "training_samples": 1661,
-        "features_count": 90
+        "features_count": 91
       }
     },
     {
-      "timestamp": "2026-01-05T13:10:57.203228Z",
+      "timestamp": "2026-01-08T07:16:59.021410Z",
       "level": "SUCCESS",
       "message": "DQN training completed",
       "category": "MODEL",
@@ -1119,42 +1201,74 @@
       "data": {
         "model": "DQN",
         "action": "long",
-        "current_price": 93126.73,
-        "features_used": 90,
+        "current_price": 91078.4,
+        "features_used": 91,
         "validation_policy": {
-          "total_return": 4.9886312163655315,
-          "avg_return": 0.018140477150420116,
-          "sharpe": 14.53507788928999,
-          "hit_rate": 0.850909090909091,
-          "max_drawdown": -0.011672055644126544
+          "total_return": 3.8824219960017454,
+          "avg_return": 0.014117898167279075,
+          "sharpe": 9.741310292475212,
+          "hit_rate": 0.7163636363636363,
+          "max_drawdown": -0.051139850837413015
         },
         "test_policy": {
-          "total_return": 3.3283996221225283,
-          "avg_return": 0.01210327135317283,
-          "sharpe": 12.568680770983658,
-          "hit_rate": 0.7890909090909091,
-          "max_drawdown": -0.020500190982304822
+          "total_return": 2.0973659226692614,
+          "avg_return": 0.007626785173342769,
+          "sharpe": 6.622978931207841,
+          "hit_rate": 0.6836363636363636,
+          "max_drawdown": -0.05610547362479701
         }
       }
     },
     {
-      "timestamp": "2026-01-05T13:10:57.206272Z",
+      "timestamp": "2026-01-08T07:16:59.024411Z",
       "level": "WARNING",
-      "message": "random_forest: Validation accuracy (90.9%) suspiciously high (expected: 55-70%)",
+      "message": "random_forest: Val R² (0.860) >> Test R² (0.699), gap=0.161 (generalization failure)",
       "category": "OVERFITTING",
       "symbol": "BTC-USDC",
       "asset_type": "crypto"
     },
     {
-      "timestamp": "2026-01-05T13:10:57.208272Z",
+      "timestamp": "2026-01-08T07:16:59.026412Z",
       "level": "WARNING",
-      "message": "lightgbm: Validation accuracy (92.0%) suspiciously high (expected: 55-70%)",
+      "message": "random_forest: Validation R² (0.860) suspiciously high for financial data (WARNING)",
       "category": "OVERFITTING",
       "symbol": "BTC-USDC",
       "asset_type": "crypto"
     },
     {
-      "timestamp": "2026-01-05T13:10:57.210272Z",
+      "timestamp": "2026-01-08T07:16:59.028411Z",
+      "level": "WARNING",
+      "message": "random_forest: Significant performance drop on test set (Train: 0.780, Val: 0.860, Test: 0.699)",
+      "category": "OVERFITTING",
+      "symbol": "BTC-USDC",
+      "asset_type": "crypto"
+    },
+    {
+      "timestamp": "2026-01-08T07:16:59.030411Z",
+      "level": "WARNING",
+      "message": "lightgbm: Val R² (0.875) >> Test R² (0.753), gap=0.122 (generalization failure)",
+      "category": "OVERFITTING",
+      "symbol": "BTC-USDC",
+      "asset_type": "crypto"
+    },
+    {
+      "timestamp": "2026-01-08T07:16:59.032411Z",
+      "level": "WARNING",
+      "message": "lightgbm: Validation R² (0.875) suspiciously high for financial data (WARNING)",
+      "category": "OVERFITTING",
+      "symbol": "BTC-USDC",
+      "asset_type": "crypto"
+    },
+    {
+      "timestamp": "2026-01-08T07:16:59.035411Z",
+      "level": "WARNING",
+      "message": "lightgbm: Validation accuracy (93.5%) suspiciously high (expected: 55-70%)",
+      "category": "OVERFITTING",
+      "symbol": "BTC-USDC",
+      "asset_type": "crypto"
+    },
+    {
+      "timestamp": "2026-01-08T07:16:59.038411Z",
       "level": "WARNING",
       "message": "lightgbm: Test accuracy (91.3%) suspiciously high (expected: 55-70%)",
       "category": "OVERFITTING",
@@ -1162,55 +1276,71 @@
       "asset_type": "crypto"
     },
     {
-      "timestamp": "2026-01-05T13:10:57.213779Z",
+      "timestamp": "2026-01-08T07:16:59.040411Z",
       "level": "WARNING",
-      "message": "xgboost: Val R² (0.904) >> Test R² (0.775), gap=0.130 (generalization failure)",
+      "message": "xgboost: Val R² (0.916) >> Test R² (0.774), gap=0.143 (generalization failure)",
       "category": "OVERFITTING",
       "symbol": "BTC-USDC",
       "asset_type": "crypto"
     },
     {
-      "timestamp": "2026-01-05T13:10:57.215782Z",
+      "timestamp": "2026-01-08T07:16:59.043412Z",
       "level": "WARNING",
-      "message": "xgboost: Validation R² (0.904) suspiciously high for financial data (WARNING)",
+      "message": "xgboost: Validation R² (0.916) suspiciously high for financial data (WARNING)",
       "category": "OVERFITTING",
       "symbol": "BTC-USDC",
       "asset_type": "crypto"
     },
     {
-      "timestamp": "2026-01-05T13:10:57.218779Z",
+      "timestamp": "2026-01-08T07:16:59.046410Z",
       "level": "WARNING",
-      "message": "xgboost: Validation accuracy (92.4%) suspiciously high (expected: 55-70%)",
+      "message": "xgboost: Validation accuracy (93.1%) suspiciously high (expected: 55-70%)",
       "category": "OVERFITTING",
       "symbol": "BTC-USDC",
       "asset_type": "crypto"
     },
     {
-      "timestamp": "2026-01-05T13:10:57.221300Z",
+      "timestamp": "2026-01-08T07:16:59.049410Z",
       "level": "WARNING",
-      "message": "xgboost: Test accuracy (92.4%) suspiciously high (expected: 55-70%)",
+      "message": "xgboost: Test accuracy (94.6%) suspiciously high (expected: 55-70%)",
       "category": "OVERFITTING",
       "symbol": "BTC-USDC",
       "asset_type": "crypto"
     },
     {
-      "timestamp": "2026-01-05T13:10:57.223808Z",
+      "timestamp": "2026-01-08T07:16:59.051410Z",
       "level": "WARNING",
-      "message": "stacked_blend: Validation accuracy (95.3%) suspiciously high (expected: 55-70%)",
+      "message": "stacked_blend: Val R² (0.903) >> Test R² (0.765), gap=0.138 (generalization failure)",
       "category": "OVERFITTING",
       "symbol": "BTC-USDC",
       "asset_type": "crypto"
     },
     {
-      "timestamp": "2026-01-05T13:10:57.225811Z",
+      "timestamp": "2026-01-08T07:16:59.054411Z",
       "level": "WARNING",
-      "message": "stacked_blend: Test accuracy (92.8%) suspiciously high (expected: 55-70%)",
+      "message": "stacked_blend: Validation R² (0.903) suspiciously high for financial data (WARNING)",
       "category": "OVERFITTING",
       "symbol": "BTC-USDC",
       "asset_type": "crypto"
     },
     {
-      "timestamp": "2026-01-05T13:10:57.229321Z",
+      "timestamp": "2026-01-08T07:16:59.057410Z",
+      "level": "WARNING",
+      "message": "stacked_blend: Validation accuracy (94.2%) suspiciously high (expected: 55-70%)",
+      "category": "OVERFITTING",
+      "symbol": "BTC-USDC",
+      "asset_type": "crypto"
+    },
+    {
+      "timestamp": "2026-01-08T07:16:59.060410Z",
+      "level": "WARNING",
+      "message": "stacked_blend: Test accuracy (92.0%) suspiciously high (expected: 55-70%)",
+      "category": "OVERFITTING",
+      "symbol": "BTC-USDC",
+      "asset_type": "crypto"
+    },
+    {
+      "timestamp": "2026-01-08T07:16:59.063415Z",
       "level": "INFO",
       "message": "Consensus action computed: HOLD",
       "category": "CONSENSUS",
@@ -1218,25 +1348,25 @@
       "asset_type": "crypto",
       "data": {
         "consensus_action": "hold",
-        "consensus_confidence": 0.55,
-        "consensus_price": 93126.73,
-        "consensus_return": 0.0,
+        "consensus_confidence": 0.7090693772200967,
+        "consensus_price": 91403.31707874799,
+        "consensus_return": 0.003567443858785368,
         "action_scores": {
-          "long": 1.0,
-          "hold": 0.0,
+          "long": 0.29093062277990334,
+          "hold": 0.7090693772200967,
           "short": 0.0
         }
       }
     },
     {
-      "timestamp": "2026-01-05T13:10:57.301580Z",
+      "timestamp": "2026-01-08T07:16:59.152929Z",
       "level": "SUCCESS",
       "message": "Training completed for BTC-USDC",
       "category": "TRAIN",
       "symbol": "BTC-USDC",
       "asset_type": "crypto",
       "data": {
-        "summary_file": "models\\crypto\\BTC-USDC\\1d\\intraday\\summary.json",
+        "summary_file": "models\\crypto\\BTC-USDC\\1d\\short\\summary.json",
         "log_file": "logs\\training\\crypto\\BTC-USDC\\1d\\training_log.json",
         "models_trained": 5,
         "models_failed": 0

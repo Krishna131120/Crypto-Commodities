@@ -31573,10 +31573,26 @@
     "timeframe": "1d",
     "timestamp": "2026-01-05T00:00:00Z",
     "open": 134.12,
-    "high": 137.75,
-    "low": 134.01,
-    "close": 135.98,
-    "volume": 772389.932,
+    "high": 139.87,
+    "low": 133.18,
+    "close": 137.9,
+    "volume": 3327567.484,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "SOL-USDT",
+    "timeframe": "1d",
+    "timestamp": "2026-01-06T00:00:00Z",
+    "open": 137.91,
+    "high": 140.08,
+    "low": 136.89,
+    "close": 138.97,
+    "volume": 1354850.235,
     "source": "binance_rest",
     "fallback_status": {
       "active": false,

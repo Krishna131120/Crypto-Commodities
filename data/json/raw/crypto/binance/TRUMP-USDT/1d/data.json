@@ -5621,10 +5621,154 @@
     "timeframe": "1d",
     "timestamp": "2026-01-05T00:00:00Z",
     "open": 5.419,
-    "high": 5.584,
+    "high": 5.683,
     "low": 5.362,
-    "close": 5.483,
-    "volume": 4634334.934,
+    "close": 5.619,
+    "volume": 7326637.38,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "TRUMP-USDT",
+    "timeframe": "1d",
+    "timestamp": "2026-01-06T00:00:00Z",
+    "open": 5.619,
+    "high": 5.655,
+    "low": 5.297,
+    "close": 5.481,
+    "volume": 4723473.25,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "TRUMP-USDT",
+    "timeframe": "1d",
+    "timestamp": "2026-01-07T00:00:00Z",
+    "open": 5.481,
+    "high": 5.544,
+    "low": 5.312,
+    "close": 5.365,
+    "volume": 3823690.389,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "TRUMP-USDT",
+    "timeframe": "1d",
+    "timestamp": "2026-01-08T00:00:00Z",
+    "open": 5.364,
+    "high": 5.437,
+    "low": 5.245,
+    "close": 5.359,
+    "volume": 3069967.436,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "TRUMP-USDT",
+    "timeframe": "1d",
+    "timestamp": "2026-01-09T00:00:00Z",
+    "open": 5.36,
+    "high": 5.504,
+    "low": 5.286,
+    "close": 5.436,
+    "volume": 2633022.335,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "TRUMP-USDT",
+    "timeframe": "1d",
+    "timestamp": "2026-01-10T00:00:00Z",
+    "open": 5.437,
+    "high": 5.49,
+    "low": 5.367,
+    "close": 5.405,
+    "volume": 1223803.795,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "TRUMP-USDT",
+    "timeframe": "1d",
+    "timestamp": "2026-01-11T00:00:00Z",
+    "open": 5.405,
+    "high": 5.694,
+    "low": 5.382,
+    "close": 5.449,
+    "volume": 2732970.782,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "TRUMP-USDT",
+    "timeframe": "1d",
+    "timestamp": "2026-01-12T00:00:00Z",
+    "open": 5.45,
+    "high": 5.531,
+    "low": 5.304,
+    "close": 5.347,
+    "volume": 1988852.73,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "TRUMP-USDT",
+    "timeframe": "1d",
+    "timestamp": "2026-01-13T00:00:00Z",
+    "open": 5.347,
+    "high": 5.684,
+    "low": 5.345,
+    "close": 5.666,
+    "volume": 2668672.376,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "TRUMP-USDT",
+    "timeframe": "1d",
+    "timestamp": "2026-01-14T00:00:00Z",
+    "open": 5.666,
+    "high": 5.784,
+    "low": 5.655,
+    "close": 5.706,
+    "volume": 1273326.45,
     "source": "binance_rest",
     "fallback_status": {
       "active": false,

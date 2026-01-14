@@ -3,15 +3,15 @@
   "total_events": 1,
   "events": [
     {
-      "timestamp": "2026-01-05T12:36:50.559744Z",
+      "timestamp": "2026-01-14T08:36:16.056800Z",
       "level": "ERROR",
-      "message": "Training skipped: crypto/SKY-USDT (intraday): Missing required feature columns: ['SMA_200']",
+      "message": "Training skipped: crypto/SKY-USDT (short): Missing required feature columns: ['SMA_200']",
       "category": "TRAIN",
       "symbol": "SKY-USDT",
       "asset_type": "crypto",
       "data": {
         "error": "Missing required feature columns: ['SMA_200']",
-        "horizon": "intraday"
+        "horizon": "short"
       }
     }
   ]

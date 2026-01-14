@@ -3,15 +3,15 @@
   "total_events": 1,
   "events": [
     {
-      "timestamp": "2026-01-05T12:36:50.910588Z",
+      "timestamp": "2026-01-14T08:36:16.417098Z",
       "level": "ERROR",
-      "message": "Training skipped: crypto/TRUMP-USDT (intraday): insufficient data (151 rows, need 200)",
+      "message": "Training skipped: crypto/TRUMP-USDT (short): insufficient data (157 rows, need 200)",
       "category": "TRAIN",
       "symbol": "TRUMP-USDT",
       "asset_type": "crypto",
       "data": {
-        "error": "insufficient data (151 rows, need 200)",
-        "horizon": "intraday"
+        "error": "insufficient data (157 rows, need 200)",
+        "horizon": "short"
       }
     }
   ]

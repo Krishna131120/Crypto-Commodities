@@ -11,26 +11,26 @@
     "target_direction",
     "Volatility_Expansion_Flag",
     "Session_VWAP",
-    "CCI_20",
-    "Gap_Open",
-    "TSI",
-    "Bollinger_%b",
+    "Donchian_Channel_low",
     "Rolling_Sharpe_30",
     "ADX_14",
-    "EMA_200",
-    "Gap_Percentage",
-    "Donchian_Channel_low",
     "Ichimoku_Senkou_Span_A",
+    "EMA_200",
     "RSI_14",
+    "TSI",
+    "Bollinger_%b",
+    "DI_plus",
     "Price_Channel_Slope",
-    "Keltner_Channel_lower",
+    "CCI_20",
     "RSI_21",
+    "Keltner_Channel_lower",
+    "Fibonacci_Level_0.786",
     "SMA_50",
     "EMA_100",
-    "CMF",
+    "EMA_50",
     "SMA_200",
-    "TRIX",
-    "EMA_50"
+    "Bollinger_Bands_lower_20_2",
+    "RSI_7"
   ],
   "config": {
     "learning_rate": 0.0005,
@@ -58,20 +58,20 @@
     "action": "long",
     "action_reason": "Action selected directly by DQN policy on latest state; reward history tracked separately.",
     "validation_policy_metrics": {
-      "total_return": 8.49210075388888,
-      "avg_return": 0.04005707902777774,
-      "sharpe": 17.06635599958814,
-      "hit_rate": 0.8867924528301887,
-      "max_drawdown": -0.024923507888515495
+      "total_return": 6.091613813302793,
+      "avg_return": 0.028734027421239587,
+      "sharpe": 9.927508698082722,
+      "hit_rate": 0.6981132075471698,
+      "max_drawdown": -0.09401824627018485
     },
     "test_policy_metrics": {
-      "total_return": 7.567088855186794,
-      "avg_return": 0.03569381535465469,
-      "sharpe": 15.792484168445753,
-      "hit_rate": 0.910377358490566,
-      "max_drawdown": -0.01255539143279183
+      "total_return": 5.294483647979548,
+      "avg_return": 0.02497397947160164,
+      "sharpe": 8.937289491362737,
+      "hit_rate": 0.7405660377358491,
+      "max_drawdown": -0.1244663901073162
     },
-    "predicted_return": 0.03569381535465469,
-    "predicted_price": 1.826963890285611
+    "predicted_return": 0.02497397947160164,
+    "predicted_price": 1.7547554528553821
   }
 }

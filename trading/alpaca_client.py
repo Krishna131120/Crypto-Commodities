@@ -21,7 +21,7 @@ from __future__ import annotations
 
 import os
 from dataclasses import dataclass
-from typing import Any, Dict, Optional
+from typing import Any, Dict, List, Optional
 
 import requests
 
@@ -227,6 +227,137 @@ class AlpacaClient(BrokerClient):
     def cancel_order(self, order_id: str) -> Dict[str, Any]:
         """Cancel an existing order by ID."""
         return self._request("DELETE", f"/orders/{order_id}")
+    
+    def list_orders(
+        self,
+        status: Optional[str] = None,
+        limit: Optional[int] = None,
+        after: Optional[str] = None,
+        until: Optional[str] = None,
+        direction: Optional[str] = None,
+        nested: Optional[bool] = None,
+        symbols: Optional[str] = None,
+    ) -> List[Dict[str, Any]]:
+        """
+        List orders with optional filtering.
+        
+        Args:
+            status: Filter by status ("open", "closed", "all"). Default: "all"
+            limit: Maximum number of orders to return (default: 50, max: 500)
+            after: Return orders submitted after this timestamp (ISO format)
+            until: Return orders submitted until this timestamp (ISO format)
+            direction: Sort direction ("asc" or "desc")
+            nested: If True, includes nested orders (for bracket orders)
+            symbols: Comma-separated list of symbols to filter by
+        
+        Returns:
+            List of order dictionaries
+        """
+        params: Dict[str, Any] = {}
+        if status:
+            params["status"] = status
+        if limit is not None:
+            params["limit"] = limit
+        if after:
+            params["after"] = after
+        if until:
+            params["until"] = until
+        if direction:
+            params["direction"] = direction
+        if nested is not None:
+            params["nested"] = nested
+        if symbols:
+            params["symbols"] = symbols
+        
+        result = self._request("GET", "/orders", params=params)
+        # Alpaca API returns a list directly
+        if isinstance(result, list):
+            return result
+        return []
+    
+    def get_recent_exit_order(
+        self,
+        symbol: str,
+        position_side: str,
+        entry_time: Optional[str] = None,
+        limit: int = 100,
+    ) -> Optional[Dict[str, Any]]:
+        """
+        Find the most recent filled order that would close the given position.
+        
+        For a LONG position, looks for filled SELL orders.
+        For a SHORT position, looks for filled BUY orders.
+        
+        Args:
+            symbol: Trading symbol (e.g., "BTCUSD")
+            position_side: "long" or "short"
+            entry_time: ISO timestamp of position entry (filters orders after this time)
+            limit: Maximum number of orders to check (default: 100)
+        
+        Returns:
+            Most recent filled exit order dict, or None if not found
+        """
+        from datetime import datetime, timezone
+        
+        # Determine which side to look for
+        if position_side.lower() == "long":
+            exit_side = "sell"
+        elif position_side.lower() == "short":
+            exit_side = "buy"
+        else:
+            return None
+        
+        # Get recent orders for this symbol
+        orders = self.list_orders(
+            status="all",  # Include filled orders
+            limit=limit,
+            symbols=symbol.upper(),
+        )
+        
+        if not orders:
+            return None
+        
+        # Filter for filled exit orders (correct side, filled status)
+        exit_orders = []
+        for order in orders:
+            order_side = order.get("side", "").lower()
+            order_status = order.get("status", "").lower()
+            
+            # Must be the correct side (sell for long, buy for short)
+            if order_side != exit_side:
+                continue
+            
+            # Must be filled
+            if order_status != "filled":
+                continue
+            
+            # If entry_time provided, only consider orders after entry
+            if entry_time:
+                try:
+                    order_filled_at = order.get("filled_at") or order.get("created_at")
+                    if order_filled_at:
+                        # Parse ISO timestamps
+                        order_time = datetime.fromisoformat(order_filled_at.replace("Z", "+00:00"))
+                        entry_time_obj = datetime.fromisoformat(entry_time.replace("Z", "+00:00"))
+                        if order_time <= entry_time_obj:
+                            continue  # Order was before entry, skip
+                except (ValueError, AttributeError):
+                    # If we can't parse dates, include the order (better to include than exclude)
+                    pass
+            
+            exit_orders.append(order)
+        
+        if not exit_orders:
+            return None
+        
+        # Sort by filled_at (most recent first)
+        exit_orders.sort(
+            key=lambda x: x.get("filled_at") or x.get("created_at") or "",
+            reverse=True
+        )
+        
+        # Return the most recent exit order
+        return exit_orders[0]
     
     def submit_stop_order(
         self,

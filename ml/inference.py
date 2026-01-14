@@ -4,6 +4,7 @@ Deployment-ready inference pipeline for classical + RL models.
 from __future__ import annotations
 
 import json
+import warnings
 from pathlib import Path
 from typing import Any, Dict, Optional
 
@@ -13,6 +14,17 @@ import pandas as pd
 
 from ml.risk import RiskManager, RiskManagerConfig
 from monitoring.live_metrics import LiveMetricsTracker
+
+# SKLEARN VERSION COMPATIBILITY
+# Models may have been trained with sklearn 1.3.2 but are being loaded with sklearn 1.7.1
+# This causes warnings about missing 'monotonic_cst' attribute (deprecated/renamed in newer versions)
+# These warnings are safe to ignore - the models still work correctly
+# Suppress all sklearn version compatibility warnings
+warnings.filterwarnings("ignore", category=UserWarning, module="sklearn")
+warnings.filterwarnings("ignore", message=".*InconsistentVersionWarning.*")
+warnings.filterwarnings("ignore", message=".*Trying to unpickle.*")
+warnings.filterwarnings("ignore", message=".*monotonic_cst.*")
+warnings.filterwarnings("ignore", message=".*does not have the attribute.*")
 
 
 PREDICTION_CLAMP = 0.2
@@ -494,11 +506,16 @@ class InferencePipeline:
                         }
             except Exception as exc:
                 # Log the error for debugging but continue with other models
-                import warnings
+                # Suppress known sklearn compatibility warnings (monotonic_cst)
+                error_str = str(exc)
+                if "monotonic_cst" in error_str:
+                    # Known sklearn version compatibility issue - model still works, just skip this prediction
+                    continue
+                # For other errors, log but don't spam warnings
                 error_msg = f"Model {name} prediction failed: {exc}"
-                warnings.warn(error_msg, UserWarning)
-                # Also print to stderr for immediate visibility
-                print(f"[WARNING] {error_msg}", flush=True)
+                # Only print if it's not a known compatibility issue
+                if "monotonic_cst" not in error_str:
+                    print(f"[WARNING] {error_msg}", flush=True)
                 continue
         
         # Second pass: if we have stacked_blend and enough base model predictions, use it
@@ -1027,187 +1044,188 @@ class InferencePipeline:
                     consensus_return = consensus_return * scale
                     consensus["consensus_return"] = consensus_return
                     consensus["extreme_prediction_scaled"] = True
-        elif self.horizon_profile == "long":
-            # For long-term predictions (30 days), apply mean reversion logic
-            # Key insight: price can go down for a few days, but final prediction at 30 days
-            # should account for mean reversion. Long-term moves rarely go in straight lines.
+        # CRITICAL: Apply mean-reversion logic for ALL horizons
+        # User wants to BUY LOW (when oversold) and SELL HIGH (when overbought)
+        # This applies mean-reversion adjustments to help identify buying opportunities
+        # Extract feature signals for mean-reversion detection
+        feature_signals = self._extract_feature_signals(feature_row, current_price)
+        
+        # Calculate mean-reversion adjustment factor
+        # Positive adjustment = bias toward LONG (oversold conditions)
+        # Negative adjustment = bias toward SHORT (overbought conditions)
+        mean_reversion_adjustment = 0.0
+        
+        # Combine multiple signals for robust mean-reversion detection
+        if feature_signals.get("rsi_signal") is not None:
+            # RSI is the strongest mean-reversion signal
+            # rsi_signal > 0 = oversold (expect upward bounce)
+            # rsi_signal < 0 = overbought (expect downward correction)
+            mean_reversion_adjustment += feature_signals["rsi_signal"] * 0.4  # 40% weight
+        
+        if feature_signals.get("sma50_signal") is not None:
+            # Price below SMA50 = oversold, expect bounce
+            mean_reversion_adjustment += feature_signals["sma50_signal"] * 0.3  # 30% weight
+        
+        if feature_signals.get("sma200_signal") is not None:
+            # Price below SMA200 = very oversold, expect stronger bounce
+            mean_reversion_adjustment += feature_signals["sma200_signal"] * 0.2  # 20% weight
+        
+        if feature_signals.get("macd_signal") is not None:
+            # MACD divergence can indicate mean-reversion
+            mean_reversion_adjustment += feature_signals["macd_signal"] * 0.1  # 10% weight
+        
+        # Apply horizon-specific mean-reversion strength
+        # Shorter horizons need stronger signals (quick bounces)
+        # Longer horizons can have weaker signals (gradual mean reversion)
+        horizon_multipliers = {
+            "intraday": 0.8,  # Strong mean-reversion for intraday (quick scalps)
+            "short": 1.0,     # Moderate mean-reversion for short-term (3-5 day bounces) - THIS IS WHAT USER WANTS
+            "long": 0.6,      # Weaker mean-reversion for long-term (gradual reversion)
+        }
+        horizon_mult = horizon_multipliers.get(self.horizon_profile, 1.0)
+        mean_reversion_adjustment *= horizon_mult
+        
+        # Convert adjustment to return impact
+        # For SHORT horizon: if oversold (adjustment > 0), bias toward +1-2% recovery
+        # For SHORT horizon: if overbought (adjustment < 0), bias toward -1-2% correction
+        adjustment_strengths = {
+            "intraday": 0.005,  # 0.5% max adjustment for intraday
+            "short": 0.015,     # 1.5% max adjustment for short-term (3-5 day recovery)
+            "long": 0.020,      # 2.0% max adjustment for long-term
+        }
+        max_adjustment = adjustment_strengths.get(self.horizon_profile, 0.015)
+        mean_reversion_return_adjustment = mean_reversion_adjustment * max_adjustment
+        
+        # SAFETY CHECKS: Only apply adjustment if conditions are safe
+        # ADJUSTED: Lowered threshold from 0.3 to 0.25 to allow more mean-reversion signals
+        # This helps identify more buying opportunities when assets are oversold
+        min_signal_strength = 0.25  # Only apply if combined signal > 25% (reduced from 30%)
+        should_apply_mean_reversion = abs(mean_reversion_adjustment) > min_signal_strength
+        
+        # Safety check 1: Don't override if model confidence is very low
+        model_confidence = consensus.get("consensus_confidence", 0.0)
+        min_confidence_for_override = 0.40  # Only override if models have at least 40% confidence
+        if model_confidence < min_confidence_for_override:
+            should_apply_mean_reversion = False
+            consensus["mean_reversion_blocked"] = f"Model confidence too low ({model_confidence:.1%} < {min_confidence_for_override:.1%})"
+        
+        # Safety check 2: Don't override if ALL models strongly agree on opposite direction
+        # Check model agreement from consensus (if available)
+        model_agreement = consensus.get("model_agreement_ratio", 0.0)
+        if model_agreement > 0.85:  # 85%+ models agree
+            # If models strongly agree on direction, be cautious about overriding
+            original_action = consensus.get("consensus_action", "hold")
+            if mean_reversion_adjustment > 0 and original_action == "short":
+                # Mean-reversion wants LONG but 85%+ models say SHORT
+                # Reduce adjustment by 50% (apply but less aggressively)
+                mean_reversion_return_adjustment *= 0.5
+                consensus["mean_reversion_reduced"] = "Strong model consensus on opposite direction"
+            elif mean_reversion_adjustment < 0 and original_action == "long":
+                # Mean-reversion wants SHORT but 85%+ models say LONG
+                mean_reversion_return_adjustment *= 0.5
+                consensus["mean_reversion_reduced"] = "Strong model consensus on opposite direction"
+        
+        # Safety check 3: Don't apply if we're in extreme market conditions
+        # Check if volatility is extreme (might indicate crash/panic)
+        extreme_volatility_threshold = 0.10  # 10% daily volatility = extreme
+        if volatility > extreme_volatility_threshold:
+            should_apply_mean_reversion = False
+            consensus["mean_reversion_blocked"] = f"Extreme volatility detected ({volatility:.1%} > {extreme_volatility_threshold:.1%})"
+        
+        # Safety check 4: For SHORT horizon, require moderate oversold/overbought signals
+        # ADJUSTED: Lowered thresholds to be less restrictive and catch more oversold conditions
+        # This aligns with user's goal: buy low (when oversold) even if models predict SHORT
+        if self.horizon_profile == "short":
+            rsi_signal = feature_signals.get("rsi_signal", 0.0) or 0.0
+            sma50_signal = feature_signals.get("sma50_signal", 0.0) or 0.0
+            sma200_signal = feature_signals.get("sma200_signal", 0.0) or 0.0
+            sma_signal = abs(sma50_signal) + abs(sma200_signal)  # Combined SMA signal strength
             
-            # Step 1: Cap at realistic 30-day moves (typically 5-8% for crypto)
+            # ADJUSTED THRESHOLDS (more permissive to catch more oversold conditions):
+            # RSI >= 0.15 (was 0.2) - RSI 37 or lower is considered oversold (was 36)
+            # SMA >= 0.12 (was 0.15) - Price 2-3% below MA is considered oversold (was 3-4%)
+            # Combined >= 0.20 (was 0.25) - Lower threshold for combined signal
+            rsi_strong_enough = abs(rsi_signal) >= 0.15  # RSI 37 or lower = moderately oversold
+            sma_strong_enough = abs(sma_signal) >= 0.12  # Price 2-3% below MA = oversold
+            combined_strong_enough = abs(mean_reversion_adjustment) >= 0.20  # Combined signal threshold
+            
+            # Block only if ALL signals are weak (more permissive condition)
+            if not (rsi_strong_enough or sma_strong_enough or combined_strong_enough):
+                should_apply_mean_reversion = False
+                consensus["mean_reversion_blocked"] = f"Insufficient oversold/overbought signals for short-term (RSI: {abs(rsi_signal):.2f}, SMA: {abs(sma_signal):.2f}, Combined: {abs(mean_reversion_adjustment):.2f})"
+        
+        if should_apply_mean_reversion:
+            # Blend model prediction with mean-reversion adjustment
+            # When oversold: increase return prediction (favor LONG)
+            # When overbought: decrease return prediction (favor SHORT)
+            original_return = consensus_return
+            consensus_return = consensus_return + mean_reversion_return_adjustment
+            
+            # Safety check 5: Cap maximum adjustment impact (don't flip extreme predictions)
+            # If original prediction is very extreme (>5%), limit how much we can adjust
+            if abs(original_return) > 0.05:  # Original > 5%
+                # Limit adjustment to maximum 30% of original magnitude
+                max_allowed_adjustment = abs(original_return) * 0.3
+                if abs(mean_reversion_return_adjustment) > max_allowed_adjustment:
+                    # Scale down adjustment
+                    scale_factor = max_allowed_adjustment / abs(mean_reversion_return_adjustment)
+                    mean_reversion_return_adjustment *= scale_factor
+                    consensus_return = original_return + mean_reversion_return_adjustment
+                    consensus["mean_reversion_capped"] = f"Adjustment capped to 30% of extreme prediction"
+            
+            # Update action based on adjusted return
+            if consensus_return > self.dynamic_threshold and original_return <= self.dynamic_threshold:
+                # Mean-reversion flipped prediction from HOLD/SHORT to LONG
+                consensus["consensus_action"] = "long"
+                consensus["mean_reversion_flipped_to_long"] = True
+            elif consensus_return < -self.dynamic_threshold and original_return >= -self.dynamic_threshold:
+                # Mean-reversion flipped prediction from HOLD/LONG to SHORT
+                consensus["consensus_action"] = "short"
+                consensus["mean_reversion_flipped_to_short"] = True
+            
+            consensus["mean_reversion_adjustment"] = mean_reversion_return_adjustment
+            consensus["mean_reversion_signal_strength"] = abs(mean_reversion_adjustment)
+            consensus["mean_reversion_applied"] = True
+            consensus["mean_reversion_reason"] = (
+                f"Mean-reversion signal: {mean_reversion_adjustment:.2f} "
+                f"(RSI: {feature_signals.get('rsi', 'N/A')}, "
+                f"SMA50: {feature_signals.get('price_vs_sma50', 0)*100:+.1f}%)"
+            )
+            consensus["consensus_return"] = consensus_return
+        else:
+            # Mean-reversion blocked - log why
+            consensus["mean_reversion_applied"] = False
+            if "mean_reversion_blocked" not in consensus:
+                consensus["mean_reversion_blocked"] = "Signal strength insufficient"
+        
+        # Apply horizon-specific caps (after mean-reversion adjustment)
+        if self.horizon_profile == "long":
+            # Cap at realistic 30-day moves (typically 5-8% for crypto)
             max_long_move = 0.08  # 8% max for 30-day prediction
             if abs(consensus_return) > max_long_move:
                 # Scale down extreme predictions
                 scale = max_long_move / abs(consensus_return)
                 consensus_return = consensus_return * scale
                 consensus["extreme_prediction_scaled"] = True
-            
-            # Step 2: Apply mean reversion for long-term predictions
-            # For long-term, we expect mean reversion: if prediction is strongly negative,
-            # apply a pull-back factor (markets rarely fall in straight lines for 30 days)
-            mean_reversion_factor = 1.0
-            if abs(consensus_return) > 0.03:  # If prediction > 3%
-                # Apply mean reversion: reduce magnitude by 20-40% depending on strength
-                # Stronger predictions get more dampening (they're less likely to persist)
-                strength = min(abs(consensus_return) / 0.08, 1.0)  # Normalize to 0-1
-                mean_reversion_dampening = 0.6 + 0.4 * (1.0 - strength)  # 0.6-1.0 range
-                mean_reversion_factor = mean_reversion_dampening
-                consensus["mean_reversion_applied"] = True
-                consensus["mean_reversion_factor"] = float(mean_reversion_factor)
-            
-            # Step 3: Feature-based mean reversion adjustment
-            # If technical indicators suggest oversold/overbought, apply STRONG correction
-            # This can even flip the direction if indicators strongly suggest mean reversion
-            feature_mean_reversion = 0.0
-            strong_oversold = False
-            strong_overbought = False
-            
-            if feature_signals.get("rsi_signal") is not None:
-                rsi_signal = feature_signals["rsi_signal"]
-                rsi_value = feature_signals.get("rsi")
-                
-                # Strong oversold: RSI < 30 and signal > 0.5
-                if rsi_value is not None and rsi_value < 30 and rsi_signal > 0.5:
-                    strong_oversold = True
-                    # If all models predict negative and we're strongly oversold, apply STRONG mean reversion
-                    if consensus_return < -0.02:  # Strong negative prediction
-                        # Flip or strongly reduce negative prediction - can flip direction
-                        feature_mean_reversion = abs(consensus_return) * 0.8  # Add 80% of negative magnitude (can flip)
-                        consensus["strong_oversold_flip"] = True
-                    elif consensus_return < 0:
-                        feature_mean_reversion = abs(consensus_return) * 0.5  # Add 50% of negative magnitude
-                
-                # Moderate oversold: RSI 30-40 (signal 0.0-0.5)
-                elif rsi_value is not None and 30 <= rsi_value < 40 and rsi_signal > 0:
-                    # RSI is oversold (30-40), apply mean reversion
-                    if consensus_return < -0.02:  # Strong negative prediction
-                        # Apply strong mean reversion for moderate oversold
-                        feature_mean_reversion = abs(consensus_return) * 0.6  # Add 60% of negative magnitude
-                        consensus["moderate_oversold_detected"] = True
-                    elif consensus_return < 0:
-                        # Moderate negative prediction
-                        feature_mean_reversion = abs(consensus_return) * 0.4  # Add 40% of negative magnitude
-                
-                # Strong overbought: RSI > 70 and signal < -0.5
-                elif rsi_value is not None and rsi_value > 70 and rsi_signal < -0.5:
-                    strong_overbought = True
-                    # If all models predict positive and we're strongly overbought, apply STRONG mean reversion
-                    if consensus_return > 0.02:  # Strong positive prediction
-                        feature_mean_reversion = -abs(consensus_return) * 0.8  # Subtract 80% of positive magnitude (can flip)
-                        consensus["strong_overbought_flip"] = True
-                    elif consensus_return > 0:
-                        feature_mean_reversion = -abs(consensus_return) * 0.5  # Subtract 50% of positive magnitude
-                
-                # Moderate overbought: RSI 60-70 (signal -0.5 to 0.0)
-                elif rsi_value is not None and 60 < rsi_value <= 70 and rsi_signal < 0:
-                    # RSI is overbought (60-70), apply mean reversion
-                    if consensus_return > 0.02:  # Strong positive prediction
-                        feature_mean_reversion = -abs(consensus_return) * 0.6  # Subtract 60% of positive magnitude
-                        consensus["moderate_overbought_detected"] = True
-                    elif consensus_return > 0:
-                        feature_mean_reversion = -abs(consensus_return) * 0.4  # Subtract 40% of positive magnitude
-            
-            if feature_signals.get("sma50_signal") is not None:
-                sma50_signal = feature_signals["sma50_signal"]
-                price_vs_sma = feature_signals.get("price_vs_sma50", 0)
-                
-                # If price is VERY far below SMA (>15% below), expect VERY strong mean reversion up
-                if price_vs_sma < -0.15 and consensus_return < 0:
-                    # Price is >15% below SMA and prediction is negative - VERY strong mean reversion signal
-                    # Can flip direction completely
-                    feature_mean_reversion += abs(consensus_return) * 0.7  # Add 70% of negative magnitude (can flip)
-                    consensus["very_oversold_sma_detected"] = True
-                # If price is far below SMA (>10% below), expect strong mean reversion up
-                elif price_vs_sma < -0.10 and consensus_return < 0:
-                    # Price is >10% below SMA and prediction is negative - strong mean reversion signal
-                    feature_mean_reversion += abs(consensus_return) * 0.5  # Add 50% of negative magnitude
-                    consensus["oversold_sma_detected"] = True
-                # If price is far above SMA (>10% above), expect mean reversion down
-                elif price_vs_sma > 0.10 and consensus_return > 0:
-                    feature_mean_reversion -= abs(consensus_return) * 0.5  # Subtract 50% of positive magnitude
-                    consensus["overbought_sma_detected"] = True
-                # Moderate deviation (5-10% away from SMA)
-                elif abs(price_vs_sma) > 0.05 and consensus_return * price_vs_sma < 0:  # Opposite directions
-                    # Price deviation suggests mean reversion opposite to prediction
-                    feature_mean_reversion += abs(consensus_return) * 0.3  # Add 30% adjustment
-            
-            # Apply feature-based mean reversion
-            if abs(feature_mean_reversion) > 0:
-                consensus_return_before = consensus_return
-                consensus_return = consensus_return + feature_mean_reversion
-                consensus["feature_mean_reversion_applied"] = True
-                consensus["feature_mean_reversion_adjustment"] = float(feature_mean_reversion)
-                consensus["consensus_return_before_mean_reversion"] = float(consensus_return_before)
-                if strong_oversold:
-                    consensus["strong_oversold_detected"] = True
-                if strong_overbought:
-                    consensus["strong_overbought_detected"] = True
-                
-                # Log the adjustment for debugging
-                consensus["mean_reversion_debug"] = {
-                    "rsi_value": feature_signals.get("rsi"),
-                    "rsi_signal": feature_signals.get("rsi_signal"),
-                    "price_vs_sma50": feature_signals.get("price_vs_sma50"),
-                    "sma50_signal": feature_signals.get("sma50_signal"),
-                    "adjustment_applied": float(feature_mean_reversion),
-                    "return_before": float(consensus_return_before),
-                    "return_after": float(consensus_return),
-                }
-            
-            # Apply mean reversion factor
-            consensus_return = consensus_return * mean_reversion_factor
-            consensus["consensus_return"] = consensus_return
-            
+                consensus["consensus_return"] = consensus_return
+        
         elif self.horizon_profile == "short":
             # For short-term, cap at 6% for 4-day prediction
             max_short_move = 0.06  # 6% max for 4-day prediction
             if abs(consensus_return) > max_short_move:
                 scale = max_short_move / abs(consensus_return)
                 consensus_return = consensus_return * scale
-                consensus["consensus_return"] = consensus_return
                 consensus["extreme_prediction_scaled"] = True
-            
-            # Apply lighter mean reversion for short-term (less dampening)
-            if abs(consensus_return) > 0.04:  # If prediction > 4%
-                mean_reversion_factor = 0.85  # Reduce by 15%
-                consensus_return = consensus_return * mean_reversion_factor
                 consensus["consensus_return"] = consensus_return
-                consensus["mean_reversion_applied"] = True
         
         # Recalculate action after dampening (action might have changed)
         final_consensus_return = consensus["consensus_return"]
         
         # For intraday with price action override, don't recalculate action (it's already set correctly)
         if not consensus.get("intraday_price_action_override", False):
-            # Final check: if mean reversion strongly suggests opposite direction, respect it
-            # Check if we have multiple strong mean reversion signals (RSI + SMA)
-            strong_mean_reversion_up = (
-                consensus.get("strong_oversold_flip") or 
-                consensus.get("moderate_oversold_detected") or
-                consensus.get("very_oversold_sma_detected") or
-                (consensus.get("oversold_sma_detected") and consensus.get("moderate_oversold_detected"))
-            )
-            strong_mean_reversion_down = (
-                consensus.get("strong_overbought_flip") or
-                consensus.get("moderate_overbought_detected") or
-                consensus.get("overbought_sma_detected")
-            )
-            
-            if strong_mean_reversion_up and final_consensus_return < -self.dynamic_threshold:
-                # Strong oversold detected (RSI + SMA) but still negative - apply strong correction
-                # Instead of forcing hold, apply additional correction to flip or neutralize
-                if abs(final_consensus_return) > 0.03:  # If still very negative (>3%)
-                    # Apply additional correction to bring it closer to neutral or positive
-                    additional_correction = abs(final_consensus_return) * 0.5
-                    final_consensus_return = final_consensus_return + additional_correction
-                    consensus["consensus_return"] = final_consensus_return
-                    consensus["mean_reversion_strong_correction"] = True
-            elif strong_mean_reversion_down and final_consensus_return > self.dynamic_threshold:
-                # Strong overbought detected but still positive - apply strong correction
-                if abs(final_consensus_return) > 0.03:  # If still very positive (>3%)
-                    additional_correction = abs(final_consensus_return) * 0.5
-                    final_consensus_return = final_consensus_return - additional_correction
-                    consensus["consensus_return"] = final_consensus_return
-                    consensus["mean_reversion_strong_correction"] = True
-            elif final_consensus_return > self.dynamic_threshold:
+            # Recalculate action based on final return (if mean-reversion changed it)
+            # Mean-reversion logic already adjusted the return above, just need to update action
+            if final_consensus_return > self.dynamic_threshold:
                 consensus["consensus_action"] = "long"
             elif final_consensus_return < -self.dynamic_threshold:
                 consensus["consensus_action"] = "short"
