@@ -3,15 +3,15 @@
   "total_events": 1,
   "events": [
     {
-      "timestamp": "2026-01-14T08:36:17.090947Z",
+      "timestamp": "2026-01-15T05:43:52.592491Z",
       "level": "ERROR",
-      "message": "Training skipped: crypto/YFI-USDC (short): No data.json found for crypto/YFI-USDC/1d",
+      "message": "Training skipped: crypto/YFI-USDC (intraday): No data.json found for crypto/YFI-USDC/1d",
       "category": "TRAIN",
       "symbol": "YFI-USDC",
       "asset_type": "crypto",
       "data": {
         "error": "No data.json found for crypto/YFI-USDC/1d",
-        "horizon": "short"
+        "horizon": "intraday"
       }
     }
   ]

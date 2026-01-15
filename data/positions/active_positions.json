@@ -25,5 +25,32 @@
     "highest_price": 100.0,
     "lowest_price": null,
     "trailing_stop_triggered": false
+  },
+  "BCHUSD": {
+    "symbol": "BCHUSD",
+    "data_symbol": "BCH-BTC",
+    "asset_type": "crypto",
+    "side": "long",
+    "entry_price": 0.006475,
+    "entry_time": "2026-01-15T10:55:43.198494Z",
+    "quantity": 671610.8108108109,
+    "profit_target_pct": 1.0,
+    "profit_target_price": 0.0065397499999999996,
+    "stop_loss_pct": 0.05,
+    "stop_loss_price": 0.0064717625,
+    "status": "stop_loss_hit",
+    "exit_price": 0.006466,
+    "exit_time": "2026-01-15T10:57:10.814268Z",
+    "exit_reason": "stop_loss_hit",
+    "realized_pl": -6.044497297296935,
+    "realized_pl_pct": -0.13899613899613067,
+    "initial_entry_price": 0.006475,
+    "total_cost_basis": 4348.68,
+    "stop_loss_order_id": null,
+    "take_profit_order_id": null,
+    "short_prediction_cycles": 0,
+    "highest_price": 0.006475,
+    "lowest_price": null,
+    "trailing_stop_triggered": false
   }
 }

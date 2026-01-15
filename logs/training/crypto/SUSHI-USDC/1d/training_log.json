@@ -3,15 +3,15 @@
   "total_events": 1,
   "events": [
     {
-      "timestamp": "2026-01-14T08:36:17.087754Z",
+      "timestamp": "2026-01-15T05:43:52.589874Z",
       "level": "ERROR",
-      "message": "Training skipped: crypto/SUSHI-USDC (short): index 8 is out of bounds for axis 0 with size 8",
+      "message": "Training skipped: crypto/SUSHI-USDC (intraday): insufficient data (11 rows, need 200)",
       "category": "TRAIN",
       "symbol": "SUSHI-USDC",
       "asset_type": "crypto",
       "data": {
-        "error": "index 8 is out of bounds for axis 0 with size 8",
-        "horizon": "short"
+        "error": "insufficient data (11 rows, need 200)",
+        "horizon": "intraday"
       }
     }
   ]

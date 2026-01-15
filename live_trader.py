@@ -1311,17 +1311,40 @@ def run_trading_cycle(
             is_in_tradable_set = data_symbol.upper() in trading_symbols_set
             is_long_with_good_confidence = (action == "long" and confidence >= 0.60)  # 60%+ confidence for LONG
             
+            # CRITICAL: Allow trading when mean-reversion is applied (even if it hasn't fully flipped to LONG)
+            # This enables "buy low" strategy - buy when oversold even if models predict SHORT
+            # BUT: Add additional safety checks to reduce risk
+            mean_reversion_applied = consensus.get("mean_reversion_applied", False)
+            mean_reversion_flipped_to_long = consensus.get("mean_reversion_flipped_to_long", False)
+            mean_reversion_adjustment = consensus.get("mean_reversion_adjustment", 0.0)
+            adjusted_return = consensus.get("consensus_return", 0.0)
+            original_return = adjusted_return - mean_reversion_adjustment  # Reverse engineer original
+            
+            # SAFETY CHECKS for mean-reversion trades:
+            # 1. Mean-reversion must be applied AND suggest LONG (positive adjustment)
+            # 2. Adjusted return must be at least slightly positive (>0.5%) - don't buy if still negative
+            # 3. Mean-reversion adjustment must be significant (>1.0%) - avoid weak signals
+            # 4. Confidence must be reasonable (>=50%)
+            # 5. Original prediction shouldn't be extremely bearish (<-8%) - avoid catching falling knives
+            is_mean_reversion_long_signal = (
+                mean_reversion_applied and 
+                mean_reversion_adjustment > 0.01 and  # At least 1% positive adjustment (oversold signal)
+                adjusted_return > 0.005 and  # Adjusted return must be >0.5% positive (don't buy if still negative)
+                original_return > -0.08 and  # Don't buy if original prediction was extremely bearish (<-8%)
+                confidence >= 0.50  # Minimum 50% confidence
+            )
+            
             # Determine if we're in top5 mode (tradable_symbols is a subset of all symbols)
             is_top5_mode = all_symbols_for_predictions and len(trading_symbols_set) < len(all_symbols_for_predictions)
             
             # Trading logic:
-            # - If top5 mode: trade if in top5 OR if LONG with 60%+ confidence
-            # - If NOT top5 mode: trade if LONG with 60%+ confidence (all symbols are in tradable_set, so we check criteria)
+            # - If top5 mode: trade if in top5 OR if LONG with 60%+ confidence OR if mean-reversion suggests LONG
+            # - If NOT top5 mode: trade if LONG with 60%+ confidence OR if mean-reversion suggests LONG
             if is_top5_mode:
-                should_trade = is_in_tradable_set or is_long_with_good_confidence
+                should_trade = is_in_tradable_set or is_long_with_good_confidence or is_mean_reversion_long_signal
             else:
-                # Not in top5 mode - trade any symbol that meets criteria (LONG with 60%+ confidence)
-                should_trade = is_long_with_good_confidence
+                # Not in top5 mode - trade any symbol that meets criteria
+                should_trade = is_long_with_good_confidence or is_mean_reversion_long_signal
             
             if not should_trade:
                 # Show prediction but don't execute trade
@@ -1342,13 +1365,27 @@ def run_trading_cycle(
                 })
                 continue
             
-            # If trading due to LONG override (not in tradable set but meets criteria), show message
+            # If trading due to LONG override or mean-reversion signal, show message
             if not is_in_tradable_set and is_long_with_good_confidence:
                 confidence_pct = confidence * 100 if confidence <= 1.0 else confidence
                 expected_move_pct = consensus.get("consensus_return", 0.0) * 100
                 print(f"\n  [OVERRIDE] ✅ Trading {data_symbol} (strong LONG signal)")
                 print(f"    Reason: LONG signal with {confidence_pct:.1f}% confidence (expected move: {expected_move_pct:+.2f}%)")
                 print(f"    Action: System detected buying opportunity based on mean reversion and model consensus")
+            elif is_mean_reversion_long_signal and not is_long_with_good_confidence:
+                # Trading due to mean-reversion signal (oversold condition detected)
+                confidence_pct = confidence * 100 if confidence <= 1.0 else confidence
+                expected_move_pct = consensus.get("consensus_return", 0.0) * 100
+                mean_rev_adj_pct = mean_reversion_adjustment * 100
+                original_action = consensus.get("consensus_action", action)
+                original_return_pct = original_return * 100
+                print(f"\n  [MEAN-REVERSION BUY] ⚠️  Trading {data_symbol} (oversold condition detected)")
+                print(f"    ⚠️  RISK: Buying against model prediction (models predicted {original_action.upper()})")
+                print(f"    Reason: Mean-reversion detected oversold condition (adjustment: {mean_rev_adj_pct:+.2f}%)")
+                print(f"    Original Prediction: {original_action.upper()} ({confidence_pct:.1f}% confidence, return: {original_return_pct:+.2f}%)")
+                print(f"    Adjusted Return: {expected_move_pct:+.2f}% (mean-reversion applied)")
+                print(f"    Strategy: Buy low when oversold, expecting mean reversion bounce")
+                print(f"    ✅ Safety checks passed: adjustment>{mean_rev_adj_pct:.1f}%, adjusted return>{expected_move_pct:.1f}%, original>{original_return_pct:.1f}%")
             
             # Execute trade with horizon-specific risk parameters
             try:

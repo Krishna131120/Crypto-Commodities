@@ -1086,25 +1086,29 @@ class InferencePipeline:
         mean_reversion_adjustment *= horizon_mult
         
         # Convert adjustment to return impact
-        # For SHORT horizon: if oversold (adjustment > 0), bias toward +1-2% recovery
+        # ADJUSTED: Increased adjustment strength for SHORT horizon to help flip SHORT predictions to LONG
+        # For SHORT horizon: if oversold (adjustment > 0), bias toward +2-3% recovery (increased from 1.5%)
         # For SHORT horizon: if overbought (adjustment < 0), bias toward -1-2% correction
         adjustment_strengths = {
             "intraday": 0.005,  # 0.5% max adjustment for intraday
-            "short": 0.015,     # 1.5% max adjustment for short-term (3-5 day recovery)
+            "short": 0.025,     # 2.5% max adjustment for short-term (increased from 1.5% to help flip SHORT to LONG)
             "long": 0.020,      # 2.0% max adjustment for long-term
         }
         max_adjustment = adjustment_strengths.get(self.horizon_profile, 0.015)
         mean_reversion_return_adjustment = mean_reversion_adjustment * max_adjustment
         
         # SAFETY CHECKS: Only apply adjustment if conditions are safe
-        # ADJUSTED: Lowered threshold from 0.3 to 0.25 to allow more mean-reversion signals
+        # ADJUSTED: Lowered threshold from 0.25 to 0.15 to allow more mean-reversion signals
         # This helps identify more buying opportunities when assets are oversold
-        min_signal_strength = 0.25  # Only apply if combined signal > 25% (reduced from 30%)
+        # BUT: Still require minimum signal strength to avoid false signals
+        min_signal_strength = 0.15  # Only apply if combined signal > 15% (reduced from 25%, but still requires meaningful signal)
         should_apply_mean_reversion = abs(mean_reversion_adjustment) > min_signal_strength
         
         # Safety check 1: Don't override if model confidence is very low
+        # ADJUSTED: Lowered from 0.40 to 0.35 to allow mean-reversion when models have moderate confidence
+        # This helps catch oversold opportunities even when model confidence is slightly lower
         model_confidence = consensus.get("consensus_confidence", 0.0)
-        min_confidence_for_override = 0.40  # Only override if models have at least 40% confidence
+        min_confidence_for_override = 0.35  # Only override if models have at least 35% confidence (reduced from 40%)
         if model_confidence < min_confidence_for_override:
             should_apply_mean_reversion = False
             consensus["mean_reversion_blocked"] = f"Model confidence too low ({model_confidence:.1%} < {min_confidence_for_override:.1%})"
@@ -1142,12 +1146,13 @@ class InferencePipeline:
             sma_signal = abs(sma50_signal) + abs(sma200_signal)  # Combined SMA signal strength
             
             # ADJUSTED THRESHOLDS (more permissive to catch more oversold conditions):
-            # RSI >= 0.15 (was 0.2) - RSI 37 or lower is considered oversold (was 36)
-            # SMA >= 0.12 (was 0.15) - Price 2-3% below MA is considered oversold (was 3-4%)
-            # Combined >= 0.20 (was 0.25) - Lower threshold for combined signal
-            rsi_strong_enough = abs(rsi_signal) >= 0.15  # RSI 37 or lower = moderately oversold
-            sma_strong_enough = abs(sma_signal) >= 0.12  # Price 2-3% below MA = oversold
-            combined_strong_enough = abs(mean_reversion_adjustment) >= 0.20  # Combined signal threshold
+            # RSI >= 0.10 (was 0.15) - RSI 38 or lower is considered oversold (was 37)
+            # SMA >= 0.08 (was 0.12) - Price 1.5-2% below MA is considered oversold (was 2-3%)
+            # Combined >= 0.15 (was 0.20) - Lower threshold for combined signal
+            # These lower thresholds help catch oversold conditions when markets are falling
+            rsi_strong_enough = abs(rsi_signal) >= 0.10  # RSI 38 or lower = moderately oversold
+            sma_strong_enough = abs(sma_signal) >= 0.08  # Price 1.5-2% below MA = oversold
+            combined_strong_enough = abs(mean_reversion_adjustment) >= 0.15  # Combined signal threshold
             
             # Block only if ALL signals are weak (more permissive condition)
             if not (rsi_strong_enough or sma_strong_enough or combined_strong_enough):
@@ -1162,16 +1167,22 @@ class InferencePipeline:
             consensus_return = consensus_return + mean_reversion_return_adjustment
             
             # Safety check 5: Cap maximum adjustment impact (don't flip extreme predictions)
-            # If original prediction is very extreme (>5%), limit how much we can adjust
+            # ADJUSTED: Allow stronger adjustments when oversold (mean_reversion_adjustment > 0)
+            # This helps mean-reversion flip SHORT predictions to LONG when assets are oversold
             if abs(original_return) > 0.05:  # Original > 5%
-                # Limit adjustment to maximum 30% of original magnitude
-                max_allowed_adjustment = abs(original_return) * 0.3
+                # For oversold conditions (positive adjustment), allow up to 50% adjustment
+                # For overbought conditions (negative adjustment), keep 30% limit (more conservative)
+                if mean_reversion_adjustment > 0:  # Oversold - want to flip SHORT to LONG
+                    max_allowed_adjustment = abs(original_return) * 0.5  # Allow 50% adjustment for oversold
+                else:  # Overbought
+                    max_allowed_adjustment = abs(original_return) * 0.3  # Keep 30% limit for overbought
+                
                 if abs(mean_reversion_return_adjustment) > max_allowed_adjustment:
                     # Scale down adjustment
                     scale_factor = max_allowed_adjustment / abs(mean_reversion_return_adjustment)
                     mean_reversion_return_adjustment *= scale_factor
                     consensus_return = original_return + mean_reversion_return_adjustment
-                    consensus["mean_reversion_capped"] = f"Adjustment capped to 30% of extreme prediction"
+                    consensus["mean_reversion_capped"] = f"Adjustment capped to {max_allowed_adjustment/abs(original_return)*100:.0f}% of extreme prediction"
             
             # Update action based on adjusted return
             if consensus_return > self.dynamic_threshold and original_return <= self.dynamic_threshold:
