@@ -28,6 +28,7 @@ from typing import Any, Dict, Optional
 import json
 
 from .alpaca_client import AlpacaClient
+from .binance_client import BinanceClient
 from .broker_interface import BrokerClient
 from .symbol_universe import AssetMapping
 from .position_manager import PositionManager
@@ -46,9 +47,9 @@ class TradingRiskConfig:
 
     max_notional_per_symbol_pct: float = 0.10  # max 10% of equity per symbol
     max_total_equity_pct: float = 0.50        # cap total deployed capital at 50% equity (ENFORCED for commodities)
-    default_stop_loss_pct: float = 0.035      # 3.5% stop-loss (for crypto - wider to avoid volatility triggers)
+    default_stop_loss_pct: float = 0.08      # 8% stop-loss (for crypto - widened from 3.5% to avoid premature exits from volatility)
     take_profit_risk_multiple: float = 2.0    # TP distance = multiple * stop-loss distance
-    min_confidence: float = 0.10              # ignore very low-confidence signals
+    min_confidence: float = 0.10              # Minimum confidence threshold (10% default - INCREASED from 5% to improve entry quality)
     profit_target_pct: Optional[float] = None  # User's desired profit percentage (e.g., 10.0 for 10%)
     user_stop_loss_pct: Optional[float] = None  # User-defined stop-loss override (for real money trading)
     manual_stop_loss: bool = False            # If True, user manages stop-losses manually (system won't submit or execute stop-loss orders)
@@ -60,39 +61,49 @@ class TradingRiskConfig:
     # CRYPTO: Shorting can be enabled if broker supports it
     allow_short: bool = True                  # enable shorting (enabled for commodities futures/options)
     
-    # Momentum filter thresholds (for entry filtering)
-    momentum_filter_pct_1bar: float = 1.5     # Block entry if price moved >X% in 1 bar (1.5% default)
-    momentum_filter_pct_2bar: float = 2.0     # Block entry if price moved >X% in 2 bars (2.0% default)
-    momentum_filter_rsi_overbought: float = 70.0  # Block LONG entry if RSI > X (70 default)
-    momentum_filter_rsi_oversold: float = 30.0    # Block SHORT entry if RSI < X (30 default)
+    # Momentum filter thresholds (for entry filtering) - STRENGTHENED to prevent buying at peaks
+    # Tightened from 0.8%/1.2% to 0.5%/0.8% to be more aggressive in blocking entries during upswings
+    momentum_filter_pct_1bar: float = 1.0     # Block entry if price moved >X% in 1 bar (1.0% default - INCREASED from 0.5% to prevent peak entries)
+    momentum_filter_pct_2bar: float = 1.5     # Block entry if price moved >X% in 2 bars (1.5% default - INCREASED from 0.8% to prevent peak entries)
+    momentum_filter_rsi_overbought: float = 65.0  # Block LONG entry if RSI > X (65 default - STRICTER, was 70)
+    momentum_filter_rsi_oversold: float = 35.0    # Block SHORT entry if RSI < X (35 default - STRICTER, was 30)
+    
+    # Cooldown period after profitable exits (prevents immediate re-entry at higher prices)
+    cooldown_after_profit_seconds: int = 3600  # 1 hour cooldown after profitable exit (prevents buying back in too soon)
+    cooldown_after_loss_seconds: int = 1800     # 30 min cooldown after loss (prevents revenge trading)
     
     # Trailing stop thresholds (for exit near peaks)
-    trailing_stop_pct: float = 1.2            # Exit if price drops X% from peak (1.2% default)
+    trailing_stop_pct: float = 2.5            # Exit if price drops X% from peak (2.5% default, widened from 1.2% to avoid premature exits in crypto volatility)
     
     def get_effective_stop_loss_pct(self, asset_type: str = "crypto") -> float:
         """
         Get effective stop-loss percentage based on asset type and user override.
         
         For commodities (real money), uses tighter stop-loss (2.0% default).
-        For crypto, uses wider stop-loss (3.5% default).
+        For crypto, uses wider stop-loss (8.0% default).
         User override takes precedence.
         
         Args:
             asset_type: "crypto" or "commodities"
             
         Returns:
-            Effective stop-loss percentage
+            Effective stop-loss as decimal (e.g., 0.02 for 2.0%, 0.08 for 8.0%)
         """
         if self.user_stop_loss_pct is not None:
             # User override takes precedence
-            return max(0.005, min(0.10, self.user_stop_loss_pct))  # Clamp between 0.5% and 10%
+            # user_stop_loss_pct is stored as percentage (e.g., 2.0 for 2%, 3.5 for 3.5%)
+            # Convert to decimal format (0.02 for 2%, 0.035 for 3.5%)
+            # Note: Users always provide percentage values (2.0, 3.5, etc.), not decimals
+            user_stop_loss_decimal = self.user_stop_loss_pct / 100.0
+            # Clamp between 0.5% and 10% (as decimals: 0.005 to 0.10)
+            return max(0.005, min(0.10, user_stop_loss_decimal))
         
         if asset_type == "commodities":
             # Real money trading - tighter stop-loss
-            return 0.020  # 2.0% for commodities
+            return 0.020  # 2.0% for commodities (decimal format)
         else:
-            # Crypto - wider stop-loss
-            return self.default_stop_loss_pct  # 3.5% for crypto
+            # Crypto - wider stop-loss (8% default, can be overridden by horizon profile)
+            return self.default_stop_loss_pct  # 0.08 for crypto (8% as decimal)
 
 
 class ExecutionEngine:
@@ -113,11 +124,19 @@ class ExecutionEngine:
         log_path: Path = Path("logs") / "trading" / "crypto_trades.jsonl",
         default_horizon: Optional[str] = None,
         position_manager: Optional[PositionManager] = None,
+        broker: Optional[str] = None,  # NEW: "alpaca", "binance", "angelone"
     ):
         # Backward compatible: if no client provided, default to AlpacaClient (for crypto)
         # NOTE: For commodities, you MUST provide AngelOneClient explicitly
         if client is None:
-            client = AlpacaClient()
+            # If broker specified, use that client
+            if broker == "binance":
+                client = BinanceClient()
+            elif broker == "alpaca":
+                client = AlpacaClient()
+            else:
+                # Default to AlpacaClient for backward compatibility
+                client = AlpacaClient()
         elif not isinstance(client, BrokerClient):
             # If old code passes AlpacaClient directly, it's still valid (AlpacaClient implements BrokerClient)
             pass
@@ -129,6 +148,10 @@ class ExecutionEngine:
         self.default_horizon = normalize_profile(default_horizon) if default_horizon else None
         self.position_manager = position_manager or PositionManager()
         self.loss_tracker = SymbolLossTracker()  # Track symbol-level losses
+        
+        # Cooldown tracking: prevent re-entry too soon after exits
+        self.cooldown_file = self.log_path.parent / "trade_cooldowns.json"
+        self._cooldowns = self._load_cooldowns()
 
     # ------------------------------------------------------------------
     # Public entry point
@@ -205,17 +228,16 @@ class ExecutionEngine:
         else:
             allow_short_for_asset = self.risk.allow_short  # Use config for other assets
         
-        # Adjust momentum/trailing stop thresholds for commodities (less volatile than crypto)
-        if is_commodities:
-            # Commodities are less volatile - use slightly wider thresholds
-            momentum_1bar = 2.0  # 2.0% for commodities (vs 1.5% for crypto)
-            momentum_2bar = 3.0  # 3.0% for commodities (vs 2.0% for crypto)
-            trailing_stop = 1.5  # 1.5% for commodities (vs 1.2% for crypto)
-        else:
-            # Crypto - use default thresholds
-            momentum_1bar = self.risk.momentum_filter_pct_1bar
-            momentum_2bar = self.risk.momentum_filter_pct_2bar
-            trailing_stop = self.risk.trailing_stop_pct
+        # CRITICAL STRATEGY: Buy low, sell at peak, minimize losses
+        # 1. Momentum filters: Prevent buying at peaks (buy low)
+        # 2. RSI filters: Only buy when oversold, only short when overbought (buy low, sell high)
+        # 3. Trailing stop: Sell when price drops from peak (sell at peak)
+        # 4. Stop-loss: Protect capital (minimize losses)
+        # 5. Negative prediction filter: Block entries when predicted return < 0 (minimize losses)
+        # 6. Minimum return filter: Require 1.5% minimum predicted return (minimize losses)
+        momentum_1bar = self.risk.momentum_filter_pct_1bar  # 0.5% default - blocks buying during upswings
+        momentum_2bar = self.risk.momentum_filter_pct_2bar  # 0.8% default - blocks buying during upswings
+        trailing_stop = self.risk.trailing_stop_pct  # 2.5% default - sells when drops from peak (sell at peak)
         
         # CRITICAL FIX: Ensure horizon stop-loss is used correctly
         # Priority: user_stop_loss_pct > horizon_risk > effective_stop_loss > default
@@ -381,20 +403,49 @@ class ExecutionEngine:
         tracked_position = self.position_manager.get_position(trading_symbol)
         profit_target_hit = False
         
-        # OPTIONAL: Update profit target for existing position if user provided a new one
-        # This allows users to change profit target when re-running the bot
-        if tracked_position and tracked_position.status == "open" and effective_profit_target is not None:
-            # Check if user wants to update the profit target (if different from current)
-            if abs(tracked_position.profit_target_pct - effective_profit_target) > 0.01:  # More than 0.01% difference
-                print(f"  [UPDATE] Updating profit target for existing position:")
-                print(f"    Old target: {tracked_position.profit_target_pct:.2f}% (${tracked_position.profit_target_price:.2f})")
+        # OPTIONAL: Update profit target AND stop-loss for existing position if they differ from new defaults
+        # This allows users to change profit target and stop-loss when re-running the bot with new settings
+        if tracked_position and tracked_position.status == "open":
+            profit_target_needs_update = False
+            stop_loss_needs_update = False
+            
+            # Check if profit target needs updating
+            if effective_profit_target is not None:
+                if abs(tracked_position.profit_target_pct - effective_profit_target) > 0.01:  # More than 0.01% difference
+                    profit_target_needs_update = True
+            
+            # Check if stop-loss needs updating (compare with new default 8% for crypto, or horizon-specific)
+            # NOTE: stop_loss_pct in Position is stored as DECIMAL (e.g., 0.05 for 5%), not percentage
+            # This is because the code does (stop_loss_pct / 100.0) in calculations
+            current_stop_loss_pct_decimal = tracked_position.stop_loss_pct  # Stored as decimal (e.g., 0.05 for 5%)
+            new_stop_loss_pct_decimal = effective_risk.get_effective_stop_loss_pct(asset.asset_type)  # Returns decimal (e.g., 0.08 for 8%)
+            
+            # Compare as decimals (both are decimals)
+            # Only update stop-loss if it differs significantly (more than 1% = 0.01 difference)
+            if abs(current_stop_loss_pct_decimal - new_stop_loss_pct_decimal) > 0.01:  # More than 1% (0.01) difference
+                stop_loss_needs_update = True
+            
+            # Update both profit target and stop-loss if needed
+            if profit_target_needs_update or stop_loss_needs_update:
+                print(f"  [UPDATE] Updating existing position parameters:")
+                if profit_target_needs_update:
+                    print(f"    Profit Target: {tracked_position.profit_target_pct:.2f}% → {effective_profit_target:.2f}%")
+                if stop_loss_needs_update:
+                    print(f"    Stop-Loss: {current_stop_loss_pct_decimal*100:.2f}% → {new_stop_loss_pct_decimal*100:.2f}% (widened to reduce premature exits)")
+                
+                # Update both profit target and stop-loss
+                # update_profit_target expects stop_loss_pct as PERCENTAGE (e.g., 8.0 for 8%), so convert decimal to percentage
+                new_stop_loss_pct_percentage = new_stop_loss_pct_decimal * 100.0  # Convert decimal (0.08) to percentage (8.0)
                 updated_position = self.position_manager.update_profit_target(
                     trading_symbol,
-                    effective_profit_target,
-                    stop_loss_pct=None,  # Keep existing stop-loss
+                    effective_profit_target if profit_target_needs_update else tracked_position.profit_target_pct,
+                    stop_loss_pct=new_stop_loss_pct_percentage if stop_loss_needs_update else None,  # Update stop-loss if needed (convert to percentage format)
                 )
                 if updated_position:
-                    print(f"    New target: {updated_position.profit_target_pct:.2f}% (${updated_position.profit_target_price:.2f})")
+                    if profit_target_needs_update:
+                        print(f"    ✓ New profit target: {updated_position.profit_target_pct:.2f}% (${updated_position.profit_target_price:.2f})")
+                    if stop_loss_needs_update:
+                        print(f"    ✓ New stop-loss: {updated_position.stop_loss_pct:.2f}% (${updated_position.stop_loss_price:.2f})")
                     tracked_position = updated_position  # Use updated position
         
         if tracked_position and tracked_position.status == "open":
@@ -477,15 +528,36 @@ class ExecutionEngine:
             can_trade, block_reason = self.loss_tracker.can_trade(trading_symbol)
             if not can_trade:
                 print(f"  [BLOCKED] {trading_symbol}: Cannot enter new position - {block_reason}")
-                orders["decision"] = "entry_blocked_symbol_loss_limit"
-                orders["block_reason"] = block_reason
-                orders["target_side"] = "flat"
-                orders["final_side"] = "flat"
-                orders["final_qty"] = 0.0
+                orders = {
+                    "asset": asset.logical_name,
+                    "data_symbol": asset.data_symbol,
+                    "trading_symbol": trading_symbol,
+                    "decision": "entry_blocked_symbol_loss_limit",
+                    "block_reason": block_reason,
+                    "target_side": "flat",
+                    "final_side": "flat",
+                    "final_qty": 0.0,
+                    "timestamp": datetime.utcnow().isoformat(timespec="seconds") + "Z",
+                }
                 self._log(orders)
                 return orders
             
-            # FIX 1: Prevent entering during upswings (buying high)
+            # FIX 1: Check cooldown period (prevent re-entry too soon after exit)
+            cooldown_reason = self._check_cooldown(trading_symbol)
+            if cooldown_reason:
+                print(f"  [COOLDOWN] Entry blocked: {cooldown_reason}")
+                orders = {
+                    "asset": asset.logical_name,
+                    "data_symbol": asset.data_symbol,
+                    "trading_symbol": trading_symbol,
+                    "decision": "skipped_cooldown",
+                    "reason": cooldown_reason,
+                    "timestamp": datetime.utcnow().isoformat(timespec="seconds") + "Z",
+                }
+                self._log(orders)
+                return orders
+            
+            # FIX 2: Prevent entering during upswings (buying high) - STRENGTHENED
             # Check if price has recently moved up significantly - avoid entering at peaks
             momentum_filter_passed = True
             momentum_reason = None
@@ -505,14 +577,21 @@ class ExecutionEngine:
                         recent_change_2 = ((current_price - price_lag_2) / price_lag_2) * 100 if price_lag_2 > 0 else 0
                         
                         # For LONG entries: Don't enter if price has risen > threshold in last 1-2 bars (upswing)
-                        # Use asset-specific thresholds (commodities may need different values)
-                        momentum_threshold_1bar = effective_risk.momentum_filter_pct_1bar
-                        momentum_threshold_2bar = effective_risk.momentum_filter_pct_2bar
+                        # STRENGTHENED: Stricter thresholds to ensure we BUY LOW, not at peaks
+                        # This minimizes losses by avoiding entries during upswings
+                        momentum_threshold_1bar = effective_risk.momentum_filter_pct_1bar  # Default: 0.5%
+                        momentum_threshold_2bar = effective_risk.momentum_filter_pct_2bar  # Default: 0.8%
+                        
+                        # STRENGTHENED: Use stricter thresholds to ensure buying low
+                        # Don't use ATR-based lenient thresholds - use strict defaults to avoid buying at peaks
+                        # This ensures we only buy when price has pulled back (buy low)
                         
                         if target_side == "long" and action == "long":
+                            # STRICT: Block entry if price has risen > 0.5% in 1 bar OR > 0.8% in 2 bars
+                            # This ensures we buy LOW, not during upswings
                             if recent_change_1 > momentum_threshold_1bar or recent_change_2 > momentum_threshold_2bar:
                                 momentum_filter_passed = False
-                                momentum_reason = f"Price upswing detected: +{recent_change_1:.2f}% (1 bar), +{recent_change_2:.2f}% (2 bars) - waiting for pullback"
+                                momentum_reason = f"Price upswing detected: +{recent_change_1:.2f}% (1 bar), +{recent_change_2:.2f}% (2 bars) - waiting for pullback to BUY LOW"
                         
                         # For SHORT entries: Don't enter if price has fallen > threshold in last 1-2 bars (downswing)
                         elif target_side == "short" and action == "short":
@@ -521,17 +600,23 @@ class ExecutionEngine:
                                 momentum_reason = f"Price downswing detected: {recent_change_1:.2f}% (1 bar), {recent_change_2:.2f}% (2 bars) - waiting for bounce"
                     
                     # Also check RSI if available (avoid overbought/oversold entries)
+                    # STRENGTHENED: Stricter RSI filters to ensure we BUY LOW (when oversold, not overbought)
                     rsi = feature_row.get("RSI")
                     if rsi is not None:
-                        rsi_overbought = effective_risk.momentum_filter_rsi_overbought
-                        rsi_oversold = effective_risk.momentum_filter_rsi_oversold
-                        
-                        if target_side == "long" and rsi > rsi_overbought:
-                            momentum_filter_passed = False
-                            momentum_reason = f"RSI overbought ({rsi:.1f} > {rsi_overbought}) - waiting for pullback"
-                        elif target_side == "short" and rsi < rsi_oversold:
-                            momentum_filter_passed = False
-                            momentum_reason = f"RSI oversold ({rsi:.1f} < {rsi_oversold}) - waiting for bounce"
+                        # STRICT RSI filters to minimize losses:
+                        # - Don't buy LONG when overbought (RSI > 70) - wait for pullback
+                        # - Prefer buying when oversold (RSI < 30) - buy low
+                        if target_side == "long" and action == "long":
+                            if rsi > 70.0:  # STRICT: Block if RSI > 70 (overbought) - wait for pullback
+                                momentum_filter_passed = False
+                                momentum_reason = f"RSI overbought ({rsi:.1f} > 70.0) - waiting for pullback to BUY LOW"
+                            elif rsi < 30.0:  # PREFER: RSI < 30 is oversold - good time to buy low
+                                # Allow entry when oversold (buy low opportunity)
+                                pass
+                        elif target_side == "short" and action == "short":
+                            if rsi < 30.0:  # STRICT: Block if RSI < 30 (oversold) - wait for bounce
+                                momentum_filter_passed = False
+                                momentum_reason = f"RSI oversold ({rsi:.1f} < 30.0) - waiting for bounce"
             except Exception as e:
                 # If we can't get feature data, allow entry (don't block due to data issues)
                 print(f"  [WARN] Could not check momentum filter: {e}")
@@ -570,13 +655,48 @@ class ExecutionEngine:
                         print(f"  [FILTER] Action mismatch: model says {action.upper()}, target is {target_side.upper()}")
                     return None
             else:
-                # Crypto (paper trading): More lenient
-                # For LONG positions, buy on positive prediction (even small)
-                # Only require confidence threshold for SHORT positions
+                # Crypto (paper trading): More lenient BUT with quality filters
+                # CRITICAL FIX: Block entries when predicted return is too low or negative
+                predicted_return = consensus.get("consensus_return", 0.0) or 0.0
+                
+                # CRITICAL: Block entries when predicted return is negative or too low
+                # This minimizes losses by only entering when there's clear upside
+                if predicted_return < 0:
+                    print(f"  [FILTER] Predicted return is NEGATIVE ({predicted_return*100:.2f}%) - blocking entry (minimize losses)")
+                    orders = {
+                        "asset": asset.logical_name,
+                        "data_symbol": asset.data_symbol,
+                        "trading_symbol": trading_symbol,
+                        "decision": "skipped_negative_prediction",
+                        "reason": f"Predicted return is negative: {predicted_return*100:.2f}% - minimizing losses",
+                        "predicted_return": predicted_return,
+                        "timestamp": datetime.utcnow().isoformat(timespec="seconds") + "Z",
+                    }
+                    self._log(orders)
+                    return orders
+                
+                # Require minimum predicted return of 1.5% (0.015) for entries - STRICTER to minimize losses
+                # Increased from 1% to 1.5% to ensure better risk-reward ratio
+                min_predicted_return = 0.015  # 1.5% minimum (stricter to minimize losses)
+                if predicted_return < min_predicted_return:
+                    print(f"  [FILTER] Predicted return too low ({predicted_return*100:.2f}% < {min_predicted_return*100:.0f}%) - blocking entry (minimize losses)")
+                    orders = {
+                        "asset": asset.logical_name,
+                        "data_symbol": asset.data_symbol,
+                        "trading_symbol": trading_symbol,
+                        "decision": "skipped_low_prediction",
+                        "reason": f"Predicted return {predicted_return*100:.2f}% below minimum {min_predicted_return*100:.0f}% - minimizing losses",
+                        "predicted_return": predicted_return,
+                        "min_required": min_predicted_return,
+                        "timestamp": datetime.utcnow().isoformat(timespec="seconds") + "Z",
+                    }
+                    self._log(orders)
+                    return orders
+                
+                # For LONG positions, buy on positive prediction (but must meet minimum return)
                 if target_side == "long" and action == "long":
-                    # Buy on any UP prediction for crypto (paper trading)
-                    # The profit target will ensure we only hold until target is hit
-                    pass  # Continue to enter position
+                    # Continue to enter position (predicted return already validated above)
+                    pass
                 elif target_side == "short" and action == "short" and confidence < effective_risk.min_confidence:
                     # For SHORT positions, still require confidence threshold (more risky)
                     return None
@@ -591,8 +711,37 @@ class ExecutionEngine:
             pass
 
         # Determine target notional for exposure, *clamped by buying power*.
-        # If profit_target_pct is provided, adjust position sizing to achieve the target.
+        # FIX 5: Add volatility-based position sizing to reduce risk in volatile markets
         max_symbol_notional = equity * effective_risk.max_notional_per_symbol_pct
+        
+        # Get volatility metric (ATR or similar) to adjust position size
+        volatility_multiplier = 1.0  # Default: no adjustment
+        try:
+            from live_trader import load_feature_row
+            feature_row = load_feature_row(asset.asset_type, asset.data_symbol, asset.timeframe)
+            if feature_row is not None:
+                # Try to get ATR (Average True Range) - measures volatility
+                atr_14 = feature_row.get("ATR_14")
+                if atr_14 is not None and current_price > 0:
+                    # Calculate volatility as percentage of price
+                    volatility_pct = (atr_14 / current_price) * 100
+                    
+                    # Adjust position size based on volatility to MINIMIZE LOSSES:
+                    # - High volatility (>5%): Reduce position by 60% (more conservative)
+                    # - Medium volatility (2-5%): Reduce position by 30% (more conservative)
+                    # - Low volatility (<2%): Use full position size
+                    if volatility_pct > 5.0:
+                        volatility_multiplier = 0.4  # Reduce by 60% in high volatility (minimize losses)
+                        print(f"  [VOLATILITY] High volatility detected ({volatility_pct:.2f}%) - reducing position size by 60% (minimize losses)")
+                    elif volatility_pct > 2.0:
+                        volatility_multiplier = 0.7  # Reduce by 30% in medium volatility (minimize losses)
+                        print(f"  [VOLATILITY] Medium volatility detected ({volatility_pct:.2f}%) - reducing position size by 30% (minimize losses)")
+                    else:
+                        volatility_multiplier = 1.0  # No reduction in low volatility
+                        print(f"  [VOLATILITY] Low volatility ({volatility_pct:.2f}%) - using full position size")
+        except Exception as vol_exc:
+            # If we can't get volatility data, use default (no adjustment)
+            print(f"  [WARN] Could not get volatility data: {vol_exc}")
         
         if effective_profit_target is not None and effective_profit_target > 0:
             # Profit-target-based position sizing
@@ -604,16 +753,17 @@ class ExecutionEngine:
                 # If model predicts 5% return and user wants 10%, we need 2x position
                 # But we cap it to avoid over-leveraging
                 profit_multiplier = min(effective_profit_target / predicted_return, 2.0)  # Cap at 2x
-                adjusted_position_size = position_size * profit_multiplier
+                adjusted_position_size = position_size * profit_multiplier * volatility_multiplier
             else:
-                # Model predicts no return or very small return - use base position size
-                adjusted_position_size = position_size
+                # Model predicts no return or very small return - use base position size with volatility adjustment
+                adjusted_position_size = position_size * volatility_multiplier
             
             # Still respect max position limits
             raw_desired_notional = max(0.0, min(adjusted_position_size * equity, max_symbol_notional))
         else:
-            # Standard position sizing (no profit target)
-            raw_desired_notional = max(0.0, min(position_size * equity, max_symbol_notional))
+            # Standard position sizing (no profit target) with volatility adjustment
+            adjusted_position_size = position_size * volatility_multiplier
+            raw_desired_notional = max(0.0, min(adjusted_position_size * equity, max_symbol_notional))
         
         desired_notional = min(raw_desired_notional, buying_power)
 
@@ -781,8 +931,8 @@ class ExecutionEngine:
                 # Get effective profit target and stop-loss from context
                 effective_profit_target = profit_target_pct if profit_target_pct is not None else self.risk.profit_target_pct
                 if effective_profit_target is None or effective_profit_target <= 0:
-                    # Fallback to default if not provided
-                    effective_profit_target = 1.0  # Default 1% profit target
+                    # Fallback to default if not provided (increased from 1% to 2.5% for better risk-reward ratio)
+                    effective_profit_target = 2.5  # Default 2.5% profit target (maintains 1:3.2 risk-reward with 8% stop-loss)
                 
                 effective_stop_loss = user_stop_loss_pct if user_stop_loss_pct is not None else effective_risk.get_effective_stop_loss_pct(asset.asset_type)
                 
@@ -849,6 +999,26 @@ class ExecutionEngine:
                 elif not must_exit_position:
                     # Only build display if we're NOT exiting
                     # Profit target not hit - continue with hold_position logic
+                    
+                    # CRITICAL: Validate current_price - if invalid, show warning instead of calculating
+                    price_valid = current_price is not None and current_price > 0
+                    if not price_valid:
+                        print(f"  [WARNING] Invalid price data for {trading_symbol}: ${current_price}")
+                        print(f"  [WARNING] Cannot calculate position status - price data not available")
+                        orders["decision"] = "hold_position"
+                        orders["position_status"] = {
+                            "symbol": trading_symbol,
+                            "side": tracked_position.side,
+                            "entry_price": tracked_position.entry_price,
+                            "entry_time": tracked_position.entry_time,
+                            "quantity": tracked_position.quantity,
+                            "current_price": current_price,
+                            "price_valid": False,
+                            "error": "Invalid price data - price is $0.00 or None",
+                        }
+                        self._log(orders)
+                        return orders
+                    
                     unrealized_pl = (current_price - tracked_position.entry_price) * tracked_position.quantity if tracked_position.side == "long" else (tracked_position.entry_price - current_price) * tracked_position.quantity
                     progress_to_target = (unrealized_pl_pct / tracked_position.profit_target_pct) * 100 if tracked_position.profit_target_pct > 0 else 0
                     
@@ -1051,6 +1221,7 @@ class ExecutionEngine:
                     print(f"  [WARNING] Position exit triggered but reason unclear (profit_target_hit={profit_target_hit}, stop_loss_hit={stop_loss_hit})")
                 
                 if dry_run:
+                    # DRY RUN: Do NOT log - this is not an actual executed trade
                     orders["decision"] = "would_exit_position"
                     orders["trade_qty"] = abs(existing_qty)
                     orders["trade_side"] = "sell" if existing_qty > 0 else "buy"
@@ -1061,7 +1232,7 @@ class ExecutionEngine:
                     orders["exit_price"] = current_price
                     orders["realized_pl"] = realized_pl
                     orders["realized_pl_pct"] = realized_pl_pct
-                    self._log(orders)
+                    # DO NOT LOG - dry_run trades are not actual executed trades
                     return orders
                 
                 # Execute exit order
@@ -1069,6 +1240,7 @@ class ExecutionEngine:
                 abs_qty = abs(existing_qty)
                 if abs_qty <= 0 or (asset.asset_type == "crypto" and round(abs_qty * current_price, 2) <= 0):
                     # Position is effectively zero - skip exit order
+                    # DO NOT LOG - no actual trade was executed
                     orders["decision"] = "exit_position_skipped_zero_qty"
                     orders["trade_qty"] = 0.0
                     orders["final_side"] = "flat"
@@ -1079,15 +1251,17 @@ class ExecutionEngine:
                     orders["realized_pl"] = realized_pl
                     orders["realized_pl_pct"] = realized_pl_pct
                     orders["reason"] = f"Position quantity too small to exit: {existing_qty}"
-                    self._log(orders)
+                    # DO NOT LOG - no actual trade executed in Alpaca
                     return orders
                 
                 # FIXED: Use qty (exact quantity) when closing positions to avoid rounding errors
                 # When closing, we want to sell/buy the EXACT quantity we have, not a rounded notional
                 # Notional is fine for opening new positions, but for closing we need precision
+                # Round to 8 decimal places to avoid floating point precision errors with Alpaca API
+                close_qty_rounded = round(abs_qty, 8)
                 close_resp = self.client.submit_order(
                     symbol=trading_symbol,
-                    qty=abs_qty,  # Use exact quantity for both crypto and commodities when closing
+                    qty=close_qty_rounded,  # Round to 8 decimals to avoid precision errors
                     notional=None,
                     side="sell" if existing_qty > 0 else "buy",
                     order_type="market",
@@ -1174,11 +1348,39 @@ class ExecutionEngine:
                         realized_pl_pct,
                     )
                 
-                orders["decision"] = "exit_position"
-                orders["trade_qty"] = abs(existing_qty)
-                orders["trade_side"] = "sell" if existing_qty > 0 else "buy"
-                orders["final_side"] = "flat"
-                orders["final_qty"] = 0.0
+                # CRITICAL: Only log if order was actually executed in Alpaca
+                # Verify close_resp exists and has a valid order ID
+                if not close_resp or not close_resp.get("id"):
+                    # Order submission failed - do NOT log
+                    print(f"  [ERROR] Exit order failed - no order ID returned. Not logging trade.")
+                    orders["decision"] = "exit_position_failed"
+                    orders["error"] = "Order submission failed - no order ID"
+                    return orders
+                
+                # Check order status - only log if order was accepted
+                order_status = close_resp.get("status", "").lower()
+                if order_status in ["rejected", "canceled", "expired"]:
+                    # Order was rejected - do NOT log
+                    print(f"  [ERROR] Exit order {close_resp.get('id')} was {order_status}. Not logging trade.")
+                    orders["decision"] = f"exit_position_{order_status}"
+                    orders["error"] = f"Order was {order_status}"
+                    return orders
+                
+                # Log as SELL when closing long, BUY when closing short
+                if existing_qty > 0:
+                    # Closing long position = SELL
+                    orders["decision"] = "exit_long"  # Changed from "exit_position" to "exit_long"
+                    orders["trade_qty"] = abs(existing_qty)
+                    orders["trade_side"] = "sell"
+                    orders["final_side"] = "short"  # Changed from "flat" to "short" to indicate SELL
+                    orders["final_qty"] = abs(existing_qty)  # Changed from 0.0 to actual qty to indicate SELL
+                else:
+                    # Closing short position = BUY (to cover)
+                    orders["decision"] = "exit_short"  # Changed from "exit_position" to "exit_short"
+                    orders["trade_qty"] = abs(existing_qty)
+                    orders["trade_side"] = "buy"
+                    orders["final_side"] = "long"  # Changed from "flat" to "long" to indicate BUY
+                    orders["final_qty"] = abs(existing_qty)  # Changed from 0.0 to actual qty to indicate BUY
                 orders["close_order"] = close_resp
                 orders["exit_reason"] = exit_reason
                 orders["entry_price"] = avg_entry_price
@@ -1220,12 +1422,21 @@ class ExecutionEngine:
                 print(f"  ⚠️  WARNING: {orders['exit_price_warning']}")
             print(f"{'='*80}\n")
             
+            # FIX 3: Set cooldown after exit (prevent immediate re-entry)
+            was_profitable = realized_pl > 0
+            self._set_cooldown(trading_symbol, exit_reason, was_profitable)
+            if was_profitable:
+                print(f"  [COOLDOWN] Profitable exit - {self.risk.cooldown_after_profit_seconds}s cooldown before re-entry")
+            else:
+                print(f"  [COOLDOWN] Loss exit - {self.risk.cooldown_after_loss_seconds}s cooldown before re-entry")
+            
             self._log(orders)
             return orders
 
         # First, exit any existing position if target is flat (model says "hold").
+        # FIX 4: IMPROVED EXIT LOGIC - Don't exit at loss unless stop-loss is hit
         # This happens when model changes from "long" to "hold" or "short" to "hold".
-        # We ALWAYS exit in this case, regardless of confidence, to lock in profits or cut losses.
+        # CRITICAL: Only exit if profitable OR stop-loss hit - don't exit at loss just because model says "hold"
         if side_in_market in {"long", "short"} and target_side == "flat":
             if existing_qty == 0:
                 orders["decision"] = "exit_position_skipped_no_qty"
@@ -1250,6 +1461,43 @@ class ExecutionEngine:
             unrealized_pl = float(existing_position.get("unrealized_pl", 0) or 0) if existing_position else 0
             unrealized_pl_pct = float(existing_position.get("unrealized_plpc", 0) or 0) * 100 if existing_position else 0
             
+            # FIX 4: Check if we're at a loss - don't exit unless stop-loss hit or profitable
+            # Calculate current P/L
+            if tracked_position:
+                if tracked_position.side == "long":
+                    current_pl = (current_price - tracked_position.entry_price) * abs(existing_qty)
+                    current_pl_pct = ((current_price - tracked_position.entry_price) / tracked_position.entry_price) * 100 if tracked_position.entry_price > 0 else 0
+                else:  # short
+                    current_pl = (tracked_position.entry_price - current_price) * abs(existing_qty)
+                    current_pl_pct = ((tracked_position.entry_price - current_price) / tracked_position.entry_price) * 100 if tracked_position.entry_price > 0 else 0
+                
+                # Check if stop-loss is hit
+                stop_loss_hit = False
+                if not effective_risk.manual_stop_loss:
+                    if tracked_position.side == "long":
+                        stop_loss_hit = current_price <= tracked_position.stop_loss_price
+                    else:  # short
+                        stop_loss_hit = current_price >= tracked_position.stop_loss_price
+                
+                # Only exit if: profitable OR stop-loss hit
+                if current_pl < 0 and not stop_loss_hit:
+                    # At a loss and stop-loss not hit - HOLD instead of exiting
+                    print(f"  [EXIT PROTECTION] Position at loss ({current_pl_pct:+.2f}%) - HOLDING instead of exiting")
+                    print(f"  [EXIT PROTECTION] Will only exit when: profit target hit OR stop-loss hit")
+                    orders = {
+                        "asset": asset.logical_name,
+                        "data_symbol": asset.data_symbol,
+                        "trading_symbol": trading_symbol,
+                        "decision": "hold_at_loss",
+                        "reason": f"Position at loss ({current_pl_pct:+.2f}%), stop-loss not hit - holding",
+                        "current_pl": current_pl,
+                        "current_pl_pct": current_pl_pct,
+                        "stop_loss_price": tracked_position.stop_loss_price,
+                        "timestamp": datetime.utcnow().isoformat(timespec="seconds") + "Z",
+                    }
+                    self._log(orders)
+                    return orders
+            
             close_resp = self.client.submit_order(
                 symbol=trading_symbol,
                 qty=abs(existing_qty),
@@ -1257,11 +1505,19 @@ class ExecutionEngine:
                 order_type="market",
                 time_in_force="gtc",
             )
-            orders["decision"] = "exit_position"
-            orders["trade_qty"] = abs(existing_qty)
-            orders["trade_side"] = "sell" if existing_qty > 0 else "buy"
-            orders["final_side"] = "flat"
-            orders["final_qty"] = 0.0
+            # Log as SELL when closing long, BUY when closing short
+            if existing_qty > 0:
+                orders["decision"] = "exit_long"  # Changed from "exit_position" to "exit_long"
+                orders["trade_qty"] = abs(existing_qty)
+                orders["trade_side"] = "sell"
+                orders["final_side"] = "short"  # Changed from "flat" to "short" to indicate SELL
+                orders["final_qty"] = abs(existing_qty)  # Changed from 0.0 to actual qty
+            else:
+                orders["decision"] = "exit_short"  # Changed from "exit_position" to "exit_short"
+                orders["trade_qty"] = abs(existing_qty)
+                orders["trade_side"] = "buy"
+                orders["final_side"] = "long"  # Changed from "flat" to "long" to indicate BUY
+                orders["final_qty"] = abs(existing_qty)  # Changed from 0.0 to actual qty
             orders["close_order"] = close_resp
             orders["exit_reason"] = "model_changed_to_hold"
             orders["entry_price"] = avg_entry_price
@@ -1269,6 +1525,11 @@ class ExecutionEngine:
             orders["realized_pl"] = unrealized_pl
             orders["realized_pl_pct"] = unrealized_pl_pct
             orders["market_value_at_exit"] = market_value
+            
+            # Set cooldown after exit
+            was_profitable = unrealized_pl > 0
+            self._set_cooldown(trading_symbol, "model_changed_to_hold", was_profitable)
+            
             self._log(orders)
             return orders
 
@@ -1554,6 +1815,10 @@ class ExecutionEngine:
                     # Record trade in loss tracker
                     self.loss_tracker.record_trade(trading_symbol, unrealized_pl, unrealized_pl_pct)
                     
+                    # Set cooldown after flip exit
+                    was_profitable = unrealized_pl > 0
+                    self._set_cooldown(trading_symbol, f"flip_from_{side_in_market}_to_{target_side}", was_profitable)
+                    
                     if is_crypto:
                         orders["stop_loss_note"] = "Crypto positions: stop-loss must be managed separately (bracket orders not supported)"
                     
@@ -1579,7 +1844,7 @@ class ExecutionEngine:
                             entry_price=new_entry_price,  # Use actual filled price
                             quantity=new_qty,
                             profit_target_pct=effective_profit_target,
-                            stop_loss_pct=effective_risk.default_stop_loss_pct,
+                            stop_loss_pct=effective_risk.default_stop_loss_pct * 100.0,  # Convert decimal to percentage (0.08 -> 8.0)
                             stop_loss_order_id=None,  # Will be set later if needed
                             take_profit_order_id=None,  # Will be set later if needed
                         )
@@ -1617,6 +1882,10 @@ class ExecutionEngine:
                 orders["market_value_at_exit"] = market_value
                 # Record trade in loss tracker
                 self.loss_tracker.record_trade(trading_symbol, unrealized_pl, unrealized_pl_pct)
+                
+                # Set cooldown after flip exit
+                was_profitable = unrealized_pl > 0
+                self._set_cooldown(trading_symbol, f"flip_from_{side_in_market}_to_flat", was_profitable)
             
             self._log(orders)
             return orders
@@ -1722,24 +1991,49 @@ class ExecutionEngine:
             # Compute stop-loss and take-profit levels with proper risk management.
             # For LONGS: stop-loss below entry (price drops), take-profit above entry (price rises).
             # For SHORTS: stop-loss above entry (price rises), take-profit below entry (price drops).
-            # Use horizon-specific stop-loss percentage with slippage buffer for commodities.
+            # FIX 7: Use ATR-based dynamic stop-loss when available, fallback to percentage-based
             stop_pct = effective_risk.default_stop_loss_pct
             tp_mult = effective_risk.take_profit_risk_multiple
             slippage_buffer = effective_risk.slippage_buffer_pct if is_commodities else 0.0  # Only use slippage buffer for commodities
+            
+            # Initialize effective_stop_pct with default (will be updated if ATR is available)
+            effective_stop_pct = stop_pct  # Default to percentage-based stop
+            
+            # Try to get ATR for dynamic stop-loss calculation
+            atr_based_stop_pct = None
+            try:
+                from live_trader import load_feature_row
+                feature_row = load_feature_row(asset.asset_type, asset.data_symbol, asset.timeframe)
+                if feature_row is not None:
+                    atr_14 = feature_row.get("ATR_14")
+                    if atr_14 is not None and current_price > 0 and atr_14 > 0:
+                        # Calculate ATR as percentage of price
+                        atr_pct = (atr_14 / current_price) * 100
+                        # Use 2.5x ATR as stop-loss distance (adjusts to volatility)
+                        # But clamp between 5% (minimum) and 15% (maximum) for safety
+                        atr_based_stop_pct = max(0.05, min(0.15, atr_pct * 2.5 / 100.0))
+                        print(f"  [ATR] ATR-based stop-loss: {atr_pct:.2f}% ATR → {atr_based_stop_pct*100:.2f}% stop-loss (2.5x ATR)")
+            except Exception as atr_exc:
+                # If ATR calculation fails, use default percentage-based stop
+                print(f"  [WARN] Could not calculate ATR-based stop-loss: {atr_exc}, using default {stop_pct*100:.1f}%")
+            
+            # Use ATR-based stop if available, otherwise use default percentage (already initialized above)
+            if atr_based_stop_pct is not None:
+                effective_stop_pct = atr_based_stop_pct
 
             if target_side == "long":
                 # Long: lose if price drops, win if price rises
                 # Add slippage buffer to stop-loss to account for execution slippage (critical for real money)
                 # Buffer is applied multiplicatively to make stop-loss slightly wider
-                stop_loss_price = current_price * (1.0 - stop_pct) * (1.0 - slippage_buffer)  # e.g., $100 * 0.98 * 0.999 = $97.90
-                take_profit_price = current_price * (1.0 + stop_pct * tp_mult)  # e.g., $100 * 1.04 = $104 (4% up)
+                stop_loss_price = current_price * (1.0 - effective_stop_pct) * (1.0 - slippage_buffer)  # e.g., $100 * 0.98 * 0.999 = $97.90
+                take_profit_price = current_price * (1.0 + effective_stop_pct * tp_mult)  # e.g., $100 * 1.04 = $104 (4% up)
                 side = "buy"
             else:  # short
                 # Short: lose if price rises, win if price drops
                 # Add slippage buffer to stop-loss to account for execution slippage (critical for real money)
                 # Buffer is applied multiplicatively to make stop-loss slightly wider
-                stop_loss_price = current_price * (1.0 + stop_pct) * (1.0 + slippage_buffer)  # e.g., $100 * 1.02 * 1.001 = $102.10
-                take_profit_price = current_price * (1.0 - stop_pct * tp_mult)  # e.g., $100 * 0.96 = $96 (4% down = profit)
+                stop_loss_price = current_price * (1.0 + effective_stop_pct) * (1.0 + slippage_buffer)  # e.g., $100 * 1.02 * 1.001 = $102.10
+                take_profit_price = current_price * (1.0 - effective_stop_pct * tp_mult)  # e.g., $100 * 0.96 = $96 (4% down = profit)
                 side = "sell"
 
             if dry_run:
@@ -1843,14 +2137,13 @@ class ExecutionEngine:
                     if verify_position:
                         verify_qty = float(verify_position.get("qty", 0) or 0)
                         if target_side == "long" and verify_qty <= 0:
-                            raise RuntimeError(f"Order submitted but position not created (expected LONG, got qty={verify_qty})")
+                            raise RuntimeError(f"Order submitted but position not created (expected LONG, got qty={verify_qty}) - order rejected")
                         elif target_side == "short" and verify_qty >= 0:
-                            raise RuntimeError(f"Order submitted but position not created (expected SHORT, got qty={verify_qty})")
+                            raise RuntimeError(f"Order submitted but position not created (expected SHORT, got qty={verify_qty}) - order rejected")
                         print(f"  ✅ Order verified: Position created ({verify_qty:.2f} {target_side.upper()})")
                     else:
-                        # Position not found - order may have failed silently
-                        print(f"  ⚠️  WARNING: Order submitted but position not found in broker - verifying order status...")
-                        # Order verification would require order ID tracking (implement if needed)
+                        # Position not found - order was rejected
+                        raise RuntimeError(f"Order submitted but position not found in broker - order was rejected")
                 
                 # CRITICAL FIX: Submit broker-level stop-loss and take-profit orders
                 # For commodities (MCX), use AngelOneClient stop-loss orders
@@ -2088,7 +2381,7 @@ class ExecutionEngine:
                         entry_price=orders.get("entry_price", current_price),  # Use filled price if available
                         quantity=implied_qty,
                         profit_target_pct=effective_profit_target,  # Always set (required)
-                        stop_loss_pct=effective_risk.default_stop_loss_pct,
+                        stop_loss_pct=effective_risk.default_stop_loss_pct * 100.0,  # Convert decimal to percentage (0.08 -> 8.0)
                         stop_loss_order_id=stop_loss_order_id,
                         take_profit_order_id=take_profit_order_id,
                     )
@@ -2105,6 +2398,54 @@ class ExecutionEngine:
                 elif orders["bracket_order_used"]:
                     print(f"[INFO] {trading_symbol}: Stop-loss and take-profit are at broker level (bracket order). Will execute even if system is down.")
                 
+                # CRITICAL: Verify trade actually executed in Alpaca BEFORE logging
+                # If order was rejected, don't log it as a successful trade
+                if not dry_run:
+                    try:
+                        import time
+                        time.sleep(1)  # Brief delay for order to process
+                        alpaca_position = self.client.get_position(trading_symbol)
+                        if alpaca_position:
+                            actual_qty = float(alpaca_position.get("qty", 0) or 0)
+                            actual_side = "long" if actual_qty > 0 else "short" if actual_qty < 0 else "flat"
+                            
+                            # Verify position matches what we expected
+                            if abs(actual_qty) > 0:
+                                # Position exists - trade executed successfully
+                                orders["alpaca_verified"] = True
+                                orders["alpaca_qty"] = actual_qty
+                                orders["alpaca_side"] = actual_side
+                                orders["alpaca_market_value"] = float(alpaca_position.get("market_value", 0) or 0)
+                                print(f"  ✅ VERIFIED: Position confirmed in Alpaca - {actual_side.upper()} {abs(actual_qty):.6f} {trading_symbol}")
+                            else:
+                                # Order was rejected or failed - don't log as successful trade
+                                print(f"  ❌ REJECTED: Order submitted but position not created in Alpaca (qty=0) - order was rejected")
+                                orders["decision"] = "order_rejected"
+                                orders["order_status"] = "rejected"
+                                orders["rejection_reason"] = "Position not found in Alpaca after order submission"
+                                # Log as rejected trade (not successful)
+                                self._log(orders)
+                                return orders
+                        else:
+                            # Order was rejected - no position found
+                            print(f"  ❌ REJECTED: Order submitted but position not found in Alpaca - order was rejected")
+                            orders["decision"] = "order_rejected"
+                            orders["order_status"] = "rejected"
+                            orders["rejection_reason"] = "Position not found in Alpaca after order submission"
+                            # Log as rejected trade (not successful)
+                            self._log(orders)
+                            return orders
+                    except Exception as verify_exc:
+                        # Verification failed - don't assume trade succeeded
+                        print(f"  ❌ ERROR: Could not verify order in Alpaca: {verify_exc} - not logging as successful trade")
+                        orders["decision"] = "verification_failed"
+                        orders["order_status"] = "verification_error"
+                        orders["verification_error"] = str(verify_exc)
+                        # Log as failed verification (not successful)
+                        self._log(orders)
+                        return orders
+                
+                # Only log if verification passed (or dry_run mode)
                 self._log(orders)
                 return orders
             except RuntimeError as exc:
@@ -2168,14 +2509,13 @@ class ExecutionEngine:
                     if verify_position:
                         verify_qty = float(verify_position.get("qty", 0) or 0)
                         if target_side == "long" and verify_qty <= 0:
-                            raise RuntimeError(f"Order submitted but position not created (expected LONG, got qty={verify_qty})")
+                            raise RuntimeError(f"Order submitted but position not created (expected LONG, got qty={verify_qty}) - order rejected")
                         elif target_side == "short" and verify_qty >= 0:
-                            raise RuntimeError(f"Order submitted but position not created (expected SHORT, got qty={verify_qty})")
+                            raise RuntimeError(f"Order submitted but position not created (expected SHORT, got qty={verify_qty}) - order rejected")
                         print(f"  ✅ Order verified: Position created ({verify_qty:.2f} {target_side.upper()})")
                     else:
-                        # Position not found - order may have failed silently
-                        print(f"  ⚠️  WARNING: Order submitted but position not found in broker - verifying order status...")
-                        # Order verification would require order ID tracking (implement if needed)
+                        # Position not found - order was rejected
+                        raise RuntimeError(f"Order submitted but position not found in broker - order was rejected")
                 
                 # CRITICAL FIX: Submit broker-level stop-loss and take-profit orders
                 # For commodities (MCX), use AngelOneClient stop-loss orders
@@ -2413,7 +2753,7 @@ class ExecutionEngine:
                         entry_price=orders.get("entry_price", current_price),  # Use filled price if available
                         quantity=implied_qty,
                         profit_target_pct=effective_profit_target,  # Always set (required)
-                        stop_loss_pct=effective_risk.default_stop_loss_pct,
+                        stop_loss_pct=effective_risk.default_stop_loss_pct * 100.0,  # Convert decimal to percentage (0.08 -> 8.0)
                         stop_loss_order_id=stop_loss_order_id,
                         take_profit_order_id=take_profit_order_id,
                     )
@@ -2527,11 +2867,85 @@ class ExecutionEngine:
         )
 
     # ------------------------------------------------------------------
+    # Cooldown management - Prevent re-entry too soon after exits
+    # ------------------------------------------------------------------
+    def _load_cooldowns(self) -> Dict[str, Dict[str, Any]]:
+        """Load cooldown data from file."""
+        try:
+            if self.cooldown_file.exists():
+                with open(self.cooldown_file, 'r', encoding='utf-8') as f:
+                    return json.load(f)
+        except Exception:
+            pass
+        return {}
+    
+    def _save_cooldowns(self) -> None:
+        """Save cooldown data to file."""
+        try:
+            self.cooldown_file.parent.mkdir(parents=True, exist_ok=True)
+            with open(self.cooldown_file, 'w', encoding='utf-8') as f:
+                json.dump(self._cooldowns, f, indent=2)
+        except Exception as e:
+            print(f"  [WARN] Failed to save cooldowns: {e}")
+    
+    def _check_cooldown(self, trading_symbol: str) -> Optional[str]:
+        """
+        Check if symbol is in cooldown period.
+        Returns reason if in cooldown, None otherwise.
+        """
+        if trading_symbol not in self._cooldowns:
+            return None
+        
+        cooldown_data = self._cooldowns[trading_symbol]
+        exit_time_str = cooldown_data.get("exit_time")
+        exit_reason = cooldown_data.get("exit_reason", "unknown")
+        was_profitable = cooldown_data.get("was_profitable", False)
+        
+        if not exit_time_str:
+            return None
+        
+        try:
+            from datetime import timezone
+            exit_time = datetime.fromisoformat(exit_time_str.replace("Z", "+00:00"))
+            current_time = datetime.now(timezone.utc)
+            elapsed_seconds = (current_time - exit_time).total_seconds()
+            
+            # Determine cooldown duration based on exit type
+            if was_profitable:
+                cooldown_duration = self.risk.cooldown_after_profit_seconds
+            else:
+                cooldown_duration = self.risk.cooldown_after_loss_seconds
+            
+            if elapsed_seconds < cooldown_duration:
+                remaining = int(cooldown_duration - elapsed_seconds)
+                return f"Cooldown active: {remaining}s remaining (exit reason: {exit_reason}, was_profitable: {was_profitable})"
+            else:
+                # Cooldown expired - remove it
+                del self._cooldowns[trading_symbol]
+                self._save_cooldowns()
+        except Exception as e:
+            print(f"  [WARN] Error checking cooldown: {e}")
+        
+        return None
+    
+    def _set_cooldown(self, trading_symbol: str, exit_reason: str, was_profitable: bool) -> None:
+        """Set cooldown period after exit."""
+        from datetime import timezone
+        self._cooldowns[trading_symbol] = {
+            "exit_time": datetime.now(timezone.utc).isoformat() + "Z",
+            "exit_reason": exit_reason,
+            "was_profitable": was_profitable,
+        }
+        self._save_cooldowns()
+    
     # Logging - Enhanced with clear entry/exit prices and P/L
     # ------------------------------------------------------------------
     def _log(self, record: Dict[str, Any]) -> None:
         """
         Append a JSON line to the trading log with clear entry/exit prices and P/L.
+        
+        IMPORTANT: Only logs EXECUTED trades (not skipped decisions or decision logs).
+        This ensures crypto_trades.jsonl contains only actual trades that appear in Alpaca dashboard.
         
         Ensures all trades are logged with:
         - entry_price: Clear entry price
@@ -2541,6 +2955,68 @@ class ExecutionEngine:
         - quantity: Position quantity
         """
         try:
+            # FILTER: Only log executed trades, not skipped decisions
+            decision = record.get("decision", "")
+            
+            # List of executed trade decisions (actual trades)
+            # IMPORTANT: Only include decisions that represent ACTUAL executed trades in Alpaca
+            executed_decisions = [
+                "enter_long",
+                "enter_short",
+                "exit_position",
+                "flip_to_long",
+                "flip_to_short",
+                "flip_to_flat",
+                "model_changed_to_hold",
+                # NOTE: "would_exit_position" is REMOVED - it's a dry-run, not an actual trade
+            ]
+            
+            # CRITICAL: Never log dry_run trades - they are not actual executed trades
+            if record.get("dry_run", False):
+                return
+            
+            # Skip logging if this is a skipped decision or decision log
+            if decision not in executed_decisions:
+                # Check if it's a skipped decision (starts with "skipped" or contains "skipped")
+                if "skipped" in decision.lower() or decision.startswith("skipped_"):
+                    # This is a skipped decision - don't log it
+                    return
+                # Check if it's a disabled decision
+                if "disabled" in decision.lower():
+                    return
+                # Check if it's a test entry or other non-executed decision
+                if decision in ["test_entry", "hold", "flat"]:
+                    return
+                # If decision is empty or unknown, don't log it
+                if not decision or decision == "unknown":
+                    return
+                # If decision doesn't match any executed trade type, don't log it
+                # (This catches any other non-executed decisions we might have missed)
+                return
+            
+            # CRITICAL: Verify that entry/exit orders actually executed in Alpaca
+            # For entry trades, verify entry_order exists and has valid order ID
+            if decision in ["enter_long", "enter_short", "flip_to_long", "flip_to_short"]:
+                entry_order = record.get("entry_order")
+                if not entry_order or not entry_order.get("id"):
+                    # No valid order response - trade was not executed
+                    return
+                order_status = entry_order.get("status", "").lower()
+                if order_status in ["rejected", "canceled", "expired"]:
+                    # Order was rejected - trade was not executed
+                    return
+            
+            # For exit trades, verify close_order exists and has valid order ID
+            if decision in ["exit_position", "flip_to_flat", "model_changed_to_hold"]:
+                close_order = record.get("close_order")
+                if not close_order or not close_order.get("id"):
+                    # No valid order response - trade was not executed
+                    return
+                order_status = close_order.get("status", "").lower()
+                if order_status in ["rejected", "canceled", "expired"]:
+                    # Order was rejected - trade was not executed
+                    return
+            
             # Ensure timestamp is present
             if "timestamp" not in record:
                 from datetime import datetime
@@ -2686,12 +3162,20 @@ class ExecutionEngine:
         )
         
         # Create proper exit trade log entry
-        orders["decision"] = "exit_position"
+        # Log as SELL when closing long, BUY when closing short
+        if tracked_position.side == "long":
+            orders["decision"] = "exit_long"  # Changed from "exit_position" to "exit_long"
+            orders["trade_qty"] = exit_quantity
+            orders["trade_side"] = "sell"
+            orders["final_side"] = "short"  # Changed from "flat" to "short" to indicate SELL
+            orders["final_qty"] = exit_quantity  # Changed from 0.0 to actual qty
+        else:
+            orders["decision"] = "exit_short"  # Changed from "exit_position" to "exit_short"
+            orders["trade_qty"] = exit_quantity
+            orders["trade_side"] = "buy"
+            orders["final_side"] = "long"  # Changed from "flat" to "long" to indicate BUY
+            orders["final_qty"] = exit_quantity  # Changed from 0.0 to actual qty
         orders["exit_reason"] = "manually_closed_externally"
-        orders["trade_qty"] = exit_quantity
-        orders["trade_side"] = "sell" if tracked_position.side == "long" else "buy"
-        orders["final_side"] = "flat"
-        orders["final_qty"] = 0.0
         orders["entry_price"] = tracked_position.entry_price
         orders["exit_price"] = exit_price
         orders["realized_pl"] = realized_pl

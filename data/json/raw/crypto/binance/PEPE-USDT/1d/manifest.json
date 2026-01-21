@@ -2,14 +2,14 @@
   "symbol": "PEPE-USDT",
   "timeframe": "1d",
   "asset_type": "crypto",
-  "generated_at": "2026-01-14T07:16:56.135875Z",
+  "generated_at": "2026-01-19T07:00:40.952432Z",
   "data_file": "data.json",
   "latest_file": "latest.json",
   "data_file_info": {
     "filename": "data.json",
-    "size_bytes": 369873,
-    "candle_count": 986,
+    "size_bytes": 371744,
+    "candle_count": 991,
     "first_timestamp": "2023-05-05T00:00:00Z",
-    "last_timestamp": "2026-01-14T00:00:00Z"
+    "last_timestamp": "2026-01-19T00:00:00Z"
   }
 }

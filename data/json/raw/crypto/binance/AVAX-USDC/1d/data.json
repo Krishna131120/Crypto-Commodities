@@ -11973,10 +11973,90 @@
     "timeframe": "1d",
     "timestamp": "2026-01-14T00:00:00Z",
     "open": 14.74,
-    "high": 14.79,
-    "low": 14.66,
-    "close": 14.69,
-    "volume": 152970.59,
+    "high": 14.95,
+    "low": 14.41,
+    "close": 14.61,
+    "volume": 792677.26,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AVAX-USDC",
+    "timeframe": "1d",
+    "timestamp": "2026-01-15T00:00:00Z",
+    "open": 14.61,
+    "high": 14.62,
+    "low": 13.62,
+    "close": 13.83,
+    "volume": 658724.87,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AVAX-USDC",
+    "timeframe": "1d",
+    "timestamp": "2026-01-16T00:00:00Z",
+    "open": 13.83,
+    "high": 13.86,
+    "low": 13.2,
+    "close": 13.59,
+    "volume": 500760.97,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AVAX-USDC",
+    "timeframe": "1d",
+    "timestamp": "2026-01-17T00:00:00Z",
+    "open": 13.58,
+    "high": 13.96,
+    "low": 13.53,
+    "close": 13.74,
+    "volume": 328976.19,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AVAX-USDC",
+    "timeframe": "1d",
+    "timestamp": "2026-01-18T00:00:00Z",
+    "open": 13.75,
+    "high": 13.82,
+    "low": 12.95,
+    "close": 12.99,
+    "volume": 382392.38,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "AVAX-USDC",
+    "timeframe": "1d",
+    "timestamp": "2026-01-19T00:00:00Z",
+    "open": 12.98,
+    "high": 12.98,
+    "low": 12.09,
+    "close": 12.61,
+    "volume": 409668.72,
     "source": "binance_rest",
     "fallback_status": {
       "active": false,

@@ -1,0 +1,1402 @@
+{
+  "log_file": "logs\\training\\commodities\\SI=F\\1d\\training_log.json",
+  "total_events": 66,
+  "events": [
+    {
+      "timestamp": "2026-01-17T13:21:04.492841Z",
+      "level": "INFO",
+      "message": "Starting training for commodities/SI=F/1d (short horizon)",
+      "category": "TRAIN",
+      "symbol": "SI=F",
+      "asset_type": "commodities",
+      "data": {
+        "timeframe": "1d",
+        "min_rows": 200,
+        "horizon_profile": {
+          "name": "short",
+          "label": "Short-Term",
+          "description": "Swing horizon of roughly 3-5 days to capture short moves. Medium position sizes, moderate frequency.",
+          "horizon_bars": 4,
+          "smoothing_window": 4,
+          "directional_threshold": 0.0012,
+          "neutral_band": 0.0006,
+          "quantile_bins": 5,
+          "quantile_window": 140,
+          "trading_style": "Swing trading - hold for several days",
+          "typical_hold_time": "3-5 days",
+          "position_size_pct": 0.1,
+          "stop_loss_pct": 0.06,
+          "min_confidence": 0.1
+        }
+      }
+    },
+    {
+      "timestamp": "2026-01-17T13:21:04.521386Z",
+      "level": "INFO",
+      "message": "Loaded 1248 raw candles",
+      "category": "DATA",
+      "symbol": "SI=F",
+      "asset_type": "commodities",
+      "data": {
+        "rows": 1248,
+        "timeframe": "1d"
+      }
+    },
+    {
+      "timestamp": "2026-01-17T13:21:04.742285Z",
+      "level": "INFO",
+      "message": "Computed 131 features",
+      "category": "DATA",
+      "symbol": "SI=F",
+      "asset_type": "commodities",
+      "data": {
+        "feature_count": 131
+      }
+    },
+    {
+      "timestamp": "2026-01-17T13:21:05.349435Z",
+      "level": "INFO",
+      "message": "Dataset assembled: 1244 rows, 133 features",
+      "category": "DATA",
+      "symbol": "SI=F",
+      "asset_type": "commodities",
+      "data": {
+        "rows_before": 1248,
+        "rows_after": 1244,
+        "rows_dropped": 4,
+        "feature_count": 133,
+        "initial_nans": 5384,
+        "residual_rows_dropped": 0,
+        "constant_features_removed": [
+          "Is_Holiday_Flag"
+        ],
+        "feature_version": 2,
+        "split_boundaries": {
+          "train": {
+            "start": "2021-01-19T05:00:00+00:00",
+            "end": "2024-10-07T04:00:00+00:00"
+          },
+          "val": {
+            "start": "2024-10-09T04:00:00+00:00",
+            "end": "2025-05-23T04:00:00+00:00"
+          },
+          "test": {
+            "start": "2025-05-28T04:00:00+00:00",
+            "end": "2026-01-12T05:00:00+00:00"
+          }
+        }
+      }
+    },
+    {
+      "timestamp": "2026-01-17T13:21:05.352437Z",
+      "level": "INFO",
+      "message": "Dataset assembled: 1244 rows",
+      "category": "DATA",
+      "symbol": "SI=F",
+      "asset_type": "commodities",
+      "data": {
+        "rows": 1244,
+        "features": 168
+      }
+    },
+    {
+      "timestamp": "2026-01-17T13:21:05.353436Z",
+      "level": "INFO",
+      "message": "Data split: train=933, val=155, test=154",
+      "category": "DATA",
+      "symbol": "SI=F",
+      "asset_type": "commodities",
+      "data": {
+        "train_rows": 933,
+        "val_rows": 155,
+        "test_rows": 154,
+        "gap_days": 1,
+        "split_boundaries": {
+          "train": {
+            "start": "2021-01-19T05:00:00+00:00",
+            "end": "2024-10-07T04:00:00+00:00"
+          },
+          "val": {
+            "start": "2024-10-09T04:00:00+00:00",
+            "end": "2025-05-23T04:00:00+00:00"
+          },
+          "test": {
+            "start": "2025-05-28T04:00:00+00:00",
+            "end": "2026-01-12T05:00:00+00:00"
+          }
+        }
+      }
+    },
+    {
+      "timestamp": "2026-01-17T13:21:05.354436Z",
+      "level": "INFO",
+      "message": "Dataset utilization confirmed",
+      "category": "DATA",
+      "symbol": "SI=F",
+      "asset_type": "commodities",
+      "data": {
+        "rows_total": 1244,
+        "rows_used": 1242,
+        "unused_rows": 2
+      }
+    },
+    {
+      "timestamp": "2026-01-17T13:21:05.355437Z",
+      "level": "INFO",
+      "message": "Split boundaries confirmed",
+      "category": "DATA",
+      "symbol": "SI=F",
+      "asset_type": "commodities",
+      "data": {
+        "train": {
+          "start": "2021-01-19T05:00:00+00:00",
+          "end": "2024-10-07T04:00:00+00:00"
+        },
+        "val": {
+          "start": "2024-10-09T04:00:00+00:00",
+          "end": "2025-05-23T04:00:00+00:00"
+        },
+        "test": {
+          "start": "2025-05-28T04:00:00+00:00",
+          "end": "2026-01-12T05:00:00+00:00"
+        }
+      }
+    },
+    {
+      "timestamp": "2026-01-17T13:21:05.363947Z",
+      "level": "WARNING",
+      "message": "Found 23 features with zero variance, removing them",
+      "category": "DATA",
+      "symbol": "SI=F",
+      "asset_type": "commodities",
+      "data": {
+        "zero_variance_features": [
+          "dxy_index",
+          "dxy_index_return_5",
+          "dxy_index_zscore_60",
+          "vix_index",
+          "vix_index_return_5",
+          "vix_index_zscore_60",
+          "us10y_yield",
+          "us10y_yield_return_5",
+          "us10y_yield_zscore_60",
+          "us2y_yield"
+        ]
+      }
+    },
+    {
+      "timestamp": "2026-01-17T13:21:05.372062Z",
+      "level": "INFO",
+      "message": "Target variable validated",
+      "category": "DATA",
+      "symbol": "SI=F",
+      "asset_type": "commodities",
+      "data": {
+        "train_mean": 0.0014417705626298802,
+        "train_std": 0.03598720486138183,
+        "val_mean": 0.002412315372096313,
+        "val_std": 0.038202784221294236,
+        "test_mean": 0.026902391492464203,
+        "test_std": 0.04823766828150591
+      }
+    },
+    {
+      "timestamp": "2026-01-17T13:21:05.373062Z",
+      "level": "WARNING",
+      "message": "Data balance analysis - checking for bearish/bullish bias",
+      "category": "DATA",
+      "symbol": "SI=F",
+      "asset_type": "commodities",
+      "data": {
+        "train_distribution": {
+          "split": "train",
+          "total_samples": 933,
+          "positive_count": 498,
+          "negative_count": 434,
+          "neutral_count": 1,
+          "positive_pct": 53.37620578778135,
+          "negative_pct": 46.51661307609861,
+          "neutral_pct": 0.10718113612004287,
+          "mean_return": 0.0014417705626298802,
+          "median_return": 0.0017211134809960171,
+          "std_return": 0.035967913943425626,
+          "imbalance_ratio": 1.1474654377880185,
+          "bias_detected": null,
+          "bias_severity": "none"
+        },
+        "val_distribution": {
+          "split": "val",
+          "total_samples": 155,
+          "positive_count": 89,
+          "negative_count": 66,
+          "neutral_count": 0,
+          "positive_pct": 57.41935483870968,
+          "negative_pct": 42.58064516129032,
+          "neutral_pct": 0.0,
+          "mean_return": 0.002412315372096313,
+          "median_return": 0.005335296447031679,
+          "std_return": 0.038079350023919725,
+          "imbalance_ratio": 1.3484848484848484,
+          "bias_detected": null,
+          "bias_severity": "none"
+        },
+        "test_distribution": {
+          "split": "test",
+          "total_samples": 154,
+          "positive_count": 108,
+          "negative_count": 46,
+          "neutral_count": 0,
+          "positive_pct": 70.12987012987013,
+          "negative_pct": 29.87012987012987,
+          "neutral_pct": 0.0,
+          "mean_return": 0.026902391492464203,
+          "median_return": 0.02080311655829592,
+          "std_return": 0.048080797400117746,
+          "imbalance_ratio": 2.347826086956522,
+          "bias_detected": "bullish",
+          "bias_severity": "moderate"
+        },
+        "warning": "If bias_severity is 'severe' or 'moderate', models may learn directional bias"
+      }
+    },
+    {
+      "timestamp": "2026-01-17T13:21:06.565445Z",
+      "level": "INFO",
+      "message": "Feature scaling verified - all features properly normalized",
+      "category": "DATA",
+      "symbol": "SI=F",
+      "asset_type": "commodities"
+    },
+    {
+      "timestamp": "2026-01-17T13:21:06.567955Z",
+      "level": "INFO",
+      "message": "Applied robust feature scaling",
+      "category": "DATA",
+      "symbol": "SI=F",
+      "asset_type": "commodities",
+      "data": {
+        "scaler": "RobustScaler",
+        "feature_count": 112,
+        "center_sample": [
+          2.0,
+          0.0015643537915728534,
+          1.0,
+          0.012263644639725117,
+          23.841999053955078
+        ],
+        "scale_sample": [
+          2.0,
+          0.037876681903709186,
+          2.0,
+          0.0013405298325087842,
+          3.253999710083008
+        ],
+        "scaling_verification": {
+          "train": {
+            "split": "train",
+            "mean_abs_mean": 0.10471916225441406,
+            "mean_abs_median": 0.0,
+            "mean_std": 0.7995076168760448,
+            "mean_abs_min": 1.6765436630999944,
+            "mean_abs_max": 2.250149654459952,
+            "nan_count": 0,
+            "inf_count": 0,
+            "issues": [],
+            "scaling_ok": true
+          },
+          "val": {
+            "split": "val",
+            "mean_abs_mean": 0.9952008618020348,
+            "mean_abs_median": 0.9802385873455959,
+            "mean_std": 0.5801822372853351,
+            "mean_abs_min": 1.4626275074794723,
+            "mean_abs_max": 2.1533950352278777,
+            "nan_count": 0,
+            "inf_count": 0,
+            "issues": [],
+            "scaling_ok": true
+          },
+          "test": {
+            "split": "test",
+            "mean_abs_mean": 1.4046064950242005,
+            "mean_abs_median": 1.3441529124577356,
+            "mean_std": 0.5701843643546755,
+            "mean_abs_min": 1.6491722578234855,
+            "mean_abs_max": 2.4874596256133796,
+            "nan_count": 0,
+            "inf_count": 0,
+            "issues": [],
+            "scaling_ok": true
+          }
+        }
+      }
+    },
+    {
+      "timestamp": "2026-01-17T13:21:06.568963Z",
+      "level": "INFO",
+      "message": "Features extracted: 112 features will be used for training",
+      "category": "DATA",
+      "symbol": "SI=F",
+      "asset_type": "commodities",
+      "data": {
+        "feature_count": 112,
+        "train_samples": 933,
+        "val_samples": 155,
+        "test_samples": 154,
+        "sample_features": [
+          "target_quantile_bin",
+          "target_return_smoothed",
+          "target_direction",
+          "ratio_SI=F_GC=F",
+          "Close_Lag_4",
+          "Close_Lag_5",
+          "Hull_MA",
+          "Price_Lag_3",
+          "MFI",
+          "Close_Lag_6"
+        ],
+        "selected_features": [
+          "target_quantile_bin",
+          "target_return_smoothed",
+          "target_direction",
+          "ratio_SI=F_GC=F",
+          "Close_Lag_4",
+          "Close_Lag_5",
+          "Hull_MA",
+          "Price_Lag_3",
+          "MFI",
+          "Close_Lag_6",
+          "SMA_5",
+          "Pivot_S2",
+          "Parabolic_SAR",
+          "Open_Lag_1",
+          "SMA_10",
+          "Typical_Price",
+          "Price_Lag_1",
+          "Close_Lag_7",
+          "MACD",
+          "Pivot_R2",
+          "Max_Drawdown_30",
+          "trend_strength_60",
+          "MACD_signal",
+          "Keltner_Channel_lower",
+          "Fractal_High",
+          "Keltner_Channel_upper",
+          "VWMA",
+          "Close_Lag_8",
+          "Donchian_Channel_low",
+          "TRIX",
+          "Bollinger_Bands_lower_20_2",
+          "Fibonacci_Level_0.618",
+          "EMA_50",
+          "Feature_Interaction_Terms",
+          "DI_minus",
+          "Close_Lag_9",
+          "Bollinger_Bands_upper_20_2",
+          "Fibonacci_Level_0.236",
+          "Ichimoku_Kijun",
+          "OBV",
+          "volatility_regime_state",
+          "SMA_50",
+          "Close_Lag_10",
+          "EMA_100",
+          "Momentum_roc_14",
+          "Rate_of_Change",
+          "EMA_200",
+          "Session_VWAP",
+          "Fractal_Low",
+          "Stochastic_%D",
+          "Ichimoku_Senkou_Span_A",
+          "RSI_21",
+          "TSI",
+          "drawdown_lookback_90",
+          "ADX_14",
+          "volatility_cluster_20",
+          "Realized_Volatility",
+          "Rolling_Sharpe_90",
+          "ATR_7",
+          "Price_Channel_Slope",
+          "Seasonality_DayOfMonth",
+          "RSI_14",
+          "Volume_Surge_Flag",
+          "Volatility_Skew",
+          "CCI_20",
+          "Bollinger_%b",
+          "DI_plus",
+          "MACD_histogram",
+          "Volatility_Clustering",
+          "Volume_Ratio",
+          "Drawdown_Duration",
+          "Rolling_Volatility_14",
+          "Ease_of_Movement",
+          "spread_zscore_SI=F_GC=F",
+          "MACD_Crossover_Signal",
+          "Williams_%R",
+          "Cumulative_Return_30",
+          "Accumulation_Distribution",
+          "Rolling_Sharpe_30",
+          "Bollinger_Bandwidth",
+          "Hour_of_Day",
+          "CMF",
+          "Day_of_Week",
+          "Ichimoku_Senkou_Span_B",
+          "SMA_200",
+          "ZScore_returns_7",
+          "Return_3",
+          "ATR_14",
+          "RSI_7",
+          "Rolling_Kurtosis",
+          "Volume_Change_1",
+          "Rolling_Skew",
+          "Force_Index",
+          "MA_Crossover_Signal",
+          "Rolling_Volatility_7",
+          "RSI_Band_Cross",
+          "ZScore_returns_30",
+          "Price_Range",
+          "Momentum_roc_7",
+          "Gap_Open",
+          "Chaikin_Oscillator",
+          "Gap_Percentage",
+          "SMA_100",
+          "Volatility_Expansion_Flag",
+          "Donchian_Breakout_Flag",
+          "Seasonality_Monthly",
+          "mean_reversion_flag",
+          "Volume_Change_7",
+          "Ensemble_Feature_Aggregates",
+          "Return_1",
+          "Intraday_Range",
+          "spread_SI=F_GC=F"
+        ],
+        "removed_low_variance": [],
+        "max_abs_corr": 0.9130736331317103,
+        "importance_filter": {
+          "method": "lightgbm_importance",
+          "selected_features": [
+            "SMA_5",
+            "SMA_10",
+            "SMA_20",
+            "SMA_50",
+            "SMA_100",
+            "SMA_200",
+            "EMA_9",
+            "EMA_12",
+            "EMA_26",
+            "EMA_50",
+            "EMA_100",
+            "EMA_200",
+            "WMA_14",
+            "Hull_MA",
+            "VWMA",
+            "VWAP",
+            "Session_VWAP",
+            "MACD",
+            "MACD_signal",
+            "MACD_histogram",
+            "RSI_7",
+            "RSI_14",
+            "RSI_21",
+            "Momentum_roc_1",
+            "Momentum_roc_7",
+            "Momentum_roc_14",
+            "Rate_of_Change",
+            "TRIX",
+            "TSI",
+            "Stochastic_%K",
+            "Stochastic_%D",
+            "Williams_%R",
+            "CCI_20",
+            "ATR_14",
+            "ATR_7",
+            "Bollinger_Bands_upper_20_2",
+            "Bollinger_Bands_lower_20_2",
+            "Bollinger_Bandwidth",
+            "Bollinger_%b",
+            "Keltner_Channel_upper",
+            "Keltner_Channel_lower",
+            "Donchian_Channel_high",
+            "Donchian_Channel_low",
+            "ADX_14",
+            "DI_plus",
+            "DI_minus",
+            "RSI_Band_Cross",
+            "ROC_Signal",
+            "Rolling_Volatility_7",
+            "Rolling_Volatility_14",
+            "Rolling_Volatility_30",
+            "Realized_Volatility",
+            "Historical_Volatility",
+            "Rolling_Skew",
+            "Rolling_Kurtosis",
+            "Volatility_Skew",
+            "Volatility_Clustering",
+            "ZScore_returns_7",
+            "ZScore_returns_30",
+            "Normalized_Returns",
+            "Log_Returns",
+            "Return_1",
+            "Return_3",
+            "Return_7",
+            "Cumulative_Return_30",
+            "Rolling_Sharpe_30",
+            "Rolling_Sharpe_90",
+            "Max_Drawdown_30",
+            "Drawdown_Duration",
+            "OBV",
+            "CMF",
+            "MFI",
+            "Ease_of_Movement",
+            "Force_Index",
+            "Accumulation_Distribution",
+            "Chaikin_Oscillator",
+            "Volume_Change_1",
+            "Volume_Change_7",
+            "Volume_Ratio",
+            "Volume_Surge_Flag",
+            "Price_Lag_1",
+            "Price_Lag_2",
+            "Price_Lag_3",
+            "Close_Lag_1",
+            "Close_Lag_2",
+            "Close_Lag_3",
+            "Close_Lag_4",
+            "Close_Lag_5",
+            "Close_Lag_6",
+            "Close_Lag_7",
+            "Close_Lag_8",
+            "Close_Lag_9",
+            "Close_Lag_10",
+            "Open_Lag_1",
+            "High_Lag_1",
+            "Low_Lag_1",
+            "Typical_Price",
+            "Median_Price",
+            "Price_Range",
+            "Intraday_Range",
+            "Gap_Open",
+            "Gap_Percentage",
+            "Donchian_Breakout_Flag",
+            "MA_Crossover_Signal",
+            "MACD_Crossover_Signal",
+            "Volatility_Expansion_Flag",
+            "Ichimoku_Tenkan",
+            "Ichimoku_Kijun",
+            "Ichimoku_Senkou_Span_A",
+            "Ichimoku_Senkou_Span_B",
+            "Parabolic_SAR",
+            "Price_Channel_Slope",
+            "Fractal_High",
+            "Fractal_Low",
+            "Pivot_Point",
+            "Pivot_R1",
+            "Pivot_S1",
+            "Pivot_R2",
+            "Pivot_S2",
+            "Fibonacci_Level_0.236",
+            "Fibonacci_Level_0.382",
+            "Fibonacci_Level_0.5",
+            "Fibonacci_Level_0.618",
+            "Fibonacci_Level_0.786",
+            "Seasonality_Monthly",
+            "Seasonality_DayOfMonth",
+            "Day_of_Week",
+            "Hour_of_Day",
+            "Feature_Interaction_Terms",
+            "Ensemble_Feature_Aggregates",
+            "target_return_smoothed",
+            "target_direction",
+            "target_quantile_bin",
+            "spread_SI=F_GC=F",
+            "ratio_SI=F_GC=F",
+            "spread_zscore_SI=F_GC=F",
+            "trend_strength_60",
+            "volatility_cluster_20",
+            "mean_reversion_flag",
+            "volatility_regime_state",
+            "drawdown_lookback_90"
+          ],
+          "dropped_features": [],
+          "skipped": true
+        }
+      }
+    },
+    {
+      "timestamp": "2026-01-17T13:21:06.571960Z",
+      "level": "INFO",
+      "message": "Data splits prepared - test set isolated for final evaluation only",
+      "category": "DATA",
+      "symbol": "SI=F",
+      "asset_type": "commodities",
+      "data": {
+        "train_rows": 933,
+        "val_rows": 155,
+        "test_rows": 154,
+        "full_train_val_rows": 1088,
+        "note": "Test set will NOT be used during training or hyperparameter optimization"
+      }
+    },
+    {
+      "timestamp": "2026-01-17T13:21:06.574959Z",
+      "level": "INFO",
+      "message": "Reference price recalibrated",
+      "category": "DATA",
+      "symbol": "SI=F",
+      "asset_type": "commodities",
+      "data": {
+        "dataset_close": 84.61000061035156,
+        "latest_market_price": 88.09100341796875
+      }
+    },
+    {
+      "timestamp": "2026-01-17T13:21:06.575960Z",
+      "level": "INFO",
+      "message": "Training Random Forest model",
+      "category": "MODEL",
+      "symbol": "SI=F",
+      "asset_type": "commodities",
+      "data": {
+        "model": "RandomForest",
+        "training_samples": 933,
+        "features_count": 112,
+        "feature_names_sample": [
+          "target_quantile_bin",
+          "target_return_smoothed",
+          "target_direction",
+          "ratio_SI=F_GC=F",
+          "Close_Lag_4"
+        ]
+      }
+    },
+    {
+      "timestamp": "2026-01-17T13:24:27.953471Z",
+      "level": "INFO",
+      "message": "RandomForest hyperparameter search complete",
+      "category": "MODEL",
+      "symbol": "SI=F",
+      "asset_type": "commodities",
+      "data": {
+        "best_params": {
+          "n_estimators": 289,
+          "max_depth": 7,
+          "min_samples_leaf": 3,
+          "min_samples_split": 8,
+          "max_features": 0.7608147591467995,
+          "max_samples": 0.7507342315891555,
+          "ccp_alpha": 0.0003012564722916786
+        }
+      }
+    },
+    {
+      "timestamp": "2026-01-17T13:24:40.694622Z",
+      "level": "INFO",
+      "message": "Random Forest prediction made using 112 features",
+      "category": "PREDICTION",
+      "symbol": "SI=F",
+      "asset_type": "commodities",
+      "data": {
+        "model": "RandomForest",
+        "features_used": 112,
+        "test_sample_index": 153,
+        "raw_return": 0.023480510105622635,
+        "clamped_return": 0.023480510105622635
+      }
+    },
+    {
+      "timestamp": "2026-01-17T13:24:40.698638Z",
+      "level": "INFO",
+      "message": "random_forest metrics computed",
+      "category": "MODEL",
+      "symbol": "SI=F",
+      "asset_type": "commodities",
+      "data": {
+        "model": "random_forest",
+        "val_r2": 0.605935584714854,
+        "val_mae": 0.014882037245080458,
+        "val_dir": 0.9612903225806452,
+        "train_metrics": {
+          "mae": 0.015787367593302647,
+          "rmse": 0.021358000293981674,
+          "r2": 0.6473932065019241,
+          "directional_accuracy": 0.932475884244373,
+          "mean_predicted_return": 0.0015308101371368553,
+          "mean_actual_return": 0.0014417705626298802
+        },
+        "test_metrics": {
+          "mae": 0.025944411651979457,
+          "rmse": 0.0405777523677753,
+          "r2": 0.2877496822920782,
+          "directional_accuracy": 0.9675324675324676,
+          "mean_predicted_return": 0.007520259261458207,
+          "mean_actual_return": 0.026902391492464203
+        }
+      }
+    },
+    {
+      "timestamp": "2026-01-17T13:24:40.699638Z",
+      "level": "INFO",
+      "message": "random_forest overfitting analysis",
+      "category": "OVERFITTING",
+      "symbol": "SI=F",
+      "asset_type": "commodities",
+      "data": {
+        "model": "random_forest",
+        "train_r2": 0.6473932065019241,
+        "val_r2": 0.605935584714854,
+        "test_r2": 0.2877496822920782,
+        "train_val_gap": 0.04145762178707013,
+        "val_test_gap": 0.3181859024227758
+      }
+    },
+    {
+      "timestamp": "2026-01-17T13:24:40.701377Z",
+      "level": "WARNING",
+      "message": "random_forest shows generalization failure: val/test gap=0.318",
+      "category": "OVERFITTING",
+      "symbol": "SI=F",
+      "asset_type": "commodities",
+      "data": {
+        "model": "random_forest",
+        "val_r2": 0.605935584714854,
+        "test_r2": 0.2877496822920782,
+        "gap": 0.3181859024227758
+      }
+    },
+    {
+      "timestamp": "2026-01-17T13:24:40.703383Z",
+      "level": "INFO",
+      "message": "random_forest accepted despite gaps: excellent validation R² 0.606 overrides strict thresholds",
+      "category": "MODEL",
+      "symbol": "SI=F",
+      "asset_type": "commodities"
+    },
+    {
+      "timestamp": "2026-01-17T13:24:40.704889Z",
+      "level": "SUCCESS",
+      "message": "Random Forest training completed",
+      "category": "MODEL",
+      "symbol": "SI=F",
+      "asset_type": "commodities",
+      "data": {
+        "model": "RandomForest",
+        "metrics": {
+          "model_name": "RandomForest",
+          "mae": 0.014882037245080458,
+          "rmse": 0.02390414069671791,
+          "r2": 0.605935584714854,
+          "directional_accuracy": 0.9612903225806452,
+          "mean_predicted_return": 0.002467647220939519,
+          "mean_actual_return": 0.002412315372096313,
+          "notes": null,
+          "precision": null,
+          "recall": null,
+          "f1": null,
+          "roc_auc": null
+        },
+        "current_price": 88.09100341796875,
+        "predicted_return": 0.023480510105622635,
+        "predicted_price": 90.1594251139388,
+        "features_used": 112
+      }
+    },
+    {
+      "timestamp": "2026-01-17T13:24:40.705896Z",
+      "level": "INFO",
+      "message": "Training LightGBM model",
+      "category": "MODEL",
+      "symbol": "SI=F",
+      "asset_type": "commodities",
+      "data": {
+        "model": "LightGBM",
+        "training_samples": 933,
+        "features_count": 112
+      }
+    },
+    {
+      "timestamp": "2026-01-17T13:24:42.291031Z",
+      "level": "INFO",
+      "message": "LightGBM hyperparameter search complete",
+      "category": "MODEL",
+      "symbol": "SI=F",
+      "asset_type": "commodities",
+      "data": {
+        "best_params": {
+          "max_depth": 4,
+          "num_leaves": 14,
+          "n_estimators": 145,
+          "learning_rate": 0.07651703771297434,
+          "subsample": 0.7707683487210761,
+          "colsample_bytree": 0.7224275449605657,
+          "min_child_samples": 16,
+          "reg_alpha": 2.0080143230091356,
+          "reg_lambda": 2.5203299714590606,
+          "min_split_gain": 0.010299233798256808
+        }
+      }
+    },
+    {
+      "timestamp": "2026-01-17T13:24:42.660284Z",
+      "level": "INFO",
+      "message": "LightGBM prediction made using 112 features",
+      "category": "PREDICTION",
+      "symbol": "SI=F",
+      "asset_type": "commodities",
+      "data": {
+        "model": "LightGBM",
+        "features_used": 112,
+        "test_sample_index": 153,
+        "raw_return": 0.02247515771948131,
+        "clamped_return": 0.02247515771948131
+      }
+    },
+    {
+      "timestamp": "2026-01-17T13:24:42.664792Z",
+      "level": "INFO",
+      "message": "lightgbm metrics computed",
+      "category": "MODEL",
+      "symbol": "SI=F",
+      "asset_type": "commodities",
+      "data": {
+        "model": "lightgbm",
+        "val_r2": 0.6611800720724994,
+        "val_mae": 0.01296420746976692,
+        "val_dir": 0.9225806451612903,
+        "train_metrics": {
+          "mae": 0.011944450137778269,
+          "rmse": 0.01840022799853401,
+          "r2": 0.7382926572206404,
+          "directional_accuracy": 0.9153269024651661,
+          "mean_predicted_return": 0.0013430605560419673,
+          "mean_actual_return": 0.0014417705626298802
+        },
+        "test_metrics": {
+          "mae": 0.02121596334554011,
+          "rmse": 0.03685619739417624,
+          "r2": 0.412405493056494,
+          "directional_accuracy": 0.9415584415584416,
+          "mean_predicted_return": 0.009869081019440274,
+          "mean_actual_return": 0.026902391492464203
+        }
+      }
+    },
+    {
+      "timestamp": "2026-01-17T13:24:42.667801Z",
+      "level": "INFO",
+      "message": "lightgbm overfitting analysis",
+      "category": "OVERFITTING",
+      "symbol": "SI=F",
+      "asset_type": "commodities",
+      "data": {
+        "model": "lightgbm",
+        "train_r2": 0.7382926572206404,
+        "val_r2": 0.6611800720724994,
+        "test_r2": 0.412405493056494,
+        "train_val_gap": 0.07711258514814101,
+        "val_test_gap": 0.24877457901600541
+      }
+    },
+    {
+      "timestamp": "2026-01-17T13:24:42.669801Z",
+      "level": "WARNING",
+      "message": "lightgbm shows generalization failure: val/test gap=0.249",
+      "category": "OVERFITTING",
+      "symbol": "SI=F",
+      "asset_type": "commodities",
+      "data": {
+        "model": "lightgbm",
+        "val_r2": 0.6611800720724994,
+        "test_r2": 0.412405493056494,
+        "gap": 0.24877457901600541
+      }
+    },
+    {
+      "timestamp": "2026-01-17T13:24:42.671801Z",
+      "level": "INFO",
+      "message": "lightgbm accepted despite gaps: excellent validation R² 0.661 overrides strict thresholds",
+      "category": "MODEL",
+      "symbol": "SI=F",
+      "asset_type": "commodities"
+    },
+    {
+      "timestamp": "2026-01-17T13:24:42.673803Z",
+      "level": "SUCCESS",
+      "message": "LightGBM training completed",
+      "category": "MODEL",
+      "symbol": "SI=F",
+      "asset_type": "commodities",
+      "data": {
+        "model": "LightGBM",
+        "metrics": {
+          "model_name": "LightGBM",
+          "mae": 0.01296420746976692,
+          "rmse": 0.02216531969891963,
+          "r2": 0.6611800720724994,
+          "directional_accuracy": 0.9225806451612903,
+          "mean_predicted_return": 0.0026441612125591768,
+          "mean_actual_return": 0.002412315372096313,
+          "notes": null,
+          "precision": null,
+          "recall": null,
+          "f1": null,
+          "roc_auc": null
+        },
+        "current_price": 88.09100341796875,
+        "predicted_return": 0.02247515771948131,
+        "predicted_price": 90.07086261345496,
+        "features_used": 112
+      }
+    },
+    {
+      "timestamp": "2026-01-17T13:24:42.676315Z",
+      "level": "INFO",
+      "message": "Training XGBoost model",
+      "category": "MODEL",
+      "symbol": "SI=F",
+      "asset_type": "commodities",
+      "data": {
+        "model": "XGBoost",
+        "training_samples": 933,
+        "features_count": 112
+      }
+    },
+    {
+      "timestamp": "2026-01-17T13:24:48.257075Z",
+      "level": "INFO",
+      "message": "XGBoost hyperparameter search complete",
+      "category": "MODEL",
+      "symbol": "SI=F",
+      "asset_type": "commodities",
+      "data": {
+        "best_params": {
+          "n_estimators": 234,
+          "learning_rate": 0.06802313115880479,
+          "max_depth": 2,
+          "subsample": 0.7064246638678424,
+          "colsample_bytree": 0.6637562619846155,
+          "min_child_weight": 3.6568802919416012,
+          "gamma": 0.10126764799092186,
+          "reg_alpha": 3.0264192103805083,
+          "reg_lambda": 4.688228329390175
+        }
+      }
+    },
+    {
+      "timestamp": "2026-01-17T13:24:49.549263Z",
+      "level": "INFO",
+      "message": "XGBoost prediction made using 112 features",
+      "category": "PREDICTION",
+      "symbol": "SI=F",
+      "asset_type": "commodities",
+      "data": {
+        "model": "XGBoost",
+        "features_used": 112,
+        "test_sample_index": 153,
+        "raw_return": 0.01335954200476408,
+        "clamped_return": 0.01335954200476408
+      }
+    },
+    {
+      "timestamp": "2026-01-17T13:24:49.553263Z",
+      "level": "INFO",
+      "message": "xgboost metrics computed",
+      "category": "MODEL",
+      "symbol": "SI=F",
+      "asset_type": "commodities",
+      "data": {
+        "model": "xgboost",
+        "val_r2": 0.8314348925006043,
+        "val_mae": 0.009560339283443013,
+        "val_dir": 0.9290322580645162,
+        "train_metrics": {
+          "mae": 0.006535464557430823,
+          "rmse": 0.008953483172081294,
+          "r2": 0.9380339886157527,
+          "directional_accuracy": 0.9367631296891747,
+          "mean_predicted_return": 0.0014174319803714752,
+          "mean_actual_return": 0.0014417705626298802
+        },
+        "test_metrics": {
+          "mae": 0.01504066953500329,
+          "rmse": 0.025620743454091082,
+          "r2": 0.716051138108396,
+          "directional_accuracy": 0.9415584415584416,
+          "mean_predicted_return": 0.015421628952026367,
+          "mean_actual_return": 0.026902391492464203
+        }
+      }
+    },
+    {
+      "timestamp": "2026-01-17T13:24:49.554769Z",
+      "level": "INFO",
+      "message": "xgboost overfitting analysis",
+      "category": "OVERFITTING",
+      "symbol": "SI=F",
+      "asset_type": "commodities",
+      "data": {
+        "model": "xgboost",
+        "train_r2": 0.9380339886157527,
+        "val_r2": 0.8314348925006043,
+        "test_r2": 0.716051138108396,
+        "train_val_gap": 0.1065990961151484,
+        "val_test_gap": 0.11538375439220827
+      }
+    },
+    {
+      "timestamp": "2026-01-17T13:24:49.556783Z",
+      "level": "WARNING",
+      "message": "xgboost shows train/val overfitting: gap=0.107",
+      "category": "OVERFITTING",
+      "symbol": "SI=F",
+      "asset_type": "commodities",
+      "data": {
+        "model": "xgboost",
+        "train_r2": 0.9380339886157527,
+        "val_r2": 0.8314348925006043,
+        "gap": 0.1065990961151484
+      }
+    },
+    {
+      "timestamp": "2026-01-17T13:24:49.559782Z",
+      "level": "WARNING",
+      "message": "xgboost shows generalization failure: val/test gap=0.115",
+      "category": "OVERFITTING",
+      "symbol": "SI=F",
+      "asset_type": "commodities",
+      "data": {
+        "model": "xgboost",
+        "val_r2": 0.8314348925006043,
+        "test_r2": 0.716051138108396,
+        "gap": 0.11538375439220827
+      }
+    },
+    {
+      "timestamp": "2026-01-17T13:24:49.561782Z",
+      "level": "INFO",
+      "message": "xgboost accepted despite gaps: excellent validation R² 0.831 overrides strict thresholds",
+      "category": "MODEL",
+      "symbol": "SI=F",
+      "asset_type": "commodities"
+    },
+    {
+      "timestamp": "2026-01-17T13:24:49.565290Z",
+      "level": "SUCCESS",
+      "message": "XGBoost training completed",
+      "category": "MODEL",
+      "symbol": "SI=F",
+      "asset_type": "commodities",
+      "data": {
+        "model": "XGBoost",
+        "metrics": {
+          "model_name": "XGBoost",
+          "mae": 0.009560339283443013,
+          "rmse": 0.01563411736013975,
+          "r2": 0.8314348925006043,
+          "directional_accuracy": 0.9290322580645162,
+          "mean_predicted_return": 0.004095857962965965,
+          "mean_actual_return": 0.002412315372096313,
+          "notes": null,
+          "precision": null,
+          "recall": null,
+          "f1": null,
+          "roc_auc": null
+        },
+        "current_price": 88.09100341796875,
+        "predicted_return": 0.01335954200476408,
+        "predicted_price": 89.26785887837292,
+        "features_used": 112
+      }
+    },
+    {
+      "timestamp": "2026-01-17T13:24:49.637966Z",
+      "level": "INFO",
+      "message": "stacked_blend metrics computed",
+      "category": "MODEL",
+      "symbol": "SI=F",
+      "asset_type": "commodities",
+      "data": {
+        "model": "stacked_blend",
+        "val_r2": 0.7396443762635501,
+        "val_mae": 0.010748882360000048,
+        "val_dir": 0.967741935483871,
+        "train_metrics": {
+          "mae": 0.010162781876743967,
+          "rmse": 0.015111003878857587,
+          "r2": 0.82349535737269,
+          "directional_accuracy": 0.9367631296891747,
+          "mean_predicted_return": 0.001430434293624066,
+          "mean_actual_return": 0.0014417705626298802
+        },
+        "test_metrics": {
+          "mae": 0.01957607036279827,
+          "rmse": 0.03369293620310465,
+          "r2": 0.508940184883194,
+          "directional_accuracy": 0.9675324675324676,
+          "mean_predicted_return": 0.01093699001143987,
+          "mean_actual_return": 0.026902391492464203
+        }
+      }
+    },
+    {
+      "timestamp": "2026-01-17T13:24:49.640966Z",
+      "level": "INFO",
+      "message": "stacked_blend overfitting analysis",
+      "category": "OVERFITTING",
+      "symbol": "SI=F",
+      "asset_type": "commodities",
+      "data": {
+        "model": "stacked_blend",
+        "train_r2": 0.82349535737269,
+        "val_r2": 0.7396443762635501,
+        "test_r2": 0.508940184883194,
+        "train_val_gap": 0.08385098110913991,
+        "val_test_gap": 0.23070419138035603
+      }
+    },
+    {
+      "timestamp": "2026-01-17T13:24:49.643965Z",
+      "level": "WARNING",
+      "message": "stacked_blend shows generalization failure: val/test gap=0.231",
+      "category": "OVERFITTING",
+      "symbol": "SI=F",
+      "asset_type": "commodities",
+      "data": {
+        "model": "stacked_blend",
+        "val_r2": 0.7396443762635501,
+        "test_r2": 0.508940184883194,
+        "gap": 0.23070419138035603
+      }
+    },
+    {
+      "timestamp": "2026-01-17T13:24:49.646989Z",
+      "level": "SUCCESS",
+      "message": "Stacked blender created",
+      "category": "MODEL",
+      "symbol": "SI=F",
+      "asset_type": "commodities",
+      "data": {
+        "models": [
+          "lightgbm",
+          "random_forest",
+          "xgboost"
+        ],
+        "weights": [
+          0.3333333333333333,
+          0.3333333333333333,
+          0.3333333333333333
+        ],
+        "alpha": null,
+        "latest_return": 0.02744923667797193
+      }
+    },
+    {
+      "timestamp": "2026-01-17T13:24:49.649990Z",
+      "level": "INFO",
+      "message": "Training DQN model",
+      "category": "MODEL",
+      "symbol": "SI=F",
+      "asset_type": "commodities",
+      "data": {
+        "model": "DQN",
+        "training_samples": 933,
+        "features_count": 112
+      }
+    },
+    {
+      "timestamp": "2026-01-17T13:24:55.520008Z",
+      "level": "SUCCESS",
+      "message": "DQN training completed",
+      "category": "MODEL",
+      "symbol": "SI=F",
+      "asset_type": "commodities",
+      "data": {
+        "model": "DQN",
+        "action": "short",
+        "current_price": 88.09100341796875,
+        "features_used": 112,
+        "validation_policy": {
+          "total_return": 1.1226899689844883,
+          "avg_return": 0.007290194603795378,
+          "sharpe": 6.308438510833509,
+          "hit_rate": 0.5844155844155844,
+          "max_drawdown": -0.0550230918413267
+        },
+        "test_policy": {
+          "total_return": 1.4656232158508014,
+          "avg_return": 0.009579236704907198,
+          "sharpe": 6.254252026190001,
+          "hit_rate": 0.6535947712418301,
+          "max_drawdown": -0.07225997875105883
+        }
+      }
+    },
+    {
+      "timestamp": "2026-01-17T13:24:55.523012Z",
+      "level": "WARNING",
+      "message": "random_forest: Val R² (0.606) >> Test R² (0.288), gap=0.318 (generalization failure)",
+      "category": "OVERFITTING",
+      "symbol": "SI=F",
+      "asset_type": "commodities"
+    },
+    {
+      "timestamp": "2026-01-17T13:24:55.526531Z",
+      "level": "WARNING",
+      "message": "random_forest: Validation accuracy (96.1%) suspiciously high (expected: 55-70%)",
+      "category": "OVERFITTING",
+      "symbol": "SI=F",
+      "asset_type": "commodities"
+    },
+    {
+      "timestamp": "2026-01-17T13:24:55.530539Z",
+      "level": "WARNING",
+      "message": "random_forest: Test accuracy (96.8%) suspiciously high (expected: 55-70%)",
+      "category": "OVERFITTING",
+      "symbol": "SI=F",
+      "asset_type": "commodities"
+    },
+    {
+      "timestamp": "2026-01-17T13:24:55.535045Z",
+      "level": "WARNING",
+      "message": "random_forest: Significant performance drop on test set (Train: 0.647, Val: 0.606, Test: 0.288)",
+      "category": "OVERFITTING",
+      "symbol": "SI=F",
+      "asset_type": "commodities"
+    },
+    {
+      "timestamp": "2026-01-17T13:24:55.539060Z",
+      "level": "WARNING",
+      "message": "lightgbm: Val R² (0.661) >> Test R² (0.412), gap=0.249 (generalization failure)",
+      "category": "OVERFITTING",
+      "symbol": "SI=F",
+      "asset_type": "commodities"
+    },
+    {
+      "timestamp": "2026-01-17T13:24:55.543059Z",
+      "level": "WARNING",
+      "message": "lightgbm: Validation accuracy (92.3%) suspiciously high (expected: 55-70%)",
+      "category": "OVERFITTING",
+      "symbol": "SI=F",
+      "asset_type": "commodities"
+    },
+    {
+      "timestamp": "2026-01-17T13:24:55.547582Z",
+      "level": "WARNING",
+      "message": "lightgbm: Test accuracy (94.2%) suspiciously high (expected: 55-70%)",
+      "category": "OVERFITTING",
+      "symbol": "SI=F",
+      "asset_type": "commodities"
+    },
+    {
+      "timestamp": "2026-01-17T13:24:55.550581Z",
+      "level": "WARNING",
+      "message": "lightgbm: Significant performance drop on test set (Train: 0.738, Val: 0.661, Test: 0.412)",
+      "category": "OVERFITTING",
+      "symbol": "SI=F",
+      "asset_type": "commodities"
+    },
+    {
+      "timestamp": "2026-01-17T13:24:55.554579Z",
+      "level": "WARNING",
+      "message": "xgboost: Train R² (0.938) >> Val R² (0.831), gap=0.107",
+      "category": "OVERFITTING",
+      "symbol": "SI=F",
+      "asset_type": "commodities"
+    },
+    {
+      "timestamp": "2026-01-17T13:24:55.560101Z",
+      "level": "WARNING",
+      "message": "xgboost: Val R² (0.831) >> Test R² (0.716), gap=0.115 (generalization failure)",
+      "category": "OVERFITTING",
+      "symbol": "SI=F",
+      "asset_type": "commodities"
+    },
+    {
+      "timestamp": "2026-01-17T13:24:55.565619Z",
+      "level": "WARNING",
+      "message": "xgboost: Validation accuracy (92.9%) suspiciously high (expected: 55-70%)",
+      "category": "OVERFITTING",
+      "symbol": "SI=F",
+      "asset_type": "commodities"
+    },
+    {
+      "timestamp": "2026-01-17T13:24:55.569627Z",
+      "level": "WARNING",
+      "message": "xgboost: Test accuracy (94.2%) suspiciously high (expected: 55-70%)",
+      "category": "OVERFITTING",
+      "symbol": "SI=F",
+      "asset_type": "commodities"
+    },
+    {
+      "timestamp": "2026-01-17T13:24:55.572627Z",
+      "level": "WARNING",
+      "message": "xgboost: Significant performance drop on test set (Train: 0.938, Val: 0.831, Test: 0.716)",
+      "category": "OVERFITTING",
+      "symbol": "SI=F",
+      "asset_type": "commodities"
+    },
+    {
+      "timestamp": "2026-01-17T13:24:55.575132Z",
+      "level": "WARNING",
+      "message": "stacked_blend: Val R² (0.740) >> Test R² (0.509), gap=0.231 (generalization failure)",
+      "category": "OVERFITTING",
+      "symbol": "SI=F",
+      "asset_type": "commodities"
+    },
+    {
+      "timestamp": "2026-01-17T13:24:55.579146Z",
+      "level": "WARNING",
+      "message": "stacked_blend: Validation accuracy (96.8%) suspiciously high (expected: 55-70%)",
+      "category": "OVERFITTING",
+      "symbol": "SI=F",
+      "asset_type": "commodities"
+    },
+    {
+      "timestamp": "2026-01-17T13:24:55.582147Z",
+      "level": "WARNING",
+      "message": "stacked_blend: Test accuracy (96.8%) suspiciously high (expected: 55-70%)",
+      "category": "OVERFITTING",
+      "symbol": "SI=F",
+      "asset_type": "commodities"
+    },
+    {
+      "timestamp": "2026-01-17T13:24:55.585660Z",
+      "level": "WARNING",
+      "message": "stacked_blend: Significant performance drop on test set (Train: 0.823, Val: 0.740, Test: 0.509)",
+      "category": "OVERFITTING",
+      "symbol": "SI=F",
+      "asset_type": "commodities"
+    },
+    {
+      "timestamp": "2026-01-17T13:24:55.590664Z",
+      "level": "INFO",
+      "message": "Consensus action computed: HOLD",
+      "category": "CONSENSUS",
+      "symbol": "SI=F",
+      "asset_type": "commodities",
+      "data": {
+        "consensus_action": "hold",
+        "consensus_confidence": 0.5526995568800978,
+        "consensus_price": 89.82597166191286,
+        "consensus_return": 0.01969518085419164,
+        "action_scores": {
+          "long": 0.18070709644306274,
+          "hold": 0.5526995568800978,
+          "short": 0.2665933466768394
+        }
+      }
+    },
+    {
+      "timestamp": "2026-01-17T13:24:55.691859Z",
+      "level": "SUCCESS",
+      "message": "Training completed for SI=F",
+      "category": "TRAIN",
+      "symbol": "SI=F",
+      "asset_type": "commodities",
+      "data": {
+        "summary_file": "models\\commodities\\SI=F\\1d\\short\\summary.json",
+        "log_file": "logs\\training\\commodities\\SI=F\\1d\\training_log.json",
+        "models_trained": 5,
+        "models_failed": 0
+      }
+    }
+  ]
+}

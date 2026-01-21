@@ -31733,10 +31733,90 @@
     "timeframe": "1d",
     "timestamp": "2026-01-14T00:00:00Z",
     "open": 3607.0,
-    "high": 3632.0,
-    "low": 3566.0,
-    "close": 3600.0,
-    "volume": 71.3075,
+    "high": 3648.0,
+    "low": 3545.0,
+    "close": 3594.0,
+    "volume": 291.83942,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "YFI-USDT",
+    "timeframe": "1d",
+    "timestamp": "2026-01-15T00:00:00Z",
+    "open": 3595.0,
+    "high": 3605.0,
+    "low": 3442.0,
+    "close": 3476.0,
+    "volume": 208.58655,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "YFI-USDT",
+    "timeframe": "1d",
+    "timestamp": "2026-01-16T00:00:00Z",
+    "open": 3474.0,
+    "high": 3490.0,
+    "low": 3356.0,
+    "close": 3478.0,
+    "volume": 280.75124,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "YFI-USDT",
+    "timeframe": "1d",
+    "timestamp": "2026-01-17T00:00:00Z",
+    "open": 3476.0,
+    "high": 3811.0,
+    "low": 3437.0,
+    "close": 3662.0,
+    "volume": 486.23613,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "YFI-USDT",
+    "timeframe": "1d",
+    "timestamp": "2026-01-18T00:00:00Z",
+    "open": 3662.0,
+    "high": 3693.0,
+    "low": 3520.0,
+    "close": 3521.0,
+    "volume": 215.95567,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "YFI-USDT",
+    "timeframe": "1d",
+    "timestamp": "2026-01-19T00:00:00Z",
+    "open": 3521.0,
+    "high": 3521.0,
+    "low": 3255.0,
+    "close": 3353.0,
+    "volume": 286.39486,
     "source": "binance_rest",
     "fallback_status": {
       "active": false,

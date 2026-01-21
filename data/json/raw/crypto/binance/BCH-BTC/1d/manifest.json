@@ -2,14 +2,14 @@
   "symbol": "BCH-BTC",
   "timeframe": "1d",
   "asset_type": "crypto",
-  "generated_at": "2026-01-14T07:25:15.451586Z",
+  "generated_at": "2026-01-19T07:13:03.895840Z",
   "data_file": "data.json",
   "latest_file": "latest.json",
   "data_file_info": {
     "filename": "data.json",
-    "size_bytes": 813661,
-    "candle_count": 2240,
+    "size_bytes": 815476,
+    "candle_count": 2245,
     "first_timestamp": "2019-11-28T00:00:00Z",
-    "last_timestamp": "2026-01-14T00:00:00Z"
+    "last_timestamp": "2026-01-19T00:00:00Z"
   }
 }

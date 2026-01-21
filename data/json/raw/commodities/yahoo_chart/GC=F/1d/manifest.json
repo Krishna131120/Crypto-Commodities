@@ -1,0 +1,15 @@
+{
+  "symbol": "GC=F",
+  "timeframe": "1d",
+  "asset_type": "commodities",
+  "generated_at": "2026-01-17T13:14:35.463352Z",
+  "data_file": "data.json",
+  "latest_file": "latest.json",
+  "data_file_info": {
+    "filename": "data.json",
+    "size_bytes": 481169,
+    "candle_count": 1258,
+    "first_timestamp": "2021-01-19T05:00:00Z",
+    "last_timestamp": "2026-01-16T05:00:00Z"
+  }
+}

@@ -2,14 +2,14 @@
   "symbol": "AAVE-USDT",
   "timeframe": "1d",
   "asset_type": "crypto",
-  "generated_at": "2026-01-14T07:03:51.357946Z",
+  "generated_at": "2026-01-19T06:57:29.964415Z",
   "data_file": "data.json",
   "latest_file": "latest.json",
   "data_file_info": {
     "filename": "data.json",
-    "size_bytes": 685977,
-    "candle_count": 1918,
+    "size_bytes": 687776,
+    "candle_count": 1923,
     "first_timestamp": "2020-10-15T00:00:00Z",
-    "last_timestamp": "2026-01-14T00:00:00Z"
+    "last_timestamp": "2026-01-19T00:00:00Z"
   }
 }

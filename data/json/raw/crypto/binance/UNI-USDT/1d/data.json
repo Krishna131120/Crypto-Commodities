@@ -31125,10 +31125,90 @@
     "timeframe": "1d",
     "timestamp": "2026-01-14T00:00:00Z",
     "open": 5.73,
-    "high": 5.791,
-    "low": 5.697,
-    "close": 5.763,
-    "volume": 1072715.99,
+    "high": 5.852,
+    "low": 5.657,
+    "close": 5.681,
+    "volume": 4165081.91,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "UNI-USDT",
+    "timeframe": "1d",
+    "timestamp": "2026-01-15T00:00:00Z",
+    "open": 5.681,
+    "high": 5.685,
+    "low": 5.226,
+    "close": 5.35,
+    "volume": 5244768.55,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "UNI-USDT",
+    "timeframe": "1d",
+    "timestamp": "2026-01-16T00:00:00Z",
+    "open": 5.351,
+    "high": 5.361,
+    "low": 5.131,
+    "close": 5.315,
+    "volume": 2862771.05,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "UNI-USDT",
+    "timeframe": "1d",
+    "timestamp": "2026-01-17T00:00:00Z",
+    "open": 5.316,
+    "high": 5.446,
+    "low": 5.305,
+    "close": 5.352,
+    "volume": 1722418.8,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "UNI-USDT",
+    "timeframe": "1d",
+    "timestamp": "2026-01-18T00:00:00Z",
+    "open": 5.351,
+    "high": 5.397,
+    "low": 5.088,
+    "close": 5.095,
+    "volume": 2597797.17,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "UNI-USDT",
+    "timeframe": "1d",
+    "timestamp": "2026-01-19T00:00:00Z",
+    "open": 5.095,
+    "high": 5.097,
+    "low": 4.62,
+    "close": 4.981,
+    "volume": 4170096.72,
     "source": "binance_rest",
     "fallback_status": {
       "active": false,

@@ -1909,10 +1909,90 @@
     "timeframe": "1d",
     "timestamp": "2026-01-14T00:00:00Z",
     "open": 0.0592,
-    "high": 0.05975,
+    "high": 0.06029,
     "low": 0.05902,
-    "close": 0.0593,
-    "volume": 4748981.0,
+    "close": 0.05981,
+    "volume": 17079887.0,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "SKY-USDT",
+    "timeframe": "1d",
+    "timestamp": "2026-01-15T00:00:00Z",
+    "open": 0.05981,
+    "high": 0.06072,
+    "low": 0.05897,
+    "close": 0.05995,
+    "volume": 18223885.0,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "SKY-USDT",
+    "timeframe": "1d",
+    "timestamp": "2026-01-16T00:00:00Z",
+    "open": 0.05991,
+    "high": 0.06558,
+    "low": 0.05984,
+    "close": 0.06466,
+    "volume": 48063731.0,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "SKY-USDT",
+    "timeframe": "1d",
+    "timestamp": "2026-01-17T00:00:00Z",
+    "open": 0.06465,
+    "high": 0.06533,
+    "low": 0.06337,
+    "close": 0.06417,
+    "volume": 23098810.0,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "SKY-USDT",
+    "timeframe": "1d",
+    "timestamp": "2026-01-18T00:00:00Z",
+    "open": 0.06417,
+    "high": 0.06477,
+    "low": 0.06344,
+    "close": 0.06378,
+    "volume": 21619379.0,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "SKY-USDT",
+    "timeframe": "1d",
+    "timestamp": "2026-01-19T00:00:00Z",
+    "open": 0.0638,
+    "high": 0.06494,
+    "low": 0.06177,
+    "close": 0.06371,
+    "volume": 17323273.0,
     "source": "binance_rest",
     "fallback_status": {
       "active": false,

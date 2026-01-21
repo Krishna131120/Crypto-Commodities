@@ -31606,9 +31606,89 @@
     "timestamp": "2026-01-14T00:00:00Z",
     "open": 2.283,
     "high": 2.298,
-    "low": 2.259,
-    "close": 2.291,
-    "volume": 1741455.08,
+    "low": 2.195,
+    "close": 2.226,
+    "volume": 7108770.22,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "DOT-USDT",
+    "timeframe": "1d",
+    "timestamp": "2026-01-15T00:00:00Z",
+    "open": 2.225,
+    "high": 2.239,
+    "low": 2.097,
+    "close": 2.117,
+    "volume": 6339482.62,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "DOT-USDT",
+    "timeframe": "1d",
+    "timestamp": "2026-01-16T00:00:00Z",
+    "open": 2.117,
+    "high": 2.156,
+    "low": 2.056,
+    "close": 2.119,
+    "volume": 5970610.99,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "DOT-USDT",
+    "timeframe": "1d",
+    "timestamp": "2026-01-17T00:00:00Z",
+    "open": 2.12,
+    "high": 2.235,
+    "low": 2.113,
+    "close": 2.179,
+    "volume": 5627984.65,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "DOT-USDT",
+    "timeframe": "1d",
+    "timestamp": "2026-01-18T00:00:00Z",
+    "open": 2.178,
+    "high": 2.203,
+    "low": 2.063,
+    "close": 2.065,
+    "volume": 5133672.79,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "DOT-USDT",
+    "timeframe": "1d",
+    "timestamp": "2026-01-19T00:00:00Z",
+    "open": 2.065,
+    "high": 2.065,
+    "low": 1.834,
+    "close": 1.959,
+    "volume": 7350126.22,
     "source": "binance_rest",
     "fallback_status": {
       "active": false,

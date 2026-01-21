@@ -36870,9 +36870,89 @@
     "timestamp": "2026-01-14T00:00:00Z",
     "open": 0.594,
     "high": 0.6019,
-    "low": 0.5848,
-    "close": 0.5893,
-    "volume": 596798.0,
+    "low": 0.5743,
+    "close": 0.5781,
+    "volume": 2991996.4,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "XTZ-USDT",
+    "timeframe": "1d",
+    "timestamp": "2026-01-15T00:00:00Z",
+    "open": 0.5781,
+    "high": 0.61,
+    "low": 0.5691,
+    "close": 0.5817,
+    "volume": 8104534.6,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "XTZ-USDT",
+    "timeframe": "1d",
+    "timestamp": "2026-01-16T00:00:00Z",
+    "open": 0.5817,
+    "high": 0.6273,
+    "low": 0.5699,
+    "close": 0.6191,
+    "volume": 7561212.4,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "XTZ-USDT",
+    "timeframe": "1d",
+    "timestamp": "2026-01-17T00:00:00Z",
+    "open": 0.6192,
+    "high": 0.6289,
+    "low": 0.5965,
+    "close": 0.602,
+    "volume": 4494299.5,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "XTZ-USDT",
+    "timeframe": "1d",
+    "timestamp": "2026-01-18T00:00:00Z",
+    "open": 0.602,
+    "high": 0.64,
+    "low": 0.5817,
+    "close": 0.5826,
+    "volume": 8135247.0,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "XTZ-USDT",
+    "timeframe": "1d",
+    "timestamp": "2026-01-19T00:00:00Z",
+    "open": 0.5825,
+    "high": 0.5826,
+    "low": 0.529,
+    "close": 0.5646,
+    "volume": 2144669.2,
     "source": "binance_rest",
     "fallback_status": {
       "active": false,

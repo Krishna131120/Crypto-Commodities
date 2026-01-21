@@ -2,14 +2,14 @@
   "symbol": "UNI-BTC",
   "timeframe": "1d",
   "asset_type": "crypto",
-  "generated_at": "2026-01-14T07:25:45.728398Z",
+  "generated_at": "2026-01-19T07:13:21.556594Z",
   "data_file": "data.json",
   "latest_file": "latest.json",
   "data_file_info": {
     "filename": "data.json",
-    "size_bytes": 717795,
-    "candle_count": 1946,
+    "size_bytes": 719612,
+    "candle_count": 1951,
     "first_timestamp": "2020-09-17T00:00:00Z",
-    "last_timestamp": "2026-01-14T00:00:00Z"
+    "last_timestamp": "2026-01-19T00:00:00Z"
   }
 }

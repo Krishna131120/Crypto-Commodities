@@ -3336,65 +3336,210 @@ def fetch_crypto_historical_with_fallback(
 def fetch_commodities_historical_with_fallback(
     symbol: str,
     timeframe: str = "1d",
-    years: float = 5,
-    fallback_engine: Optional[FallbackEngine] = None
+    years: float = 7,
+    fallback_engine: Optional[FallbackEngine] = None,
+    incremental: bool = True,
 ) -> List[Dict[str, Any]]:
     """
     Fetch commodities historical data with automatic fallback.
+    
+    UPDATED: Now uses AngelOne (MCX) for ALL commodities (both MCX_* and Yahoo Finance symbols).
+    This ensures consistency - we trade on MCX, so we use MCX data for historical analysis too.
+    
+    Priority:
+    1. AngelOne MCX API (primary - for all commodities)
+    2. Yahoo Finance (fallback - only if AngelOne fails and symbol has Yahoo equivalent)
+    3. Local cache (final fallback)
+    
+    Args:
+        symbol: Data symbol (e.g., "GC=F" or "MCX_GOLDM")
+        timeframe: Timeframe (1d, 1h, etc.)
+        years: Number of years to fetch (used only if no existing data found)
+        fallback_engine: Optional fallback engine for source switching
+        incremental: If True, check for existing data and only fetch if missing or incomplete
     """
     timeframe = "1d"
-    if fallback_engine is None:
-        sources = ["yahoo", "stooq", "local_cache"]
-        fallback_engine = FallbackEngine(sources, "yahoo")
     
-    all_candles = []
-    max_attempts = len(fallback_engine.sources) * 2
-    
-    for attempt in range(max_attempts):
-        source = fallback_engine.get_current_source()
+    # Check for existing data if incremental mode is enabled
+    if incremental:
+        # Check if data.json already exists and has sufficient data
+        from pathlib import Path
         
+        # Try multiple possible source folders for commodities
+        possible_sources = ["yahoo_chart", "yahoo", "stooq", "angelone_mcx"]
+        existing_data_found = False
+        existing_candles = []
+        
+        for source_folder in possible_sources:
+            try:
+                # data.json is stored in the timeframe directory, not as latest.json
+                base_path = get_data_path("commodities", symbol, timeframe, None, source_folder).parent
+                data_path = base_path / "data.json"
+                if data_path.exists():
+                    existing_candles = load_json_file(data_path)
+                    if existing_candles and len(existing_candles) > 0:
+                        # Check if we have sufficient data (at least 1 year worth)
+                        min_required_candles = 365  # At least 1 year of daily data
+                        if len(existing_candles) >= min_required_candles:
+                            existing_data_found = True
+                            print(f"[{symbol}] Found existing data ({len(existing_candles)} candles) - skipping fetch")
+                            print(f"[{symbol}] Using existing data from {source_folder}")
+                            return existing_candles  # Return existing data, don't fetch again
+                        else:
+                            print(f"[{symbol}] Existing data found but insufficient ({len(existing_candles)} candles < {min_required_candles}) - will fetch more")
+                            break  # Continue to fetch more data
+            except Exception:
+                continue  # Try next source
+        
+        if existing_data_found:
+            # Data exists and is sufficient - return it
+            return existing_candles
+    
+    # CRITICAL: For ALL commodities, try MCX data FIRST (since we trade on MCX)
+    # - If symbol maps to MCX trading symbol, use MCX data (AngelOne)
+    # - Only fallback to Yahoo Finance if MCX data unavailable
+    # 
+    # Why? We trade on MCX, so we should use MCX data for analysis too!
+    # Using COMEX data (GC=F) to predict MCX prices is inaccurate.
+    
+    # Check if this symbol maps to an MCX trading symbol
+    from trading.symbol_universe import find_by_data_symbol
+    asset_mapping = find_by_data_symbol(symbol)
+    is_mcx_symbol = symbol.startswith("MCX_")
+    maps_to_mcx = asset_mapping and asset_mapping.asset_type == "commodities" and asset_mapping.trading_symbol
+    
+    # Try MCX data FIRST for ALL commodities (if they map to MCX trading symbols)
+    if is_mcx_symbol or maps_to_mcx:
+        # Try MCX data FIRST (for both MCX_* symbols and Yahoo Finance symbols that map to MCX)
         try:
-            print(f"[{symbol}] Fetching historical from {source} (attempt {attempt + 1})...")
+            from trading.angelone_client import AngelOneClient
+            from trading.mcx_symbol_mapper import get_mcx_contract_symbol
             
-            if source == "yahoo":
-                candles = fetch_yahoo_historical(symbol, timeframe, years)
-            elif source == "stooq":
-                candles = fetch_stooq_historical(symbol, timeframe, years)
-            elif source == "local_cache":
-                candles = load_from_local_cache(symbol, timeframe, "commodities")
-            else:
-                candles = []
+            # Get asset mapping to find MCX contract symbol
+            if not asset_mapping:
+                asset_mapping = find_by_data_symbol(symbol)
             
-            if candles and len(candles) > 0:
-                fallback_engine.mark_success(source)
-                all_candles = candles
-                print(f"  [OK] Successfully fetched {len(candles)} candles from {source}")
-                break
-            else:
-                fallback_engine.mark_failure(source, "No data returned")
+            if asset_mapping and asset_mapping.asset_type == "commodities":
+                # Get MCX contract symbol (e.g., MCX_SILVERM -> SILVERMDEC25)
+                mcx_contract = get_mcx_contract_symbol(asset_mapping.data_symbol)
                 
-        except Exception as exc:
-            error_msg = str(exc)
-            status_code = None
-            if "429" in error_msg or "rate limit" in error_msg.lower():
-                status_code = 429
-            
-            print(f"  [ERROR] {source}: {error_msg}")
-            fallback_engine.mark_failure(source, error_msg, status_code)
+                print(f"[{symbol}] Using AngelOne MCX API for historical data (MCX contract: {mcx_contract})")
+                
+                # Initialize AngelOne client
+                client = AngelOneClient()
+                
+                # Fetch historical candles
+                candles = client.get_historical_candles(
+                    symbol=mcx_contract,
+                    timeframe=timeframe,
+                    years=years
+                )
+                
+                if candles and len(candles) > 0:
+                    # Convert to canonical format with symbol name
+                    canonical_candles = []
+                    for candle in candles:
+                        canonical = create_canonical_candle(
+                            symbol=symbol,  # Use original data_symbol (MCX_SILVERM)
+                            timeframe=timeframe,
+                            timestamp=candle["timestamp"],
+                            open_price=candle["open"],
+                            high=candle["high"],
+                            low=candle["low"],
+                            close=candle["close"],
+                            volume=candle.get("volume", 0),
+                            source="angelone_mcx"
+                        )
+                        canonical_candles.append(canonical)
+                    
+                    print(f"  [OK] Successfully fetched {len(canonical_candles)} candles from AngelOne MCX")
+                    return canonical_candles
+                else:
+                    print(f"  [WARNING] AngelOne returned no data for {mcx_contract}")
+                    print(f"  [INFO] This might mean: (1) Contract expired, (2) Symbol token not found, or (3) No data for date range")
+            else:
+                print(f"  [WARNING] Asset mapping not found or not a commodity: {symbol}")
+                
+        except ImportError:
+            print(f"  [WARNING] AngelOneClient not available")
+        except Exception as angel_exc:
+            print(f"  [WARNING] AngelOne fetch failed: {angel_exc}")
         
-        if attempt < max_attempts - 1:
-            wait_time = min(2 ** (attempt % 3), 10)
-            print(f"  Waiting {wait_time}s before trying next source...")
-            time.sleep(wait_time)
+        # Fallback: Try local cache, then Yahoo Finance (if symbol has Yahoo equivalent)
+        try:
+            candles = load_from_local_cache(symbol, timeframe, "commodities")
+            if candles and len(candles) > 0:
+                print(f"  [OK] Found {len(candles)} candles in local cache")
+                return candles
+        except Exception as cache_exc:
+            print(f"  [WARNING] Local cache check failed: {cache_exc}")
+        
+        # If MCX data failed and this is a Yahoo Finance symbol, fallback to Yahoo Finance
+        if not is_mcx_symbol:
+            print(f"  [INFO] MCX data unavailable, falling back to Yahoo Finance (COMEX/NYMEX) for {symbol}")
+            # Continue to Yahoo Finance fallback below
+        else:
+            # MCX_* symbols: No Yahoo Finance fallback (they don't exist there)
+            print(f"  [WARNING] No data available for {symbol} from AngelOne or local cache")
+            return []
     
-    return all_candles
+    # Yahoo Finance fallback (only for Yahoo Finance symbols that failed MCX fetch)
+    if not is_mcx_symbol:
+        # Yahoo Finance symbols (GC=F, CL=F, etc.): Use Yahoo Finance as fallback
+        print(f"[{symbol}] Using Yahoo Finance for historical data (fallback - MCX data unavailable)")
+        
+        if fallback_engine is None:
+            sources = ["yahoo", "stooq", "local_cache"]
+            fallback_engine = FallbackEngine(sources, "yahoo")
+        
+        all_candles = []
+        max_attempts = len(fallback_engine.sources) * 2
+        
+        for attempt in range(max_attempts):
+            source = fallback_engine.get_current_source()
+            
+            try:
+                print(f"[{symbol}] Fetching historical from {source} (attempt {attempt + 1})...")
+                
+                if source == "yahoo":
+                    candles = fetch_yahoo_historical(symbol, timeframe, years)
+                elif source == "stooq":
+                    candles = fetch_stooq_historical(symbol, timeframe, years)
+                elif source == "local_cache":
+                    candles = load_from_local_cache(symbol, timeframe, "commodities")
+                else:
+                    candles = []
+                
+                if candles and len(candles) > 0:
+                    fallback_engine.mark_success(source)
+                    all_candles = candles
+                    print(f"  [OK] Successfully fetched {len(candles)} candles from {source}")
+                    break
+                else:
+                    fallback_engine.mark_failure(source, "No data returned")
+                    
+            except Exception as exc:
+                error_msg = str(exc)
+                status_code = None
+                if "429" in error_msg or "rate limit" in error_msg.lower():
+                    status_code = 429
+                
+                print(f"  [ERROR] {source}: {error_msg}")
+                fallback_engine.mark_failure(source, error_msg, status_code)
+            
+            if attempt < max_attempts - 1:
+                wait_time = min(2 ** (attempt % 3), 10)
+                print(f"  Waiting {wait_time}s before trying next source...")
+                time.sleep(wait_time)
+        
+        return all_candles
 
 
 def ingest_all_historical(
     crypto_symbols: Optional[List[str]] = None,
     commodities_symbols: Optional[List[str]] = None,
     timeframe: str = "1d",
-    years: float = 5
+    years: float = 7
 ):
     """
     Ingest historical data for all configured symbols with automatic fallback.
@@ -3443,11 +3588,12 @@ def ingest_all_historical(
             traceback.print_exc()
     
     print(f"\n[COMMODITIES] Ingesting {len(commodities_symbols)} symbols...")
+    print("  Using incremental fetching: will only fetch new data if existing data found")
     for idx, symbol in enumerate(commodities_symbols, 1):
         try:
             print(f"\n[{idx}/{len(commodities_symbols)}] {symbol} ({timeframe})")
             candles = fetch_commodities_historical_with_fallback(
-                symbol, timeframe, years, commodities_fallback
+                symbol, timeframe, years, commodities_fallback, incremental=True
             )
             if candles:
                 save_yahoo_historical(symbol, timeframe, candles)
@@ -3842,15 +3988,15 @@ def get_user_input():
             break
         print("Invalid choice. Please enter 1, 2, or 3.")
     
-    years = 5.0
+    years = 7.0
     if mode in ["historical", "both"]:
         print("\n" + "-" * 80)
         print("HISTORICAL DATA PERIOD")
         print("-" * 80)
         while True:
-            years_input = input("Enter number of years of historical data (default 5): ").strip()
+            years_input = input("Enter number of years of historical data (default 7): ").strip()
             if not years_input:
-                years = 5.0
+                years = 7.0
                 break
             try:
                 years = float(years_input)
@@ -3927,7 +4073,7 @@ Examples:
     else:
         crypto_symbols = args.crypto_symbols
         commodities_symbols = args.commodities_symbols
-        years = args.years if args.years is not None else 5.0
+        years = args.years if args.years is not None else 7.0
         mode = args.mode if args.mode else "both"
         horizon_preferences = {
             asset: profile

@@ -13,6 +13,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import math
 import time
 import warnings
 from dataclasses import asdict
@@ -668,14 +669,29 @@ def run_trading_cycle(
                         if avg_entry_price <= 0:
                             continue
                         
-                        # Get horizon for this symbol to determine stop-loss percentage
-                        horizon = normalize_profile(getattr(asset_mapping, "horizon_profile", None) or "short")
-                        horizon_risk = get_horizon_risk_config(horizon)
-                        stop_loss_pct = horizon_risk.get("default_stop_loss_pct", 0.02)
+                        # CRITICAL FIX: Get stop-loss from PositionManager (not horizon config)
+                        # The position manager stores the actual stop-loss that was set when entering
+                        from trading.position_manager import PositionManager
+                        position_manager = PositionManager()
+                        tracked_position = position_manager.get_position(trading_symbol)
+                        
+                        if tracked_position and tracked_position.status == "open":
+                            # Use the actual stop-loss from the position (stored as percentage, e.g., 8.0 for 8%)
+                            stop_loss_pct = tracked_position.stop_loss_pct / 100.0  # Convert percentage to decimal
+                        else:
+                            # Fallback to horizon config if position not tracked
+                            horizon = normalize_profile(getattr(asset_mapping, "horizon_profile", None) or "short")
+                            horizon_risk = get_horizon_risk_config(horizon)
+                            stop_loss_pct = horizon_risk.get("default_stop_loss_pct", 0.08)  # Default 8% for crypto
+                        
                         slippage_buffer = 0.001  # 0.1% slippage buffer for stop-loss execution
                         
-                        # Get profit target percentage (use provided value or default)
-                        effective_profit_target_pct = profit_target_pct if profit_target_pct is not None else 1.0  # Default 1% if not specified
+                        # Get profit target percentage (MUST be provided by user - no default)
+                        # CRITICAL: Profit target is MANDATORY - user must specify it
+                        if profit_target_pct is None:
+                            print(f"  [ERROR] Profit target not specified for {trading_symbol}. Skipping position monitoring.")
+                            continue
+                        effective_profit_target_pct = profit_target_pct
                         
                         # Calculate stop-loss price and profit target price
                         is_long = position_qty > 0
@@ -762,7 +778,12 @@ def run_trading_cycle(
                         if should_force_exit and not dry_run:
                             try:
                                 # Execute exit: close the position (either profit target or stop-loss)
-                                close_qty = abs(position_qty)
+                                # FIX: Use actual qty from Alpaca position directly (avoid precision errors)
+                                # Alpaca's position qty is the exact available quantity
+                                actual_qty = float(position.get("qty", 0) or 0)
+                                close_qty = abs(actual_qty)  # Use exact qty from Alpaca, just ensure positive
+                                # Truncate to 8 decimals (not round) to avoid precision issues
+                                close_qty = math.floor(close_qty * 1e8) / 1e8
                                 close_side = "sell" if is_long else "buy"
                                 
                                 close_resp = client.submit_order(
@@ -776,6 +797,28 @@ def run_trading_cycle(
                                 if force_exit_reason == "profit_target_hit":
                                     print(f"  ✅ SOLD: {close_qty:.8f} @ ${current_price:.2f} | Profit: ${unrealized_pl:.2f} ({unrealized_pl_pct:+.2f}%)")
                                     stop_loss_triggered_count += 1  # Reuse counter for tracking
+                                    
+                                    # CRITICAL: Log the sell trade immediately
+                                    exit_log_entry = {
+                                        "asset": asset_mapping.logical_name,
+                                        "data_symbol": asset_mapping.data_symbol,
+                                        "trading_symbol": trading_symbol,
+                                        "decision": "exited_position",
+                                        "action": "sell",
+                                        "side": "long" if is_long else "short",
+                                        "trade_qty": close_qty,
+                                        "trade_price": current_price,
+                                        "entry_price": avg_entry_price,
+                                        "exit_price": current_price,
+                                        "realized_pl": unrealized_pl,
+                                        "realized_pl_pct": unrealized_pl_pct,
+                                        "exit_reason": "profit_target_hit",
+                                        "profit_target_pct": effective_profit_target_pct,
+                                        "timestamp": datetime.utcnow().isoformat(timespec="seconds") + "Z",
+                                    }
+                                    execution_engine._log(exit_log_entry)
+                                    print(f"    ✓ Sell trade logged to {execution_engine.log_path}")
+                                    
                                     results["details"].append({
                                         "symbol": asset_mapping.data_symbol,
                                         "status": "profit_target_executed",
@@ -789,6 +832,28 @@ def run_trading_cycle(
                                 else:
                                     print(f"  ✅ STOP-LOSS: {close_qty:.8f} @ ${current_price:.2f} | Loss: ${unrealized_pl:.2f} ({unrealized_pl_pct:.2f}%)")
                                     stop_loss_triggered_count += 1
+                                    
+                                    # CRITICAL: Log the stop-loss sell trade immediately
+                                    exit_log_entry = {
+                                        "asset": asset_mapping.logical_name,
+                                        "data_symbol": asset_mapping.data_symbol,
+                                        "trading_symbol": trading_symbol,
+                                        "decision": "exited_position",
+                                        "action": "sell",
+                                        "side": "long" if is_long else "short",
+                                        "trade_qty": close_qty,
+                                        "trade_price": current_price,
+                                        "entry_price": avg_entry_price,
+                                        "exit_price": current_price,
+                                        "realized_pl": unrealized_pl,
+                                        "realized_pl_pct": unrealized_pl_pct,
+                                        "exit_reason": "stop_loss_triggered",
+                                        "stop_loss_pct": stop_loss_pct * 100,
+                                        "timestamp": datetime.utcnow().isoformat(timespec="seconds") + "Z",
+                                    }
+                                    execution_engine._log(exit_log_entry)
+                                    print(f"    ✓ Stop-loss trade logged to {execution_engine.log_path}")
+                                    
                                     results["details"].append({
                                         "symbol": asset_mapping.data_symbol,
                                         "status": "stop_loss_executed",
@@ -866,6 +931,104 @@ def run_trading_cycle(
     # CRITICAL STEP 1: Check ALL existing positions for profit targets/stop-losses FIRST
     # This ensures positions are sold even if the symbol is not in top 5 or being actively traded
     active_positions = execution_engine.position_manager.get_all_positions()
+    
+    # CRITICAL: Sync with Alpaca to detect positions closed externally
+    # If position exists in position manager but not in Alpaca, it was closed externally - log it
+    if active_positions:
+        try:
+            alpaca_positions = execution_engine.client.list_positions()
+            alpaca_symbols = {pos.get("symbol", "").upper() for pos in (alpaca_positions or []) if float(pos.get("qty", 0) or 0) != 0}
+            
+            # Find positions that are tracked but closed in Alpaca
+            for pos in active_positions[:]:  # Copy list to modify during iteration
+                if pos.symbol.upper() not in alpaca_symbols:
+                    # Position was closed externally - log it immediately
+                    print(f"  [SYNC] {pos.symbol}: Position closed externally in Alpaca, logging exit...")
+                    
+                    # CRITICAL FIX: Get correct asset mapping first to ensure correct data_symbol
+                    from trading.symbol_universe import find_by_trading_symbol
+                    asset_mapping = find_by_trading_symbol(pos.symbol)
+                    
+                    # Get exit price from order history or use current market price
+                    # Use asset_mapping.data_symbol instead of pos.data_symbol to avoid wrong symbol (e.g., LTC-BTC vs LTC-USDT)
+                    exit_price = pos.entry_price  # Fallback
+                    correct_data_symbol = asset_mapping.data_symbol if asset_mapping else pos.data_symbol
+                    try:
+                        current_price = get_current_price_from_features(
+                            pos.asset_type,
+                            correct_data_symbol,  # FIX: Use correct data_symbol from asset mapping
+                            "1d",
+                            force_live=True,
+                            verbose=False
+                        )
+                        if current_price and current_price > 0:
+                            exit_price = current_price
+                        else:
+                            print(f"  [WARN] Could not get live price for {correct_data_symbol}, using entry price as fallback")
+                    except Exception as price_exc:
+                        print(f"  [WARN] Failed to get exit price for {correct_data_symbol}: {price_exc}")
+                    
+                    # Calculate P/L
+                    if pos.side == "long":
+                        realized_pl = (exit_price - pos.entry_price) * pos.quantity
+                        realized_pl_pct = ((exit_price - pos.entry_price) / pos.entry_price) * 100 if pos.entry_price > 0 else 0
+                    else:
+                        realized_pl = (pos.entry_price - exit_price) * pos.quantity
+                        realized_pl_pct = ((pos.entry_price - exit_price) / pos.entry_price) * 100 if pos.entry_price > 0 else 0
+                    
+                    # Close position in position manager
+                    execution_engine.position_manager.close_position(
+                        pos.symbol,
+                        exit_price,
+                        "closed_externally_alpaca_sync",
+                        realized_pl,
+                        realized_pl_pct
+                    )
+                    
+                    # Log exit trade immediately
+                    if asset_mapping:
+                        exit_log_entry = {
+                            "asset": asset_mapping.asset,
+                            "data_symbol": asset_mapping.data_symbol,
+                            "trading_symbol": pos.symbol,
+                            "current_price": exit_price,
+                            "model_action": "flat",
+                            "target_side": "flat",
+                            "existing_side": pos.side,
+                            "existing_qty": pos.quantity,
+                            "timestamp": datetime.utcnow().isoformat() + "Z",
+                            "dry_run": False,
+                            "decision": "exit_long" if pos.side == "long" else "exit_short",  # Changed from "exit_position"
+                            "trade_qty": pos.quantity,
+                            "trade_side": "sell" if pos.side == "long" else "buy",
+                            "final_side": "short" if pos.side == "long" else "long",  # Changed from "flat" to indicate SELL/BUY
+                            "final_qty": pos.quantity,  # Changed from 0.0 to actual qty to indicate SELL/BUY
+                            "close_order": {"id": "external_close", "status": "filled"},  # Placeholder
+                            "exit_reason": "closed_externally_alpaca_sync",
+                            "entry_price": pos.entry_price,
+                            "exit_price": exit_price,
+                            "realized_pl": realized_pl,
+                            "realized_pl_pct": realized_pl_pct,
+                            "market_value_at_exit": exit_price * pos.quantity,
+                            "pl_summary": {
+                                "entry_price": pos.entry_price,
+                                "exit_price": exit_price,
+                                "quantity": pos.quantity,
+                                "realized_pl": realized_pl,
+                                "realized_pl_pct": realized_pl_pct,
+                                "is_profit": realized_pl > 0,
+                                "calculation": f"({exit_price} - {pos.entry_price}) * {pos.quantity}" if pos.side == "long" else f"({pos.entry_price} - {exit_price}) * {pos.quantity}"
+                            }
+                        }
+                        execution_engine._log(exit_log_entry)
+                        print(f"    ✓ External exit logged to crypto_trades.jsonl")
+                    
+                    # Remove from active_positions list
+                    active_positions.remove(pos)
+        except Exception as sync_err:
+            if verbose:
+                print(f"  [WARN] Position sync check failed: {sync_err}")
+    
     if active_positions:
         print(f"\n[POSITION MONITORING] Checking {len(active_positions)} open position(s) for exits...")
         positions_exited = 0
@@ -884,10 +1047,12 @@ def run_trading_cycle(
                     asset_mapping = find_by_trading_symbol(pos.symbol)
                 
                 if asset_mapping:
-                    # Get current price
+                    # Get current price using CORRECT data_symbol from asset mapping (not pos.data_symbol which might be wrong)
+                    # This prevents using wrong symbols like LTC-BTC instead of LTC-USDT
+                    correct_data_symbol = asset_mapping.data_symbol
                     current_price = get_current_price_from_features(
                         pos.asset_type,
-                        pos.data_symbol,
+                        correct_data_symbol,  # FIX: Use correct data_symbol from asset mapping
                         "1d",
                         force_live=True,
                         verbose=False
@@ -904,18 +1069,116 @@ def run_trading_cycle(
                             # Position should exit - execute the exit
                             exit_reason = exit_signal.get("exit_reason", "unknown")
                             exit_price = exit_signal.get("exit_price", current_price)
+                            position_obj = exit_signal.get("position", pos)
+                            
                             print(f"  [EXIT] {pos.symbol}: {exit_reason} at ${exit_price:.4f}")
                             
-                            # Execute exit trade
+                            # Execute exit trade using submit_order (close_position method doesn't exist)
                             try:
-                                exit_result = execution_engine.client.close_position(pos.symbol)
-                                if exit_result:
+                                # Get position quantity and side
+                                # FIX: Use actual qty from Alpaca position directly (avoid precision errors)
+                                # First try to get from Alpaca's position response
+                                alpaca_pos = execution_engine.client.get_position(pos.symbol)
+                                if alpaca_pos:
+                                    actual_qty = float(alpaca_pos.get("qty", 0) or 0)
+                                    exit_qty = abs(actual_qty)  # Use exact qty from Alpaca
+                                else:
+                                    # Fallback to PositionManager quantity if Alpaca query fails
+                                    exit_qty = abs(position_obj.quantity)
+                                
+                                # Truncate to 8 decimals (not round) to avoid precision issues
+                                exit_qty = math.floor(exit_qty * 1e8) / 1e8
+                                exit_side = "sell" if position_obj.side == "long" else "buy"
+                                
+                                if not dry_run:
+                                    # Submit market order to close position
+                                    exit_result = execution_engine.client.submit_order(
+                                        symbol=pos.symbol,
+                                        qty=exit_qty,
+                                        side=exit_side,
+                                        order_type="market",
+                                        time_in_force="gtc",
+                                    )
+                                    
+                                    if exit_result:
+                                        positions_exited += 1
+                                        realized_pl = exit_signal.get("realized_pl", 0)
+                                        realized_pl_pct = exit_signal.get("realized_pl_pct", 0)
+                                        print(f"    ✓ Position closed successfully")
+                                        print(f"    ✓ Realized P/L: ${realized_pl:+.2f} ({realized_pl_pct:+.2f}%)")
+                                        
+                                        # Get actual filled price from order response
+                                        actual_exit_price = exit_price  # Default to exit_price
+                                        filled_avg_price = exit_result.get("filled_avg_price") or exit_result.get("filled_price")
+                                        if filled_avg_price:
+                                            try:
+                                                actual_exit_price = float(filled_avg_price)
+                                            except (ValueError, TypeError):
+                                                pass
+                                        
+                                        # Update position manager with exit details
+                                        execution_engine.position_manager.close_position(
+                                            pos.symbol, 
+                                            actual_exit_price,
+                                            exit_reason,
+                                            realized_pl,
+                                            realized_pl_pct
+                                        )
+                                        
+                                        # CRITICAL: Log exit trade immediately to crypto_trades.jsonl
+                                        # Find asset mapping for this symbol
+                                        from trading.symbol_universe import find_by_trading_symbol
+                                        asset_mapping = find_by_trading_symbol(pos.symbol)
+                                        if asset_mapping:
+                                            # Create exit log entry matching execution_engine format
+                                            exit_log_entry = {
+                                                "asset": asset_mapping.asset,
+                                                "data_symbol": asset_mapping.data_symbol,
+                                                "trading_symbol": pos.symbol,
+                                                "current_price": actual_exit_price,
+                                                "model_action": "flat",  # Position is being closed
+                                                "target_side": "flat",
+                                                "existing_side": position_obj.side,
+                                                "existing_qty": position_obj.quantity,
+                                                "timestamp": datetime.utcnow().isoformat() + "Z",
+                                                "dry_run": False,
+                                                "decision": "exit_position",
+                                                "trade_qty": exit_qty,
+                                                "trade_side": exit_side,
+                                                "final_side": "flat",
+                                                "final_qty": 0.0,
+                                                "close_order": exit_result,
+                                                "exit_reason": exit_reason,
+                                                "entry_price": position_obj.entry_price,
+                                                "exit_price": actual_exit_price,
+                                                "realized_pl": realized_pl,
+                                                "realized_pl_pct": realized_pl_pct,
+                                                "market_value_at_exit": actual_exit_price * exit_qty,
+                                                "pl_summary": {
+                                                    "entry_price": position_obj.entry_price,
+                                                    "exit_price": actual_exit_price,
+                                                    "quantity": exit_qty,
+                                                    "realized_pl": realized_pl,
+                                                    "realized_pl_pct": realized_pl_pct,
+                                                    "is_profit": realized_pl > 0,
+                                                    "calculation": f"({actual_exit_price} - {position_obj.entry_price}) * {exit_qty}" if position_obj.side == "long" else f"({position_obj.entry_price} - {actual_exit_price}) * {exit_qty}"
+                                                }
+                                            }
+                                            # Log the exit trade immediately
+                                            execution_engine._log(exit_log_entry)
+                                            print(f"    ✓ Exit trade logged to crypto_trades.jsonl")
+                                        
+                                        # Set cooldown after exit
+                                        was_profitable = realized_pl > 0
+                                        execution_engine._set_cooldown(pos.symbol, exit_reason, was_profitable)
+                                else:
+                                    print(f"    [DRY RUN] Would close {exit_qty} @ ${exit_price:.4f}")
                                     positions_exited += 1
-                                    print(f"    ✓ Position closed successfully")
-                                    # Update position manager
-                                    execution_engine.position_manager.close_position(pos.symbol, exit_price)
                             except Exception as exit_err:
                                 print(f"    ✗ Exit execution failed: {exit_err}")
+                                if verbose:
+                                    import traceback
+                                    print(f"    [ERROR] Traceback: {traceback.format_exc()}")
             except Exception as pos_err:
                 if verbose:
                     print(f"  [WARN] Could not check position {pos.symbol}: {pos_err}")
@@ -1357,6 +1620,7 @@ def run_trading_cycle(
                 if action == "long" and confidence < 0.60:
                     print(f"  [INFO] LONG signal detected but confidence too low ({confidence_pct:.1f}% < 60%)")
                 results["symbols_skipped"] += 1
+                results["symbols_processed"] += 1  # FIX: Count all symbols that went through prediction stage
                 results["details"].append({
                     "symbol": data_symbol,
                     "status": "prediction_only",
@@ -1582,8 +1846,8 @@ def main():
     parser.add_argument(
         "--interval",
         type=int,
-        default=60,
-        help="Seconds between trading cycles. Runs forever. Minimum: 30 seconds (to avoid rate limiting). Default: 60 seconds.",
+        default=30,
+        help="Seconds between trading cycles. Runs forever. Minimum: 30 seconds (to avoid rate limiting). Default: 30 seconds.",
     )
     parser.add_argument(
         "--dry-run",
@@ -1617,6 +1881,25 @@ def main():
         action="store_true",
         help="Enable manual stop-loss management. System will NOT submit or execute stop-loss orders automatically. You manage stop-losses yourself.",
     )
+    parser.add_argument(
+        "--broker",
+        type=str,
+        default="alpaca",
+        choices=["alpaca", "binance"],
+        help="Broker to use for trading (default: alpaca). Options: alpaca, binance",
+    )
+    parser.add_argument(
+        "--profit-target-pct",
+        type=float,
+        default=None,
+        help="Profit target percentage (e.g., 1.5 for 1.5%%)",
+    )
+    parser.add_argument(
+        "--stop-loss-pct",
+        type=float,
+        default=None,
+        help="Stop-loss percentage (e.g., 8.0 for 8%%)",
+    )
     args = parser.parse_args()
     
     # Validate interval (minimum 30 seconds to avoid API rate limiting)
@@ -1629,15 +1912,33 @@ def main():
     print("LIVE TRADING LOOP - CRYPTO ONLY")
     print("=" * 80)
     print(f"Mode: {'DRY RUN (no real orders)' if args.dry_run else 'LIVE TRADING'}")
+    print(f"Broker: {args.broker.upper()}")
     print(f"Interval: {args.interval} seconds (runs forever)")
     print(f"Timeframe: {args.timeframe}")
     if args.max_cycles:
         print(f"Max Cycles: {args.max_cycles}")
+    if args.profit_target_pct:
+        print(f"Profit Target: {args.profit_target_pct}%")
+    if args.stop_loss_pct:
+        print(f"Stop-Loss: {args.stop_loss_pct}%")
     if args.manual_stop_loss:
         print(f"Stop-Loss: MANUAL MODE (you manage stop-losses)")
     else:
         print(f"Stop-Loss: AUTOMATIC (system manages stop-losses)")
     print("=" * 80)
+    print()
+    print("[STRATEGY] Buy Low, Sell High, Minimize Losses:")
+    print("  ✅ Momentum filters: Block buying during upswings (buy low)")
+    print("  ✅ RSI filters: Only buy when oversold (RSI < 30), only short when overbought (RSI > 70)")
+    print("  ✅ Mean reversion: Flips SHORT to LONG when oversold (buy low)")
+    print("  ✅ Trailing stop: Sell when price drops 2.5% from peak (sell at peak)")
+    if args.stop_loss_pct:
+        print(f"  ✅ Stop-loss: {args.stop_loss_pct:.1f}% protection (minimize losses)")
+    else:
+        print("  ✅ Stop-loss: Automatic protection (minimize losses)")
+    print("  ✅ Negative prediction filter: Block entries when predicted return < 0 (minimize losses)")
+    print("  ✅ Minimum return filter: Require 1.5% minimum predicted return (minimize losses)")
+    print("  ✅ Volatility-based sizing: Reduce position size in high volatility (minimize losses)")
     print()
     
     # Show available horizons and their trading behavior
@@ -1659,17 +1960,28 @@ def main():
     
     # Initialize execution engine with risk config
     try:
-        risk_config = TradingRiskConfig(manual_stop_loss=args.manual_stop_loss)
-        execution_engine = ExecutionEngine(risk_config=risk_config)
+        risk_config = TradingRiskConfig(
+            manual_stop_loss=args.manual_stop_loss,
+            profit_target_pct=args.profit_target_pct,
+            user_stop_loss_pct=args.stop_loss_pct,
+        )
+        execution_engine = ExecutionEngine(
+            risk_config=risk_config,
+            broker=args.broker,
+        )
+        broker_name = args.broker.upper()
         if args.manual_stop_loss:
-            print("[INIT] Execution engine ready (MANUAL STOP-LOSS MODE enabled)")
+            print(f"[INIT] Execution engine ready with {broker_name} (MANUAL STOP-LOSS MODE enabled)")
             print("  ⚠️  You are responsible for managing stop-losses manually")
             print("  📝 System will calculate stop-loss levels but will NOT submit or execute them")
         else:
-            print("[INIT] Execution engine ready")
+            print(f"[INIT] Execution engine ready with {broker_name}")
     except Exception as exc:
         print(f"[ERROR] Failed to initialize execution engine: {exc}")
-        print("Make sure ALPACA_API_KEY and ALPACA_SECRET_KEY are set in environment")
+        if args.broker == "binance":
+            print("Make sure BINANCE_API_KEY and BINANCE_SECRET_KEY are set in environment or .env file")
+        else:
+            print("Make sure ALPACA_API_KEY and ALPACA_SECRET_KEY are set in environment")
         return
     
     # Run trading loop
@@ -1695,6 +2007,8 @@ def main():
                 dry_run=args.dry_run,
                 verbose=args.verbose,
                 excluded_symbols=symbols_to_skip,
+                profit_target_pct=args.profit_target_pct,
+                user_stop_loss_pct=args.stop_loss_pct,
             )
             
             print(f"\n[CYCLE {cycle_count}] Complete:")

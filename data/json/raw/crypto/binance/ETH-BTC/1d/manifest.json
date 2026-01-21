@@ -2,14 +2,14 @@
   "symbol": "ETH-BTC",
   "timeframe": "1d",
   "asset_type": "crypto",
-  "generated_at": "2026-01-14T07:25:28.662559Z",
+  "generated_at": "2026-01-19T07:13:10.120879Z",
   "data_file": "data.json",
   "latest_file": "latest.json",
   "data_file_info": {
     "filename": "data.json",
-    "size_bytes": 1133434,
-    "candle_count": 3107,
+    "size_bytes": 1135249,
+    "candle_count": 3112,
     "first_timestamp": "2017-07-14T00:00:00Z",
-    "last_timestamp": "2026-01-14T00:00:00Z"
+    "last_timestamp": "2026-01-19T00:00:00Z"
   }
 }

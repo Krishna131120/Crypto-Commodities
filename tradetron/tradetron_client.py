@@ -45,7 +45,8 @@ class TradetronAuthError(RuntimeError):
 class TradetronConfig:
     """Configuration wrapper for Tradetron API settings."""
 
-    api_token: str  # OAuth token from strategy settings
+    api_token: str  # API token (UUID format)
+    auth_token: str  # Auth token (used in requests as auth-token)
     api_url: str = DEFAULT_TRADETRON_API_URL
 
     @classmethod
@@ -54,6 +55,7 @@ class TradetronConfig:
         Load Tradetron config from .env file FIRST, then fallback to environment variables.
         """
         api_token = None
+        auth_token = None
         api_url = DEFAULT_TRADETRON_API_URL
 
         # PRIORITY 1: Read from .env file FIRST
@@ -71,6 +73,8 @@ class TradetronConfig:
                         val = val.strip().strip('"').strip("'")
                         if key == "TRADETRON_API_TOKEN":
                             api_token = val
+                        elif key == "TRADETRON_AUTH_TOKEN":
+                            auth_token = val
                         elif key == "TRADETRON_API_URL":
                             api_url = val
             except Exception:
@@ -79,16 +83,23 @@ class TradetronConfig:
         # PRIORITY 2: Fallback to environment variables
         if not api_token:
             api_token = os.getenv("TRADETRON_API_TOKEN")
+        if not auth_token:
+            auth_token = os.getenv("TRADETRON_AUTH_TOKEN")
         if api_url == DEFAULT_TRADETRON_API_URL:
             api_url = os.getenv("TRADETRON_API_URL", DEFAULT_TRADETRON_API_URL)
 
-        if not api_token:
+        # Auth token is required (used in requests)
+        if not auth_token:
             raise TradetronAuthError(
-                "Tradetron API token not found. Set TRADETRON_API_TOKEN in .env file or as environment variable. "
+                "Tradetron auth token not found. Set TRADETRON_AUTH_TOKEN in .env file or as environment variable. "
                 "Get your token from Tradetron dashboard: My Strategies → Your Strategy → API OAUTH Token"
             )
+        
+        # API token is optional (for reference, but auth_token is what's used)
+        if not api_token:
+            api_token = auth_token  # Fallback to auth_token if API token not provided
 
-        return cls(api_token=api_token, api_url=api_url)
+        return cls(api_token=api_token, auth_token=auth_token, api_url=api_url)
 
 
 class TradetronClient(BrokerClient):
@@ -142,7 +153,7 @@ class TradetronClient(BrokerClient):
         # Tradetron uses auth-token in the request body (webhook format)
         # Add token to json_body if it's a POST request
         if method.upper() == "POST" and json_body is not None:
-            json_body["auth-token"] = self.config.api_token
+            json_body["auth-token"] = self.config.auth_token  # Use auth_token (not api_token)
 
         resp = self._session.request(method, url, params=params, json=json_body, timeout=15)
 
@@ -268,7 +279,7 @@ class TradetronClient(BrokerClient):
         # Build Tradetron signal payload
         # Format: key-value pairs for webhook
         signal_payload = {
-            "auth-token": self.config.api_token,
+            "auth-token": self.config.auth_token,  # Use auth_token (not api_token)
         }
 
         # For BUY: Set long signal
@@ -389,7 +400,7 @@ class TradetronClient(BrokerClient):
         symbol_normalized = symbol.upper().replace(" ", "_").replace("-", "_")
 
         signal_payload = {
-            "auth-token": self.config.api_token,
+            "auth-token": self.config.auth_token,  # Use auth_token (not api_token)
             f"{symbol_normalized}_long": "0",  # Disable long
             f"{symbol_normalized}_short": "0",  # Disable short
         }

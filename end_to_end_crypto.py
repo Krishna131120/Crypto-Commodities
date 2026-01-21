@@ -155,8 +155,8 @@ def main():
     parser.add_argument(
         "--interval",
         type=int,
-        default=60,
-        help="Seconds between trading cycles. Runs forever if set. Minimum: 15 seconds (to avoid rate limiting). Default: 60 seconds.",
+        default=30,
+        help="Seconds between trading cycles. Runs forever if set. Minimum: 30 seconds (to avoid rate limiting). Default: 30 seconds.",
     )
     parser.add_argument(
         "--allow-existing-positions",
@@ -192,6 +192,11 @@ def main():
 
     args = parser.parse_args()
     
+    # Validate interval (minimum 30 seconds to avoid API rate limiting)
+    if args.interval < 30:
+        print(f"⚠️  WARNING: Interval {args.interval} seconds is too short. Minimum is 30 seconds to avoid rate limiting.")
+        print(f"   Setting interval to 30 seconds.")
+        args.interval = 30
     
     # --top5 flag: Override symbol selection with 5 most volatile cryptos
     if args.top5:
@@ -343,6 +348,19 @@ def main():
         print(f"Stop-Loss Mode: AUTOMATIC (system manages stop-losses)")
     print(f"Mode:      {'DRY RUN (no real orders)' if args.dry_run else 'LIVE PAPER TRADING'}")
     print("=" * 80)
+    print()
+    print("[STRATEGY] Buy Low, Sell High, Minimize Losses:")
+    print("  ✅ Momentum filters: Block buying during upswings (buy low)")
+    print("  ✅ RSI filters: Only buy when oversold (RSI < 30), only short when overbought (RSI > 70)")
+    print("  ✅ Mean reversion: Flips SHORT to LONG when oversold (buy low)")
+    print("  ✅ Trailing stop: Sell when price drops 2.5% from peak (sell at peak)")
+    if args.stop_loss_pct is not None:
+        print(f"  ✅ Stop-loss: {args.stop_loss_pct:.1f}% protection (minimize losses)")
+    else:
+        print("  ✅ Stop-loss: 3.5% protection (minimize losses)")
+    print("  ✅ Negative prediction filter: Block entries when predicted return < 0 (minimize losses)")
+    print("  ✅ Minimum return filter: Require 1.5% minimum predicted return (minimize losses)")
+    print("  ✅ Volatility-based sizing: Reduce position size in high volatility (minimize losses)")
     print()
     
     # Show available horizons and their trading behavior

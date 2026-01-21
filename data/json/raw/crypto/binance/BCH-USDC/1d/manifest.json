@@ -2,14 +2,14 @@
   "symbol": "BCH-USDC",
   "timeframe": "1d",
   "asset_type": "crypto",
-  "generated_at": "2026-01-14T07:18:23.739360Z",
+  "generated_at": "2026-01-19T07:01:27.340288Z",
   "data_file": "data.json",
   "latest_file": "latest.json",
   "data_file_info": {
     "filename": "data.json",
-    "size_bytes": 600865,
-    "candle_count": 1689,
+    "size_bytes": 602637,
+    "candle_count": 1694,
     "first_timestamp": "2019-11-28T00:00:00Z",
-    "last_timestamp": "2026-01-14T00:00:00Z"
+    "last_timestamp": "2026-01-19T00:00:00Z"
   }
 }

@@ -3,7 +3,7 @@
   "total_events": 1,
   "events": [
     {
-      "timestamp": "2026-01-03T09:09:18.435739Z",
+      "timestamp": "2026-01-17T13:21:04.487830Z",
       "level": "ERROR",
       "message": "Training skipped: commodities/MCX_GOLDGUINEA (short): No data.json found for commodities/MCX_GOLDGUINEA/1d",
       "category": "TRAIN",

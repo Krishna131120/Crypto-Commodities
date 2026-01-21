@@ -2,314 +2,314 @@
   "asset_type": "crypto",
   "symbol": "NEAR-USDT",
   "timeframe": "1d",
-  "last_updated": "2026-01-14T00:00:00+00:00",
+  "last_updated": "2026-01-19T00:00:00+00:00",
   "feature_count": 159,
   "features": {
     "SMA_5": {
-      "value": 1.7533999999999998
+      "value": 1.6796
     },
     "SMA_10": {
-      "value": 1.746
+      "value": 1.7122
     },
     "SMA_20": {
-      "value": 1.6734000000000002
+      "value": 1.7043500000000003
     },
     "SMA_50": {
-      "value": 1.66742
+      "value": 1.64696
     },
     "SMA_100": {
-      "value": 1.9893
+      "value": 1.9381
     },
     "SMA_200": {
-      "value": 2.3173399999999997
+      "value": 2.304405
     },
     "EMA_9": {
-      "value": 1.7481480832010854
+      "value": 1.686103755903332
     },
     "EMA_12": {
-      "value": 1.7298327871967816
+      "value": 1.6903008941809745
     },
     "EMA_26": {
-      "value": 1.6931795643348662
+      "value": 1.6845801940791452
     },
     "EMA_50": {
-      "value": 1.7532890521614988
+      "value": 1.7379379914493684
     },
     "EMA_100": {
-      "value": 1.9471762596803142
+      "value": 1.9207823237438346
     },
     "EMA_200": {
-      "value": 2.2573203982057928
+      "value": 2.2286967030226315
     },
     "WMA_14": {
-      "value": 1.745809523809524
+      "value": 1.7040666666666664
     },
     "Hull_MA": {
-      "value": 1.7678290043290041
+      "value": 1.7349880952380952
     },
     "VWMA": {
-      "value": 1.690367793261277
+      "value": 1.717667961321108
     },
     "VWAP": {
-      "value": 4.596725351715898
+      "value": 4.5872734181848696
     },
     "Session_VWAP": {
-      "value": 4.596725351715898
+      "value": 4.5872734181848696
     },
     "MACD": {
-      "value": 0.03665322286191541
+      "value": 0.005720700101829346
     },
     "MACD_signal": {
-      "value": 0.013679971807091894
+      "value": 0.017630039112416045
     },
     "MACD_histogram": {
-      "value": 0.02297325105482352
+      "value": -0.0119093390105867
     },
     "RSI_7": {
-      "value": 69.9747697178677
+      "value": 32.13055452967173
     },
     "RSI_14": {
-      "value": 61.896479052079044
+      "value": 41.41244415748884
     },
     "RSI_21": {
-      "value": 55.770953209936245
+      "value": 43.45699491572769
     },
     "Momentum_roc_1": {
-      "value": -0.009144701452393655
+      "value": -0.03928790669122162
     },
     "Momentum_roc_7": {
-      "value": 0.06968641114982588
+      "value": -0.06567164179104479
     },
     "Momentum_roc_14": {
-      "value": 0.21664464993394983
+      "value": -0.11781285231116123
     },
     "Rate_of_Change": {
-      "value": 0.06597222222222232
+      "value": -0.08103347034644748
     },
     "TRIX": {
-      "value": 0.0015394443376015587
+      "value": 0.002150747867789793
     },
     "TSI": {
-      "value": 11.232175924398074
+      "value": 2.0471651947183114
     },
     "Stochastic_%K": {
-      "value": 86.76844783715018
+      "value": 26.06741573033706
     },
     "Stochastic_%D": {
-      "value": 77.92326518201504
+      "value": 23.573089194062977
     },
     "Williams_%R": {
-      "value": -13.231552162849827
+      "value": -73.93258426966294
     },
     "CCI_20": {
-      "value": 140.66906925728586
+      "value": -184.7561762399629
     },
     "ATR_14": {
-      "value": 0.09542857142857142
+      "value": 0.11164285714285713
     },
     "ATR_7": {
-      "value": 0.09957142857142857
+      "value": 0.13199999999999995
     },
     "Bollinger_Bands_upper_20_2": {
-      "value": 1.8853129910859452
+      "value": 1.864276660828079
     },
     "Bollinger_Bands_lower_20_2": {
-      "value": 1.4614870089140553
+      "value": 1.5444233391719215
     },
     "Bollinger_Bandwidth": {
-      "value": 0.25327236893264604
+      "value": 0.1876688013941722
     },
     "Bollinger_%b": {
-      "value": 0.897804776233896
+      "value": 0.06433155273028034
     },
     "Keltner_Channel_upper": {
-      "value": 1.883274581369295
+      "value": 1.889987073655022
     },
     "Keltner_Channel_lower": {
-      "value": 1.5146745813692952
+      "value": 1.4809870736550221
     },
     "Donchian_Channel_high": {
       "value": 1.894
     },
     "Donchian_Channel_low": {
-      "value": 1.432
+      "value": 1.449
     },
     "ADX_14": {
-      "value": 45.961537005867
+      "value": 43.61380880594146
     },
     "DI_plus": {
-      "value": 522.9041916167662
+      "value": 253.4868841970567
     },
     "DI_minus": {
-      "value": 75.44910179640726
+      "value": 409.34101087651965
     },
     "RSI_Band_Cross": {
       "value": 0.0
     },
     "ROC_Signal": {
-      "value": 0.06968641114982588
+      "value": -0.06567164179104479
     },
     "Rolling_Volatility_7": {
-      "value": 0.04527022667109951
+      "value": 0.059201537429928786
     },
     "Rolling_Volatility_14": {
-      "value": 0.03992644936245277
+      "value": 0.043087078797385416
     },
     "Rolling_Volatility_30": {
-      "value": 0.03779471523842407
+      "value": 0.037560711501244855
     },
     "Realized_Volatility": {
-      "value": 0.20180503561709862
+      "value": 0.19937648855238158
     },
     "Historical_Volatility": {
-      "value": 0.20701018090569107
+      "value": 0.2057284896517554
     },
     "Rolling_Skew": {
-      "value": 0.944537299554174
+      "value": 0.8678427478552716
     },
     "Rolling_Kurtosis": {
-      "value": 0.9528507189757187
+      "value": 1.459472759611956
     },
     "Volatility_Skew": {
-      "value": 0.007475511432675441
+      "value": 0.02164082592868393
     },
     "Volatility_Clustering": {
-      "value": 1.8712006833846324
+      "value": 1.0926646734179934
     },
     "ZScore_returns_7": {
-      "value": -0.433929014239663
+      "value": -0.5251003525482256
     },
     "ZScore_returns_30": {
-      "value": -0.4152699022378172
+      "value": -1.087937128567119
     },
     "Normalized_Returns": {
-      "value": -0.4152699022378172
+      "value": -1.087937128567119
     },
     "Log_Returns": {
-      "value": -0.009186770906191756
+      "value": -0.04008050562779155
     },
     "Return_1": {
-      "value": -0.009144701452393655
+      "value": -0.03928790669122162
     },
     "Return_3": {
-      "value": 0.08225616921269108
+      "value": -0.09589832466782211
     },
     "Return_7": {
-      "value": 0.06968641114982588
+      "value": -0.06567164179104479
     },
     "Cumulative_Return_30": {
-      "value": 0.1922330097087379
+      "value": 0.027577150361130176
     },
     "Rolling_Sharpe_30": {
-      "value": 0.1733127557239395
+      "value": 0.041953037186967204
     },
     "Rolling_Sharpe_90": {
-      "value": -0.008151060509014532
+      "value": -0.04072643041262089
     },
     "Max_Drawdown_30": {
-      "value": -0.3996634413125788
+      "value": -0.2570986060918947
     },
     "Drawdown_Duration": {
-      "value": 1.0
+      "value": 6.0
     },
     "OBV": {
-      "value": 996762039.7399989
+      "value": 958919693.239999
     },
     "CMF": {
-      "value": 0.15133039824093517
+      "value": 0.060933785986989626
     },
     "MFI": {
-      "value": 72.25428761690398
+      "value": 48.075471113815084
     },
     "Ease_of_Movement": {
-      "value": 0.00022685354878425955
+      "value": -0.00014757346966672025
     },
     "Force_Index": {
-      "value": -67711.58989999963
+      "value": -1169172.4224000012
     },
     "Accumulation_Distribution": {
-      "value": 456541211.85545975
+      "value": 430365432.8628522
     },
     "Chaikin_Oscillator": {
-      "value": 3007839.085689068
+      "value": -7603851.29484719
     },
     "Volume_Change_1": {
-      "value": -0.8328351692702498
+      "value": 0.3807540472400406
     },
     "Volume_Change_7": {
-      "value": -0.7583602529071896
+      "value": 0.054629884026453635
     },
     "Volume_Ratio": {
-      "value": 0.30547423645640753
+      "value": 1.2733894209984802
     },
     "Volume_Surge_Flag": {
       "value": 0.0
     },
     "Price_Lag_1": {
-      "value": 1.859
+      "value": 1.629
     },
     "Price_Lag_2": {
-      "value": 1.675
+      "value": 1.751
     },
     "Price_Lag_3": {
-      "value": 1.702
+      "value": 1.731
     },
     "Close_Lag_1": {
-      "value": 1.859
+      "value": 1.629
     },
     "Close_Lag_2": {
-      "value": 1.675
+      "value": 1.751
     },
     "Close_Lag_3": {
-      "value": 1.702
+      "value": 1.731
     },
     "Close_Lag_4": {
-      "value": 1.689
-    },
-    "Close_Lag_5": {
-      "value": 1.703
-    },
-    "Close_Lag_6": {
-      "value": 1.686
-    },
-    "Close_Lag_7": {
       "value": 1.722
     },
+    "Close_Lag_5": {
+      "value": 1.799
+    },
+    "Close_Lag_6": {
+      "value": 1.859
+    },
+    "Close_Lag_7": {
+      "value": 1.675
+    },
     "Close_Lag_8": {
-      "value": 1.808
+      "value": 1.702
     },
     "Close_Lag_9": {
-      "value": 1.774
+      "value": 1.689
     },
     "Close_Lag_10": {
-      "value": 1.728
+      "value": 1.703
     },
     "Open_Lag_1": {
-      "value": 1.674
+      "value": 1.751
     },
     "High_Lag_1": {
-      "value": 1.894
+      "value": 1.768
     },
     "Low_Lag_1": {
-      "value": 1.673
+      "value": 1.624
     },
     "Typical_Price": {
-      "value": 1.8476666666666663
+      "value": 1.5473333333333332
     },
     "Median_Price": {
-      "value": 1.8504999999999998
+      "value": 1.5385
     },
     "Price_Range": {
-      "value": 0.05499999999999994
+      "value": 0.17899999999999983
     },
     "Intraday_Range": {
-      "value": -0.018000000000000016
+      "value": -0.06299999999999994
     },
     "Gap_Open": {
-      "value": 0.001000000000000112
+      "value": -0.001000000000000112
     },
     "Gap_Percentage": {
-      "value": 0.000537923614846752
+      "value": -0.0006138735420504063
     },
     "Donchian_Breakout_Flag": {
       "value": 0.0
@@ -324,67 +324,67 @@
       "value": 0.0
     },
     "Ichimoku_Tenkan": {
-      "value": 1.769
+      "value": 1.6715
     },
     "Ichimoku_Kijun": {
       "value": 1.6629999999999998
     },
     "Ichimoku_Senkou_Span_A": {
-      "value": 1.64025
+      "value": 1.5837500000000002
     },
     "Ichimoku_Senkou_Span_B": {
       "value": 2.295
     },
     "Parabolic_SAR": {
-      "value": 1.673
+      "value": 1.449
     },
     "Price_Channel_Slope": {
-      "value": 0.07534999999999999
+      "value": 0.09980000000000007
     },
     "Fractal_High": {
-      "value": 1.885
+      "value": 1.615
     },
     "Fractal_Low": {
       "value": 1.432
     },
     "Pivot_Point": {
-      "value": 1.8086666666666666
+      "value": 1.6736666666666669
     },
     "Pivot_R1": {
-      "value": 1.9443333333333332
+      "value": 1.7233333333333336
     },
     "Pivot_S1": {
-      "value": 1.7233333333333334
+      "value": 1.5793333333333337
     },
     "Pivot_R2": {
-      "value": 2.0296666666666665
+      "value": 1.8176666666666668
     },
     "Pivot_S2": {
-      "value": 1.5876666666666668
+      "value": 1.529666666666667
     },
     "Fibonacci_Level_0.236": {
-      "value": 1.7849679999999999
+      "value": 1.78898
     },
     "Fibonacci_Level_0.382": {
-      "value": 1.7175159999999998
+      "value": 1.72401
     },
     "Fibonacci_Level_0.5": {
-      "value": 1.6629999999999998
+      "value": 1.6715
     },
     "Fibonacci_Level_0.618": {
-      "value": 1.6084839999999998
+      "value": 1.61899
     },
     "Fibonacci_Level_0.786": {
-      "value": 1.530868
+      "value": 1.54423
     },
     "Seasonality_Monthly": {
       "value": 1.0
     },
     "Seasonality_DayOfMonth": {
-      "value": 14.0
+      "value": 19.0
     },
     "Day_of_Week": {
-      "value": 2.0
+      "value": 0.0
     },
     "Hour_of_Day": {
       "value": 0.0
@@ -393,10 +393,10 @@
       "value": 0.0
     },
     "Feature_Interaction_Terms": {
-      "value": 0.008649851645234154
+      "value": -0.005076211650875734
     },
     "Ensemble_Feature_Aggregates": {
-      "value": 0.07555604644593227
+      "value": -0.2285740086676058
     },
     "dxy_index": {
       "value": 0.0
@@ -468,10 +468,10 @@
       "value": 0.0
     },
     "trend_strength_60": {
-      "value": -0.09225945370533424
+      "value": -0.09215849330833777
     },
     "volatility_cluster_20": {
-      "value": 0.7364353576026588
+      "value": 0.8855710305552987
     },
     "mean_reversion_flag": {
       "value": 0.0
@@ -480,7 +480,7 @@
       "value": 0.0
     },
     "drawdown_lookback_90": {
-      "value": -0.4009756097560976
+      "value": -0.4910569105691057
     }
   }
 }

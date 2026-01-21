@@ -27014,9 +27014,89 @@
     "timestamp": "2026-01-14T00:00:00Z",
     "open": 616.8,
     "high": 619.2,
-    "low": 610.6,
-    "close": 614.9,
-    "volume": 2351.319,
+    "low": 594.0,
+    "close": 597.6,
+    "volume": 10826.557,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "BCH-USDC",
+    "timeframe": "1d",
+    "timestamp": "2026-01-15T00:00:00Z",
+    "open": 597.6,
+    "high": 630.5,
+    "low": 574.5,
+    "close": 590.7,
+    "volume": 15863.734,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "BCH-USDC",
+    "timeframe": "1d",
+    "timestamp": "2026-01-16T00:00:00Z",
+    "open": 590.9,
+    "high": 606.8,
+    "low": 589.6,
+    "close": 599.6,
+    "volume": 5056.464,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "BCH-USDC",
+    "timeframe": "1d",
+    "timestamp": "2026-01-17T00:00:00Z",
+    "open": 599.5,
+    "high": 602.4,
+    "low": 588.9,
+    "close": 593.9,
+    "volume": 3143.632,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "BCH-USDC",
+    "timeframe": "1d",
+    "timestamp": "2026-01-18T00:00:00Z",
+    "open": 593.8,
+    "high": 601.9,
+    "low": 587.7,
+    "close": 591.2,
+    "volume": 3682.619,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "BCH-USDC",
+    "timeframe": "1d",
+    "timestamp": "2026-01-19T00:00:00Z",
+    "open": 591.1,
+    "high": 594.5,
+    "low": 562.7,
+    "close": 591.0,
+    "volume": 4344.788,
     "source": "binance_rest",
     "fallback_status": {
       "active": false,

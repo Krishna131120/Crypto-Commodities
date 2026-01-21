@@ -112,7 +112,7 @@ def clear_commodities_data(include_positions: bool = False):
     print("  - Commodities features (data/features/commodities)")
     print("  - Commodities models (models/commodities)")
     print("  - Commodities training logs (logs/training/commodities)")
-    print("  - Commodities trading logs (logs/trading/commodities_trades.jsonl)")
+    print("  - Commodities trading logs (logs/trading/commodities_trades.jsonl and tradetron/commodities_trades.jsonl)")
     print("  - Commodities DQN summaries (models/dqn/commodities_*)")
     print()
     print("PRESERVES:")
@@ -145,9 +145,14 @@ def clear_commodities_data(include_positions: bool = False):
     if _delete_directory(commodities_training_logs_path, "Commodities training logs"):
         deleted_count += 1
     
-    # 5. Clear commodities trading logs
+    # 5. Clear commodities trading logs (old location)
     commodities_trades_file = project_root / "logs" / "trading" / "commodities_trades.jsonl"
-    if _delete_file(commodities_trades_file, "Commodities trading logs"):
+    if _delete_file(commodities_trades_file, "Commodities trading logs (old location)"):
+        deleted_count += 1
+    
+    # 5b. Clear commodities trading logs (tradetron folder)
+    tradetron_trades_file = project_root / "tradetron" / "commodities_trades.jsonl"
+    if _delete_file(tradetron_trades_file, "Commodities trading logs (tradetron)"):
         deleted_count += 1
     
     # 6. Clear commodities DQN summaries

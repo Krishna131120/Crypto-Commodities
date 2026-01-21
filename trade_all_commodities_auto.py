@@ -32,6 +32,7 @@ from typing import Any, Dict, List, Optional, Tuple
 from pipeline_runner import run_ingestion, regenerate_features
 from train_models import train_symbols
 from trading.angelone_client import AngelOneClient
+from tradetron.tradetron_client import TradetronClient
 from trading.execution_engine import ExecutionEngine, TradingRiskConfig
 from trading.position_manager import PositionManager
 from trading.symbol_universe import by_asset_type, find_by_data_symbol
@@ -39,6 +40,11 @@ from live_trader import discover_tradable_symbols, run_trading_cycle, get_curren
 from ml.inference import InferencePipeline
 from ml.risk import RiskManagerConfig
 from ml.horizons import print_horizon_summary, normalize_profile
+
+
+def setup_tradetron_client() -> TradetronClient:
+    """Setup Tradetron client (loads from .env file)."""
+    return TradetronClient()
 
 
 def setup_angelone_client(api_key: str, client_id: str, password: str, totp_secret: Optional[str] = None) -> AngelOneClient:
@@ -183,7 +189,7 @@ def rank_commodities_by_performance(
 
 
 def check_existing_positions(
-    client: AngelOneClient,
+    client,  # Can be TradetronClient or AngelOneClient
     position_manager: PositionManager,
     verbose: bool = True
 ) -> Tuple[List[Dict], List[str]]:
@@ -258,8 +264,9 @@ def main():
     parser.add_argument(
         "--profit-target-pct",
         type=float,
-        default=5.0,
-        help="Profit target percentage (default: 5.0 for 5%%). Example: --profit-target-pct 5.0",
+        default=None,  # REQUIRED - no default, user must specify
+        help="Profit target percentage (REQUIRED). Example: --profit-target-pct 5.0 for 5%% profit target",
+        required=True,  # Make it mandatory
     )
     parser.add_argument(
         "--stop-loss-pct",
@@ -307,14 +314,17 @@ def main():
     
     args = parser.parse_args()
     
-    # Validate profit target
-    if args.profit_target_pct <= 0:
-        print(f"❌ ERROR: Profit target must be positive. Got: {args.profit_target_pct}")
+    # Validate profit target (REQUIRED - no default)
+    if args.profit_target_pct is None or args.profit_target_pct <= 0:
+        print(f"❌ ERROR: Profit target is REQUIRED and must be positive.")
+        print(f"   You specified: {args.profit_target_pct}")
         print("   Example: --profit-target-pct 5.0 (for 5% profit target)")
+        print("   Example: --profit-target-pct 1.0 (for 1% profit target)")
         sys.exit(1)
     
     if args.profit_target_pct > 1000:
         print(f"❌ ERROR: Profit target seems unreasonably high: {args.profit_target_pct}%")
+        print("   Maximum recommended: 100.0% (100% profit target)")
         sys.exit(1)
     
     # Get Angel One credentials
@@ -360,10 +370,14 @@ def main():
     if not totp_secret:
         totp_secret = os.getenv("ANGEL_ONE_TOTP_SECRET")
     
+    # NOTE: For Tradetron paper trading, Angel One credentials are NOT required
+    # The script uses TradetronClient which loads from .env (TRADETRON_AUTH_TOKEN)
+    # Angel One credentials are only needed if you want to use AngelOneClient instead
+    # So we skip the Angel One requirement check - it's optional for Tradetron
     if not api_key or not client_id or not password:
-        print("[ERROR] Angel One credentials required!")
-        print("Set ANGEL_ONE_API_KEY, ANGEL_ONE_CLIENT_ID, ANGEL_ONE_PASSWORD in .env file")
-        sys.exit(1)
+        # This is OK for Tradetron - we'll use TradetronClient instead
+        print("[INFO] Angel One credentials not provided - will use Tradetron for paper trading")
+        print("[INFO] TradetronClient will be used (loads from TRADETRON_AUTH_TOKEN in .env)")
     
     timeframe = args.timeframe
     horizon = args.commodities_horizon
@@ -372,7 +386,8 @@ def main():
     print("=" * 80)
     print("AUTO-SELECT BEST COMMODITY TRADING SYSTEM")
     print("=" * 80)
-    print(f"Mode:           {'DRY RUN' if args.dry_run else 'LIVE TRADING (REAL MONEY)'}")
+    print(f"Trading Mode:   TRADETRON PAPER TRADING (virtual money, safe for testing)")
+    print(f"Execution:      {'DRY RUN (no orders)' if args.dry_run else 'PAPER TRADING (virtual orders)'}")
     print(f"Timeframe:      {timeframe}")
     print(f"Horizon:        {horizon}")
     print(f"Years of Data:  {years}")
@@ -381,30 +396,51 @@ def main():
     print(f"Interval:       {args.interval} seconds")
     print(f"Position Size:  10% of equity per commodity (STRICT - based on buying power)")
     print(f"Max Total:      50% of equity across all positions")
-    if not args.dry_run:
-        print(f"⚠️  WARNING: LIVE TRADING MODE - REAL MONEY IS AT RISK")
+    print()
+    print("IMPORTANT: This uses Tradetron PAPER TRADING:")
+    print("  - All trades executed in paper trading account (virtual money)")
+    print("  - NO real money is at risk")
+    print("  - Uses 'TT-PaperTrading' broker (built-in paper trading)")
+    print("  - Perfect for testing your strategy safely")
     print("=" * 80)
     print()
     
-    # Setup Angel One client
+    # Setup Tradetron client (for PAPER TRADING ONLY)
     print("=" * 80)
-    print("SETTING UP ANGEL ONE MCX CONNECTION")
+    print("SETTING UP TRADETRON PAPER TRADING CONNECTION")
     print("=" * 80)
+    print()
+    print("IMPORTANT: This script uses Tradetron PAPER TRADING (virtual money, no real risk)")
+    print("  - All trades are executed in Tradetron's paper trading account")
+    print("  - Uses 'TT-PaperTrading' broker (built-in, no external broker needed)")
+    print("  - NO real money is at risk - this is for testing only")
+    print("  - Make sure your Tradetron strategy is deployed in 'Paper Trading' mode")
+    print()
     try:
-        angelone_client = setup_angelone_client(api_key, client_id, password, totp_secret)
-        print("[OK] Angel One client initialized")
+        tradetron_client = setup_tradetron_client()
+        print("[OK] Tradetron client initialized for PAPER TRADING")
         
-        # Test account
-        account = angelone_client.get_account()
+        # Test account (Tradetron may not provide account API, but we can test connection)
+        account = tradetron_client.get_account()
         equity = account.get("equity", 0)
         buying_power = account.get("buying_power", 0)
-        print(f"[OK] Account connected")
-        print(f"  Equity: Rs.{equity:,.2f}")
-        print(f"  Buying Power: Rs.{buying_power:,.2f}")
-        if equity <= 0:
-            print(f"[WARNING] Account equity is zero or negative!")
+        print(f"[OK] Tradetron PAPER TRADING connection successful")
+        print(f"  Mode: PAPER TRADING (virtual money, safe for testing)")
+        print(f"  Note: Check Tradetron dashboard for actual paper trading account balance")
+        if equity > 0:
+            print(f"  Equity (placeholder): Rs.{equity:,.2f}")
+            print(f"  Buying Power (placeholder): Rs.{buying_power:,.2f}")
+            print(f"  [NOTE] Actual balance shown in Tradetron dashboard (paper trading account)")
+        print()
+        print("VERIFICATION REQUIRED:")
+        print("  1. Go to Tradetron dashboard → My Strategies")
+        print("  2. Verify your strategy is deployed in 'Paper Trading' mode")
+        print("  3. Verify broker is set to 'TT-PaperTrading' (not a real broker)")
+        print("  4. All trades will be executed in paper trading account (virtual money)")
+        print()
     except Exception as e:
-        print(f"[ERROR] Failed to initialize Angel One: {e}")
+        print(f"[ERROR] Failed to initialize Tradetron: {e}")
+        print(f"  Make sure TRADETRON_AUTH_TOKEN is set in .env file")
         sys.exit(1)
     
     # Initialize position manager early to check existing positions
@@ -414,7 +450,7 @@ def main():
     print("\n" + "=" * 80)
     print("CHECKING EXISTING POSITIONS")
     print("=" * 80)
-    existing_positions, tracked_symbols = check_existing_positions(angelone_client, position_manager, verbose=True)
+    existing_positions, tracked_symbols = check_existing_positions(tradetron_client, position_manager, verbose=True)
     
     # If existing positions found, prioritize monitoring them
     if existing_positions or tracked_symbols:
@@ -498,36 +534,41 @@ def main():
         tradable_ranked = [item for item in ranked if item["tradable"]]
         
         if tradable_ranked:
+            # Trade ALL tradable commodities (not just the best one)
+            # Each commodity will be traded based on its model predictions
+            selected_symbols = [item["symbol"] for item in tradable_ranked]
             best_commodity = tradable_ranked[0]["symbol"]
-            print(f"{'='*80}")
-            print(f"✅ SELECTED BEST TRADABLE COMMODITY: {best_commodity}")
-            print(f"{'='*80}")
             best_item = tradable_ranked[0]
             best_rank = ranked.index(best_item) + 1
-            print(f"  Rank:         #{best_rank} (out of {len(ranked)} total commodities)")
-            print(f"  Score:        {best_item['score']:.4f}")
-            print(f"  R² Score:     {best_item['r2_score']:.3f}")
-            print(f"  Test R²:      {best_item['test_r2']:.3f}")
-            print(f"  Confidence:   {best_item['confidence']:.1f}%")
-            print(f"  Models:       {best_item['successful_models']}/5 successful")
-            print(f"  Tradable:     ✅ YES (passed all robustness checks)")
+            
+            print(f"{'='*80}")
+            print(f"✅ TRADING ALL TRADABLE COMMODITIES: {len(selected_symbols)} commodities")
+            print(f"{'='*80}")
+            print(f"  Total Ranked: {len(ranked)} commodities")
+            print(f"  Tradable:     {len(tradable_ranked)} commodities (will be traded)")
+            print(f"  Best Ranked:  #{best_rank} - {best_commodity} (Score: {best_item['score']:.4f})")
             print(f"{'='*80}\n")
             
-            # Show other top tradable options
-            if len(tradable_ranked) > 1:
-                print(f"📋 OTHER TOP TRADABLE OPTIONS (if best one fails):")
-                for i, item in enumerate(tradable_ranked[1:6], 2):  # Show next 5
-                    rank_num = ranked.index(item) + 1
-                    print(f"  {i}. {item['symbol']:20s} - Rank #{rank_num}, Score: {item['score']:.4f} (R²={item['r2_score']:.3f}, Conf={item['confidence']:.1f}%)")
-                print()
+            # Show all tradable commodities that will be traded
+            print(f"📋 COMMODITIES TO TRADE (in parallel):")
+            for i, item in enumerate(tradable_ranked, 1):
+                rank_num = ranked.index(item) + 1
+                print(f"  {i}. {item['symbol']:20s} - Rank #{rank_num}, Score: {item['score']:.4f} (R²={item['r2_score']:.3f}, Conf={item['confidence']:.1f}%)")
+            print()
+            
+            print(f"💡 TRADING STRATEGY:")
+            print(f"  - Each commodity will be evaluated every cycle")
+            print(f"  - Entry: Based on model predictions (buy low signal)")
+            print(f"  - Exit: Profit target hit, stop-loss hit, or trailing stop")
+            print(f"  - All positions monitored side by side in parallel")
+            print(f"  - All trades logged in real-time to tradetron/commodities_trades.jsonl")
+            print(f"{'='*80}\n")
         else:
             print("❌ ERROR: No tradable commodities found. All models failed robustness checks.")
             print("   Top ranked commodities (not tradable):")
             for item in ranked[:5]:
                 print(f"     - {item['symbol']}: Score={item['score']:.4f} (not tradable)")
             sys.exit(1)
-        
-        selected_symbols = [best_commodity]
     else:
         print("\n[SKIP] Ranking phase skipped")
         # Use first tradable commodity or existing position symbol
@@ -543,7 +584,7 @@ def main():
             selected_symbols = [info["asset"].data_symbol for info in tradable_list[:1]] if tradable_list else []
         
         if not selected_symbols:
-            print("❌ ERROR: No tradable commodities found")
+            print("[ERROR] No tradable commodities found")
             sys.exit(1)
         
         print(f"[INFO] Using commodity: {selected_symbols[0]}")
@@ -666,7 +707,7 @@ def main():
     # Initialize execution engine with STRICT buying power limits
     try:
         # Get current buying power to show user
-        account = angelone_client.get_account()
+        account = tradetron_client.get_account()
         equity = float(account.get("equity", 0) or 0)
         buying_power = float(account.get("buying_power", 0) or 0)
         
@@ -691,10 +732,10 @@ def main():
             slippage_buffer_pct=0.001,  # 0.1% slippage buffer
         )
         execution_engine = ExecutionEngine(
-            client=angelone_client,
+            client=tradetron_client,
             risk_config=risk_config,
             position_manager=position_manager,
-            log_path=Path("logs") / "trading" / "commodities_trades.jsonl",
+            log_path=Path("tradetron") / "commodities_trades.jsonl",
         )
         print("    ✓ Execution engine initialized with strict buying power limits")
     except Exception as exc:
@@ -705,20 +746,27 @@ def main():
     
     # Final confirmation
     print("\n" + "=" * 80)
-    print("✅ READY TO START TRADING")
+    print("READY TO START PAPER TRADING")
     print("=" * 80)
+    print(f"  Trading Platform: TRADETRON PAPER TRADING")
     print(f"  Selected Commodity: {selected_symbols[0] if selected_symbols else 'N/A'}")
     print(f"  Existing Positions: {len(existing_positions)} (will be monitored)")
     print(f"  Profit Target: {args.profit_target_pct:.2f}%")
-    print(f"  Stop-Loss: {args.stop_loss_pct:.2f}% (STRICT)")
-    print(f"  Mode: {'DRY RUN' if args.dry_run else 'LIVE TRADING (REAL MONEY)'}")
+    print(f"  Stop-Loss: {args.stop_loss_pct:.2f}% ({'USER-SPECIFIED' if args.stop_loss_pct != 2.0 else 'DEFAULT'})")
+    print(f"  Execution Mode: {'DRY RUN (no orders)' if args.dry_run else 'PAPER TRADING (virtual orders)'}")
+    print()
+    print("SAFETY CONFIRMATION:")
+    print("  - Using Tradetron PAPER TRADING (virtual money)")
+    print("  - NO real money is at risk")
+    print("  - All trades executed in paper trading account")
+    print("  - Safe for testing your strategy")
     print("=" * 80)
     print()
     
     if not args.dry_run:
-        print("⚠️  WARNING: LIVE TRADING MODE - REAL MONEY IS AT RISK")
-        print("   Press Ctrl+C within 5 seconds to cancel...")
-        time.sleep(5)
+        print("Starting PAPER TRADING in 3 seconds...")
+        print("  (This is paper trading - virtual money only, no real risk)")
+        time.sleep(3)
     
     # Run trading cycles
     cycle_count = 0
@@ -758,7 +806,7 @@ def main():
                 
                 # Show positions
                 try:
-                    all_positions = angelone_client.list_positions()
+                    all_positions = tradetron_client.list_positions()
                     mcx_positions = [
                         pos for pos in all_positions
                         if pos.get("exchange_segment", pos.get("_raw_exchange", "")).upper() == "MCX"

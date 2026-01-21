@@ -1,1 +1,62 @@
-{}
+{
+  "LTCUSD": {
+    "symbol": "LTCUSD",
+    "consecutive_losses": 1,
+    "total_trades": 1,
+    "winning_trades": 0,
+    "losing_trades": 1,
+    "daily_loss": 4192.456255754493,
+    "last_loss_time": "2026-01-16T12:50:35.985132+00:00",
+    "cooldown_until": null,
+    "is_blocked": false,
+    "block_reason": null
+  },
+  "BCHUSD": {
+    "symbol": "BCHUSD",
+    "consecutive_losses": 1,
+    "total_trades": 1,
+    "winning_trades": 0,
+    "losing_trades": 1,
+    "daily_loss": 4189.278220539188,
+    "last_loss_time": "2026-01-17T04:04:36.767771+00:00",
+    "cooldown_until": null,
+    "is_blocked": false,
+    "block_reason": null
+  },
+  "UNIUSD": {
+    "symbol": "UNIUSD",
+    "consecutive_losses": 2,
+    "total_trades": 2,
+    "winning_trades": 0,
+    "losing_trades": 2,
+    "daily_loss": 4205.318078101266,
+    "last_loss_time": "2026-01-17T05:13:37.583107+00:00",
+    "cooldown_until": null,
+    "is_blocked": false,
+    "block_reason": null
+  },
+  "ETHUSD": {
+    "symbol": "ETHUSD",
+    "consecutive_losses": 1,
+    "total_trades": 1,
+    "winning_trades": 0,
+    "losing_trades": 1,
+    "daily_loss": 4193.697487369636,
+    "last_loss_time": "2026-01-17T10:18:02.501313+00:00",
+    "cooldown_until": null,
+    "is_blocked": false,
+    "block_reason": null
+  },
+  "YFIUSD": {
+    "symbol": "YFIUSD",
+    "consecutive_losses": 0,
+    "total_trades": 1,
+    "winning_trades": 1,
+    "losing_trades": 0,
+    "daily_loss": 0.0,
+    "last_loss_time": null,
+    "cooldown_until": null,
+    "is_blocked": false,
+    "block_reason": null
+  }
+}

@@ -1,0 +1,72 @@
+{
+  "AAVEUSD": {
+    "exit_time": "2026-01-16T07:50:33.190461+00:00Z",
+    "exit_reason": "stop_loss_hit",
+    "was_profitable": false
+  },
+  "BATUSD": {
+    "exit_time": "2026-01-16T12:44:35.705088+00:00Z",
+    "exit_reason": "stop_loss_hit",
+    "was_profitable": false
+  },
+  "DOGEUSD": {
+    "exit_time": "2026-01-16T12:44:38.245833+00:00Z",
+    "exit_reason": "trailing_stop_from_peak",
+    "was_profitable": false
+  },
+  "SHIBUSD": {
+    "exit_time": "2026-01-16T12:44:48.130544+00:00Z",
+    "exit_reason": "trailing_stop_from_peak",
+    "was_profitable": false
+  },
+  "LTCUSD": {
+    "exit_time": "2026-01-16T12:50:35.987129+00:00Z",
+    "exit_reason": "trailing_stop_from_peak",
+    "was_profitable": false
+  },
+  "PEPEUSD": {
+    "exit_time": "2026-01-16T12:45:15.413153+00:00Z",
+    "exit_reason": "stop_loss_hit",
+    "was_profitable": false
+  },
+  "LINKUSD": {
+    "exit_time": "2026-01-16T12:45:24.752962+00:00Z",
+    "exit_reason": "stop_loss_hit",
+    "was_profitable": false
+  },
+  "BTCUSD": {
+    "exit_time": "2026-01-16T12:45:57.213949+00:00Z",
+    "exit_reason": "stop_loss_hit",
+    "was_profitable": false
+  },
+  "AVAXUSD": {
+    "exit_time": "2026-01-16T12:46:03.778519+00:00Z",
+    "exit_reason": "stop_loss_hit",
+    "was_profitable": false
+  },
+  "DOTUSD": {
+    "exit_time": "2026-01-16T12:46:05.940553+00:00Z",
+    "exit_reason": "stop_loss_hit",
+    "was_profitable": false
+  },
+  "BCHUSD": {
+    "exit_time": "2026-01-17T04:04:36.769771+00:00Z",
+    "exit_reason": "trailing_stop_from_peak",
+    "was_profitable": false
+  },
+  "UNIUSD": {
+    "exit_time": "2026-01-17T05:13:37.585097+00:00Z",
+    "exit_reason": "trailing_stop_from_peak",
+    "was_profitable": false
+  },
+  "ETHUSD": {
+    "exit_time": "2026-01-17T10:18:02.503336+00:00Z",
+    "exit_reason": "trailing_stop_from_peak",
+    "was_profitable": false
+  },
+  "YFIUSD": {
+    "exit_time": "2026-01-17T11:22:59.483240+00:00Z",
+    "exit_reason": "profit_target_hit",
+    "was_profitable": true
+  }
+}

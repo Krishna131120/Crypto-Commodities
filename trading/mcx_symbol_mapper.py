@@ -4,14 +4,15 @@ MCX Symbol Mapping System
 Maps Yahoo Finance commodity symbols (GC=F, CL=F, etc.) to MCX contract symbols.
 Handles contract expiry and auto-selects current month contract.
 
-MCX Contract Format:
-- Gold: GOLDFEB24, GOLDMAR24, etc. (GOLD + Month + Year)
-- Crude Oil: CRUDEOILFEB24, CRUDEOILMAR24, etc.
-- Silver: SILVERFEB24, SILVERMAR24, etc.
+MCX Contract Format (AngelOne):
+- Format: {BASE_SYMBOL}{DAY:02d}{MONTH}{YEAR:02d}FUT
+- Example: GOLD05FEB26FUT = GOLD + 05 (day) + FEB (month) + 26 (year) + FUT
+- Example: GOLDGUINEA30JAN26FUT = GOLDGUINEA + 30 (day) + JAN (month) + 26 (year) + FUT
 
 Contract Expiry:
-- MCX contracts typically expire on the last business day of the month
-- We auto-select the current month contract
+- MCX contracts expire on specific days of the month (varies by commodity)
+- Common expiry days: 05 (GOLD), 27/30/31 (GOLDGUINEA, GOLDPETAL, SILVERM), 18/19/20 (CRUDEOIL)
+- We auto-select the current month contract with appropriate expiry day
 - Handle rollover when contract expires
 """
 
@@ -44,6 +45,7 @@ MCX_BASE_SYMBOLS: Dict[str, str] = {
     "MCX_ALUMINIUM": "ALUMINIUM",  # Aluminium
     "MCX_ALUMINI": "ALUMINI",      # Aluminium Mini
     "HG=F": "COPPER",          # Copper (HG=F is COMEX copper, closest Yahoo equivalent)
+    "MCX_COPPERMI": "COPPERMI",    # Copper Mini
     "MCX_LEAD": "LEAD",        # Lead
     "MCX_LEADMINI": "LEADMINI",    # Lead Mini
     "MCX_NICKEL": "NICKEL",    # Nickel
@@ -67,18 +69,64 @@ MCX_MONTH_CODES = {
     9: "SEP", 10: "OCT", 11: "NOV", 12: "DEC",
 }
 
+# MCX Contract Expiry Days (typical expiry day for each base symbol)
+# Format: {BASE_SYMBOL: [list of common expiry days to try]}
+# If first day doesn't work, symbol lookup will try others
+MCX_EXPIRY_DAYS: Dict[str, list[int]] = {
+    # Bullion
+    "GOLD": [5, 4, 2],           # Usually 05, sometimes 04, 02
+    "SILVER": [5, 4, 3],         # Usually 05, sometimes 04, 03
+    "PLATINUM": [5],             # Usually 05
+    "GOLDM": [5, 3],             # Usually 05, sometimes 03
+    "GOLDGUINEA": [30, 27, 31, 29],  # Usually 30, sometimes 27, 31, 29
+    "GOLDPETAL": [30, 27, 31, 29],   # Usually 30, sometimes 27, 31, 29
+    "SILVERM": [30, 27, 31],     # Usually 30, sometimes 27, 31
+    "SILVERMIC": [30, 27, 31],   # Usually 30, sometimes 27, 31
+    "SILVER1000": [30, 27, 31],  # Usually 30, sometimes 27, 31
+    
+    # Energy
+    "CRUDEOIL": [20, 19, 18],    # Usually 20, sometimes 19, 18
+    "BRENTCRUDE": [20, 19, 18],  # Usually 20, sometimes 19, 18
+    "NATURALGAS": [20, 19, 18],  # Usually 20, sometimes 19, 18
+    "CRUDEOILM": [20, 19, 18],   # Usually 20, sometimes 19, 18
+    
+    # Base Metals (default to 30 if not specified)
+    "ALUMINIUM": [30, 27, 31],
+    "ALUMINI": [30, 27, 31],
+    "COPPER": [30, 27, 31],
+    "COPPERMI": [30, 27, 31],
+    "LEAD": [30, 27, 31],
+    "LEADMINI": [30, 27, 31],
+    "NICKEL": [30, 27, 31],
+    "ZINC": [30, 27, 31],
+    "ZINCMINI": [30, 27, 31],
+    
+    # Agricultural (default to 30 if not specified)
+    "CORN": [30, 27, 31],
+    "SOYBEAN": [30, 27, 31],
+    "WHEAT": [30, 27, 31],
+    "CARDAMOM": [30, 27, 31],
+    "COTTON": [30, 27, 31],
+    "CPO": [30, 27, 31],
+    "MENTHAOIL": [30, 27, 31],
+}
 
-def get_mcx_contract_symbol(yahoo_symbol: str, month: Optional[int] = None, year: Optional[int] = None) -> str:
+
+def get_mcx_contract_symbol(yahoo_symbol: str, month: Optional[int] = None, year: Optional[int] = None, expiry_day: Optional[int] = None) -> str:
     """
     Convert Yahoo Finance symbol or MCX-specific symbol to MCX contract symbol.
+    
+    AngelOne MCX format: {BASE_SYMBOL}{DAY:02d}{MONTH}{YEAR:02d}FUT
+    Example: GOLD05FEB26FUT = GOLD + 05 (day) + FEB (month) + 26 (year) + FUT
     
     Args:
         yahoo_symbol: Yahoo Finance symbol (e.g., "GC=F") or MCX-specific symbol (e.g., "MCX_GOLDM")
         month: Optional month (1-12). If None, uses current month.
-        year: Optional year (2-digit, e.g., 24). If None, uses current year.
+        year: Optional year (2-digit, e.g., 26). If None, uses current year.
+        expiry_day: Optional expiry day (1-31). If None, uses default for the commodity.
         
     Returns:
-        MCX contract symbol (e.g., "GOLDFEB24")
+        MCX contract symbol (e.g., "GOLD05FEB26FUT")
     """
     base_symbol = MCX_BASE_SYMBOLS.get(yahoo_symbol.upper())
     if not base_symbol:
@@ -93,9 +141,15 @@ def get_mcx_contract_symbol(yahoo_symbol: str, month: Optional[int] = None, year
     contract_month = month if month is not None else now.month
     contract_year = year if year is not None else int(str(now.year)[-2:])
     
+    # Get expiry day (default based on commodity)
+    if expiry_day is None:
+        expiry_days = MCX_EXPIRY_DAYS.get(base_symbol, [30])  # Default to 30 if not specified
+        expiry_day = expiry_days[0]  # Use first (most common) expiry day
+    
     month_code = MCX_MONTH_CODES[contract_month]
     
-    return f"{base_symbol}{month_code}{contract_year:02d}"
+    # AngelOne format: {BASE}{DAY:02d}{MONTH}{YEAR:02d}FUT
+    return f"{base_symbol}{expiry_day:02d}{month_code}{contract_year:02d}FUT"
 
 
 def get_current_mcx_contract(yahoo_symbol: str) -> str:
@@ -197,6 +251,7 @@ def get_mcx_lot_size(yahoo_symbol: str) -> int:
         "MCX_ALUMINIUM": 5,     # Aluminium: 5 MT per lot
         "MCX_ALUMINI": 1,       # Aluminium Mini: 1 MT per lot
         "HG=F": 25000,          # Copper: 25,000 lbs per lot (COMEX standard, MCX may differ)
+        "MCX_COPPERMI": 1,      # Copper Mini: 1 MT per lot
         "MCX_LEAD": 5,          # Lead: 5 MT per lot
         "MCX_LEADMINI": 1,      # Lead Mini: 1 MT per lot
         "MCX_NICKEL": 1,         # Nickel: 1 MT per lot

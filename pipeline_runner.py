@@ -190,7 +190,7 @@ def main():
     parser.add_argument("--crypto-symbols", nargs="+", help="Crypto symbols (e.g., SOL-USDT ETH-USDT)")
     parser.add_argument("--commodities-symbols", nargs="+", help="Commodity symbols (e.g., CL=F SI=F)")
     parser.add_argument("--timeframe", default="1d", help="Historical timeframe (default 1d)")
-    parser.add_argument("--years", type=float, default=None, help="Years of historical data (default 5)")
+    parser.add_argument("--years", type=float, default=None, help="Years of historical data (default 7 for commodities, 10 for crypto)")
     horizon_choices = available_horizon_profiles()
     parser.add_argument(
         "--crypto-horizon",

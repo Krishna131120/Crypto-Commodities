@@ -31382,9 +31382,89 @@
     "timestamp": "2026-01-14T00:00:00Z",
     "open": 0.354,
     "high": 0.3583,
-    "low": 0.3487,
-    "close": 0.3539,
-    "volume": 3131067.6,
+    "low": 0.3422,
+    "close": 0.3451,
+    "volume": 5234611.0,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "SUSHI-USDT",
+    "timeframe": "1d",
+    "timestamp": "2026-01-15T00:00:00Z",
+    "open": 0.3451,
+    "high": 0.3459,
+    "low": 0.3215,
+    "close": 0.3271,
+    "volume": 3357882.7,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "SUSHI-USDT",
+    "timeframe": "1d",
+    "timestamp": "2026-01-16T00:00:00Z",
+    "open": 0.3272,
+    "high": 0.334,
+    "low": 0.3184,
+    "close": 0.3334,
+    "volume": 1968309.6,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "SUSHI-USDT",
+    "timeframe": "1d",
+    "timestamp": "2026-01-17T00:00:00Z",
+    "open": 0.3334,
+    "high": 0.3754,
+    "low": 0.3323,
+    "close": 0.3537,
+    "volume": 6836010.5,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "SUSHI-USDT",
+    "timeframe": "1d",
+    "timestamp": "2026-01-18T00:00:00Z",
+    "open": 0.3536,
+    "high": 0.3587,
+    "low": 0.3277,
+    "close": 0.3284,
+    "volume": 3710618.1,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "SUSHI-USDT",
+    "timeframe": "1d",
+    "timestamp": "2026-01-19T00:00:00Z",
+    "open": 0.3283,
+    "high": 0.3283,
+    "low": 0.2908,
+    "close": 0.3057,
+    "volume": 6528160.3,
     "source": "binance_rest",
     "fallback_status": {
       "active": false,

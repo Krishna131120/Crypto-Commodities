@@ -143,12 +143,16 @@ class PositionManager:
             new_avg_entry = total_cost / total_qty if total_qty > 0 else entry_price
             
             # Update profit target and stop-loss based on new average entry
+            # FIX 6: Add entry buffer (0.75% default) to stop-loss to account for entry slippage and initial volatility
+            entry_buffer_pct = 0.75  # 0.75% buffer (between 0.5-1% as recommended)
             if side == "long":
                 profit_target_price = new_avg_entry * (1.0 + profit_target_pct / 100.0)
-                stop_loss_price = new_avg_entry * (1.0 - stop_loss_pct / 100.0)
+                # Add buffer to stop-loss: stop_loss_pct + entry_buffer_pct
+                stop_loss_price = new_avg_entry * (1.0 - (stop_loss_pct + entry_buffer_pct) / 100.0)
             else:  # short
                 profit_target_price = new_avg_entry * (1.0 - profit_target_pct / 100.0)
-                stop_loss_price = new_avg_entry * (1.0 + stop_loss_pct / 100.0)
+                # Add buffer to stop-loss: stop_loss_pct + entry_buffer_pct
+                stop_loss_price = new_avg_entry * (1.0 + (stop_loss_pct + entry_buffer_pct) / 100.0)
             
             # Update position
             existing_position.entry_price = new_avg_entry
@@ -163,12 +167,17 @@ class PositionManager:
             return existing_position
         else:
             # New position
+            # FIX 6: Add entry buffer (0.75% default) to stop-loss to account for entry slippage and initial volatility
+            # This prevents stop-loss from triggering immediately after entry
+            entry_buffer_pct = 0.75  # 0.75% buffer (between 0.5-1% as recommended)
             if side == "long":
                 profit_target_price = entry_price * (1.0 + profit_target_pct / 100.0)
-                stop_loss_price = entry_price * (1.0 - stop_loss_pct / 100.0)
+                # Add buffer to stop-loss: stop_loss_pct + entry_buffer_pct
+                stop_loss_price = entry_price * (1.0 - (stop_loss_pct + entry_buffer_pct) / 100.0)
             else:  # short
                 profit_target_price = entry_price * (1.0 - profit_target_pct / 100.0)
-                stop_loss_price = entry_price * (1.0 + stop_loss_pct / 100.0)
+                # Add buffer to stop-loss: stop_loss_pct + entry_buffer_pct
+                stop_loss_price = entry_price * (1.0 + (stop_loss_pct + entry_buffer_pct) / 100.0)
             
             position = Position(
                 symbol=symbol,
@@ -246,13 +255,13 @@ class PositionManager:
             if position.highest_price is None or current_price > position.highest_price:
                 position.highest_price = current_price
                 price_updated = True
-            # Check if price has dropped from peak (trailing stop)
+            # Check if price has dropped from peak (trailing stop) - SELL AT PEAK
             if position.highest_price is not None:
                 drawdown_from_peak = ((current_price - position.highest_price) / position.highest_price) * 100
-                # FIX 2: Exit when price drops from peak (trailing stop)
+                # CRITICAL: Exit when price drops from peak (trailing stop) - SELL HIGH
                 # This captures profit near highs instead of waiting for prediction to turn
-                # Use asset-specific threshold (commodities: 1.5%, crypto: 1.2%)
-                trailing_stop_pct = 1.5 if position.asset_type == "commodities" else 1.2
+                # SAME for crypto and commodities: 2.5% trailing stop (sell at peak)
+                trailing_stop_pct = 2.5  # Exit when drops 2.5% from peak - SELL AT PEAK
                 if drawdown_from_peak < -trailing_stop_pct and not position.trailing_stop_triggered:
                     position.trailing_stop_triggered = True
                     self._save_positions()  # Save before exiting
@@ -270,8 +279,8 @@ class PositionManager:
             # Check if price has risen from bottom (trailing stop for shorts)
             if position.lowest_price is not None:
                 rise_from_bottom = ((current_price - position.lowest_price) / position.lowest_price) * 100
-                # Use asset-specific threshold (commodities: 1.5%, crypto: 1.2%)
-                trailing_stop_pct = 1.5 if position.asset_type == "commodities" else 1.2
+                # SAME for crypto and commodities: 2.5% trailing stop (sell at peak)
+                trailing_stop_pct = 2.5  # Same for both crypto and commodities - exit when rises 2.5% from bottom
                 if rise_from_bottom > trailing_stop_pct and not position.trailing_stop_triggered:
                     position.trailing_stop_triggered = True
                     self._save_positions()  # Save before exiting
@@ -430,12 +439,16 @@ class PositionManager:
             stop_loss_pct = position.stop_loss_pct
         
         # Recalculate profit target and stop-loss prices based on current entry price
+        # FIX 6: Add entry buffer (0.75% default) to stop-loss to account for entry slippage and initial volatility
+        entry_buffer_pct = 0.75  # 0.75% buffer (between 0.5-1% as recommended)
         if position.side == "long":
             profit_target_price = position.entry_price * (1.0 + new_profit_target_pct / 100.0)
-            stop_loss_price = position.entry_price * (1.0 - stop_loss_pct / 100.0)
+            # Add buffer to stop-loss: stop_loss_pct + entry_buffer_pct
+            stop_loss_price = position.entry_price * (1.0 - (stop_loss_pct + entry_buffer_pct) / 100.0)
         else:  # short
             profit_target_price = position.entry_price * (1.0 - new_profit_target_pct / 100.0)
-            stop_loss_price = position.entry_price * (1.0 + stop_loss_pct / 100.0)
+            # Add buffer to stop-loss: stop_loss_pct + entry_buffer_pct
+            stop_loss_price = position.entry_price * (1.0 + (stop_loss_pct + entry_buffer_pct) / 100.0)
         
         # Update position
         position.profit_target_pct = new_profit_target_pct

@@ -3,15 +3,15 @@
   "total_events": 1,
   "events": [
     {
-      "timestamp": "2026-01-15T05:43:51.374335Z",
+      "timestamp": "2026-01-19T07:13:35.982454Z",
       "level": "ERROR",
-      "message": "Training skipped: crypto/DAI-USDT (intraday): Bin edges must be unique: Index([-inf, 0.0, 0.0, inf], dtype='float64').\nYou can drop duplicate edges by setting the 'duplicates' kwarg",
+      "message": "Training skipped: crypto/DAI-USDT (short): Bin edges must be unique: array([-inf,   0.,   0.,  inf]).\nYou can drop duplicate edges by setting the 'duplicates' kwarg",
       "category": "TRAIN",
       "symbol": "DAI-USDT",
       "asset_type": "crypto",
       "data": {
-        "error": "Bin edges must be unique: Index([-inf, 0.0, 0.0, inf], dtype='float64').\nYou can drop duplicate edges by setting the 'duplicates' kwarg",
-        "horizon": "intraday"
+        "error": "Bin edges must be unique: array([-inf,   0.,   0.,  inf]).\nYou can drop duplicate edges by setting the 'duplicates' kwarg",
+        "horizon": "short"
       }
     }
   ]

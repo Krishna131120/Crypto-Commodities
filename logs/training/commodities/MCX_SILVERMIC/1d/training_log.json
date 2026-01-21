@@ -1,0 +1,18 @@
+{
+  "log_file": "logs\\training\\commodities\\MCX_SILVERMIC\\1d\\training_log.json",
+  "total_events": 1,
+  "events": [
+    {
+      "timestamp": "2026-01-17T13:24:55.709893Z",
+      "level": "ERROR",
+      "message": "Training skipped: commodities/MCX_SILVERMIC (short): No data.json found for commodities/MCX_SILVERMIC/1d",
+      "category": "TRAIN",
+      "symbol": "MCX_SILVERMIC",
+      "asset_type": "commodities",
+      "data": {
+        "error": "No data.json found for commodities/MCX_SILVERMIC/1d",
+        "horizon": "short"
+      }
+    }
+  ]
+}

@@ -16,6 +16,14 @@ Environment variables expected:
 - ANGEL_ONE_TOTP_SECRET : TOTP secret (optional, if using pyotp library)
 - ANGEL_ONE_BASE_URL : optional override for the base URL
 
+IMPORTANT - STATIC IP REQUIREMENT:
+- NO IP whitelisting is required from Angel One side
+- You MUST create your API key with a STATIC IP from your internet provider
+- Contact your ISP to get a static IP address if you don't have one
+- When creating the API key in SmartAPI, ensure it's configured with your static IP
+- The static IP must match the IP from which you're making API calls
+- If your IP changes, API calls will fail - ensure your internet connection uses static IP
+
 IMPORTANT:
 - TOTP must be enabled in your Angel One account
 - MCX segment must be activated
@@ -30,7 +38,8 @@ import time
 import socket
 import uuid
 from dataclasses import dataclass
-from typing import Any, Dict, Optional
+from datetime import datetime, timezone, timedelta
+from typing import Any, Dict, Optional, List
 
 import requests
 
@@ -402,9 +411,11 @@ class AngelOneClient(BrokerClient):
                 support_id = support_id_match.group(1) if support_id_match else "N/A"
                 raise RuntimeError(
                     f"Angel One API gateway rejected request (Support ID: {support_id}). "
-                    f"This usually means: (1) IP not whitelisted in SmartAPI settings, "
+                    f"This usually means: (1) API key was not created with static IP from your ISP, "
                     f"(2) Wrong endpoint format, or (3) Symbol token required instead of symbol name. "
-                    f"Check your SmartAPI app settings and whitelist your IP address."
+                    f"IMPORTANT: NO IP whitelisting is required from Angel One side. "
+                    f"You MUST create your API key with a STATIC IP from your internet provider. "
+                    f"Contact your ISP to get a static IP if you don't have one."
                 )
 
         if resp.status_code == 401:
@@ -813,6 +824,41 @@ class AngelOneClient(BrokerClient):
             if scrip_master and isinstance(scrip_master, list):
                 # Search for symbol in scrip master
                 symbol_upper = symbol.upper()
+                # Try multiple format variations (MCX contracts use different formats)
+                symbol_variations = [
+                    symbol_upper,  # GOLD05FEB26FUT (new format)
+                ]
+                
+                # If symbol has FUT suffix, also try without it
+                if symbol_upper.endswith("FUT"):
+                    symbol_variations.append(symbol_upper[:-3])  # Remove FUT
+                
+                # Try variations with spaces (old format compatibility)
+                for month in ["JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"]:
+                    if month in symbol_upper:
+                        symbol_variations.append(symbol_upper.replace(month, f" {month}"))  # GOLD JAN26
+                        symbol_variations.append(symbol_upper.replace(month, f"{month} "))  # GOLDJAN 26
+                        break
+                
+                # Try old format (without day and FUT): GOLDJAN26
+                import re
+                # Match: BASESYMBOL + DAY(2digits) + MONTH(3letters) + YEAR(2digits) + FUT
+                old_format_match = re.match(r"^([A-Z]+)(\d{2})([A-Z]{3})(\d{2})FUT$", symbol_upper)
+                if old_format_match:
+                    base, day, month, year = old_format_match.groups()
+                    # Try without day and FUT: GOLDJAN26
+                    symbol_variations.append(f"{base}{month}{year}")
+                    # Try without FUT: GOLD05FEB26
+                    symbol_variations.append(f"{base}{day}{month}{year}")
+                
+                # Also try reverse: if old format (GOLDJAN26), try new format
+                new_format_match = re.match(r"^([A-Z]+)([A-Z]{3})(\d{2})$", symbol_upper)
+                if new_format_match and not symbol_upper.endswith("FUT"):
+                    base, month, year = new_format_match.groups()
+                    # Try with common expiry days and FUT
+                    for day in [5, 30, 27, 31, 20, 19, 18]:
+                        symbol_variations.append(f"{base}{day:02d}{month}{year}FUT")
+                
                 for inst in scrip_master:
                     if isinstance(inst, dict):
                         # Check multiple fields for symbol match
@@ -820,11 +866,17 @@ class AngelOneClient(BrokerClient):
                         name = inst.get("name", "").upper()
                         exch_seg = inst.get("exch_seg", inst.get("exchange", "")).upper()
                         
-                        # Match symbol and exchange
-                        if (trading_symbol == symbol_upper or name == symbol_upper) and exch_seg == exchange.upper():
-                            token = inst.get("token", inst.get("symboltoken", ""))
-                            if token:
-                                return str(token)
+                        # Match symbol and exchange - try all variations
+                        for symbol_variant in symbol_variations:
+                            if (trading_symbol == symbol_variant or name == symbol_variant) and exch_seg == exchange.upper():
+                                token = inst.get("token", inst.get("symboltoken", ""))
+                                if token:
+                                    return str(token)
+                        
+                        # DISABLED: Partial matching was too aggressive and matched wrong symbols
+                        # (e.g., GOLDMJAN26 matched GOLDMAHMCOM incorrectly)
+                        # Only use exact matches to avoid wrong token lookups
+                        # If exact match not found, symbol doesn't exist in scrip master
         except Exception as e:
             import warnings
             warnings.warn(f"Scrip master lookup failed for {symbol}: {e}", UserWarning)
@@ -929,21 +981,23 @@ class AngelOneClient(BrokerClient):
                 try:
                     response = self._request("POST", "/rest/secure/marketData/quote", json_body=body)
                 except RuntimeError as api_err:
-                    # If this fails, check if it's an IP whitelisting issue
+                    # If this fails, check if it's a static IP issue
                     error_str = str(api_err)
                     if "Request Rejected" in error_str or "HTML" in error_str:
-                        # This is likely an IP whitelisting issue
+                        # This is likely a static IP issue
                         import warnings
                         warnings.warn(
                             f"Angel One API rejected request for {symbol}. "
-                            f"This usually means: (1) IP not whitelisted, or (2) Symbol token lookup failed. "
-                            f"Please whitelist your IP in SmartAPI settings and ensure scrip master is downloaded.",
+                            f"This usually means: (1) API key was not created with static IP, or (2) Symbol token lookup failed. "
+                            f"IMPORTANT: NO IP whitelisting is required from Angel One. "
+                            f"You MUST create your API key with a STATIC IP from your ISP. Ensure scrip master is downloaded.",
                             UserWarning,
                         )
                         # Don't try alternative endpoint if it's an IP issue
                         raise RuntimeError(
                             f"Angel One API gateway rejected request. "
-                            f"Please whitelist your IP address in SmartAPI settings. "
+                            f"IMPORTANT: NO IP whitelisting is required. "
+                            f"You MUST create your API key with a STATIC IP from your internet provider. "
                             f"Symbol: {symbol}, Token: {symbol_token or 'NOT FOUND'}"
                         )
                     else:
@@ -1079,3 +1133,280 @@ class AngelOneClient(BrokerClient):
                     return None
 
         return None
+    
+    def get_historical_candles(
+        self,
+        symbol: str,
+        timeframe: str = "1d",
+        from_date: Optional[datetime] = None,
+        to_date: Optional[datetime] = None,
+        years: float = 7.0,
+    ) -> List[Dict[str, Any]]:
+        """
+        Fetch historical OHLC candle data for MCX symbol from Angel One SmartAPI.
+        
+        This uses the /candle/data endpoint which supports MCX commodities.
+        Requires symbol token (numeric ID) which is looked up automatically.
+        
+        Args:
+            symbol: MCX trading symbol (e.g., "GOLDDEC25", "SILVERFEB24")
+            timeframe: Timeframe ("1d", "1h", "5m", etc.)
+            from_date: Start date (optional, defaults to years ago)
+            to_date: End date (optional, defaults to now)
+            years: Number of years to fetch (used if from_date not provided)
+            
+        Returns:
+            List of candle dictionaries with: timestamp, open, high, low, close, volume
+            
+        Raises:
+            RuntimeError: If symbol token not found or API call fails
+        """
+        # Get symbol token (required for historical data API)
+        symbol_token = self._get_symbol_token(symbol, MCX_EXCHANGE_CODE)
+        if not symbol_token:
+            # Try different expiry days if current contract doesn't exist
+            # Format: BASESYMBOL + DAY(2digits) + MONTH(3letters) + YEAR(2digits) + FUT
+            import re
+            base_match = re.match(r"^([A-Z]+)(\d{2})([A-Z]{3})(\d{2})FUT$", symbol.upper())
+            if base_match:
+                base_symbol, day_str, month_code, year = base_match.groups()
+                day = int(day_str)
+                month_map = {"JAN": 1, "FEB": 2, "MAR": 3, "APR": 4, "MAY": 5, "JUN": 6,
+                           "JUL": 7, "AUG": 8, "SEP": 9, "OCT": 10, "NOV": 11, "DEC": 12}
+                
+                # Try alternative expiry days for same month
+                from trading.mcx_symbol_mapper import MCX_EXPIRY_DAYS
+                expiry_days = MCX_EXPIRY_DAYS.get(base_symbol, [30, 27, 31, 5])
+                for alt_day in expiry_days:
+                    if alt_day != day:
+                        alt_contract = f"{base_symbol}{alt_day:02d}{month_code}{year}FUT"
+                        alt_token = self._get_symbol_token(alt_contract, MCX_EXCHANGE_CODE)
+                        if alt_token:
+                            import warnings
+                            warnings.warn(f"Contract {symbol} not found, using alternative expiry day {alt_contract}", UserWarning)
+                            symbol_token = alt_token
+                            symbol = alt_contract
+                            break
+                
+                # If still not found, try next month contract
+                if not symbol_token:
+                    month_num = month_map.get(month_code, 1)
+                    next_month = (month_num % 12) + 1
+                    next_year = int(year) if next_month > month_num else int(year) + 1
+                    month_codes = ["JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"]
+                    next_month_code = month_codes[next_month - 1]
+                    
+                    # Try next month with same expiry day
+                    next_contract = f"{base_symbol}{day:02d}{next_month_code}{next_year:02d}FUT"
+                    symbol_token = self._get_symbol_token(next_contract, MCX_EXCHANGE_CODE)
+                    if symbol_token:
+                        import warnings
+                        warnings.warn(f"Current month contract {symbol} not found, using next month {next_contract}", UserWarning)
+                        symbol = next_contract
+                    else:
+                        # Try next month with alternative expiry days
+                        for alt_day in expiry_days:
+                            next_contract = f"{base_symbol}{alt_day:02d}{next_month_code}{next_year:02d}FUT"
+                            symbol_token = self._get_symbol_token(next_contract, MCX_EXCHANGE_CODE)
+                            if symbol_token:
+                                import warnings
+                                warnings.warn(f"Using next month contract {next_contract} with alternative expiry day", UserWarning)
+                                symbol = next_contract
+                                break
+        
+        if not symbol_token:
+            raise RuntimeError(
+                f"Symbol token not found for {symbol} (and next month contract). "
+                f"This might mean: (1) Contract format is wrong, (2) Contract doesn't exist in scrip master, "
+                f"(3) Contract has expired, or (4) Scrip master needs to be refreshed. "
+                f"Try downloading fresh scrip master from: https://margincalculator.angelone.in/OpenAPI_File/files/OpenAPIScripMaster.json"
+            )
+        
+        # Map timeframe to Angel One interval format
+        interval_map = {
+            "1m": "ONE_MINUTE",
+            "3m": "THREE_MINUTE",
+            "5m": "FIVE_MINUTE",
+            "10m": "TEN_MINUTE",
+            "15m": "FIFTEEN_MINUTE",
+            "30m": "THIRTY_MINUTE",
+            "1h": "ONE_HOUR",
+            "1d": "ONE_DAY",
+        }
+        angel_interval = interval_map.get(timeframe.lower(), "ONE_DAY")
+        
+        # Set date range
+        if to_date is None:
+            to_date = datetime.now(timezone.utc)
+        if from_date is None:
+            from_date = to_date - timedelta(days=int(years * 365))
+        
+        # Calculate total days requested
+        total_days = (to_date - from_date).days
+        
+        # Max days per request (as per AngelOne API documentation)
+        max_days_per_request = {
+            "ONE_MINUTE": 30,
+            "THREE_MINUTE": 60,
+            "FIVE_MINUTE": 100,
+            "TEN_MINUTE": 100,
+            "FIFTEEN_MINUTE": 200,
+            "THIRTY_MINUTE": 200,
+            "ONE_HOUR": 400,
+            "ONE_DAY": 2000,
+        }.get(angel_interval, 2000)  # Default to 2000 days for ONE_DAY
+        
+        # If request exceeds max days, we'll need to split into multiple requests
+        if total_days > max_days_per_request:
+            print(f"  [INFO] Requesting {total_days} days, but max is {max_days_per_request} days per request")
+            print(f"  [INFO] Will split into multiple requests to fetch all data")
+        
+        # Format dates for Angel One API (yyyy-MM-dd hh:mm format as per official docs)
+        # NOTE: Use 24-hour format (H) not 12-hour (h) - Python's %H gives 24-hour format
+        from_date_str = from_date.strftime("%Y-%m-%d %H:%M")  # e.g., "2023-09-06 11:15"
+        to_date_str = to_date.strftime("%Y-%m-%d %H:%M")      # e.g., "2023-09-06 12:00"
+        
+        # Angel One SmartAPI candle data endpoint (OFFICIAL API)
+        # Endpoint: /rest/secure/angelbroking/historical/v1/getCandleData
+        # Documentation: https://apiconnect.angelone.in/rest/secure/angelbroking/historical/v1/getCandleData
+        # Exchange: MCX (for commodities only)
+        body = {
+            "exchange": MCX_EXCHANGE_CODE,  # "MCX" for commodities
+            "symboltoken": symbol_token,     # Numeric token from scrip master
+            "interval": angel_interval,      # ONE_MINUTE, ONE_HOUR, ONE_DAY, etc.
+            "fromdate": from_date_str,       # Format: "yyyy-MM-dd hh:mm"
+            "todate": to_date_str,           # Format: "yyyy-MM-dd hh:mm"
+        }
+        
+        try:
+            # Add rate limiting protection - wait between requests
+            import time
+            time.sleep(0.5)  # 500ms delay to avoid rate limits
+            
+            # If request exceeds max days, split into multiple chunks
+            all_candles = []
+            current_from = from_date
+            chunk_number = 1
+            
+            while current_from < to_date:
+                # Calculate chunk end date (max days per request)
+                chunk_to = min(current_from + timedelta(days=max_days_per_request), to_date)
+                
+                if total_days > max_days_per_request:
+                    print(f"  [CHUNK {chunk_number}] Fetching {current_from.date()} to {chunk_to.date()} ({max_days_per_request} days max)")
+                
+                # Format dates for this chunk
+                chunk_from_str = current_from.strftime("%Y-%m-%d %H:%M")
+                chunk_to_str = chunk_to.strftime("%Y-%m-%d %H:%M")
+                
+                # Request body for this chunk
+                chunk_body = {
+                    "exchange": MCX_EXCHANGE_CODE,  # "MCX" for commodities
+                    "symboltoken": symbol_token,     # Numeric token from scrip master
+                    "interval": angel_interval,      # ONE_MINUTE, ONE_HOUR, ONE_DAY, etc.
+                    "fromdate": chunk_from_str,      # Format: "yyyy-MM-dd hh:mm"
+                    "todate": chunk_to_str,          # Format: "yyyy-MM-dd hh:mm"
+                }
+                
+                # Use official historical data endpoint
+                response = self._request("POST", "/rest/secure/angelbroking/historical/v1/getCandleData", json_body=chunk_body)
+                
+                # Handle response format - check if it's HTML (error page) first
+                if isinstance(response, str):
+                    # API returned HTML error page instead of JSON
+                    if "<html>" in response.lower() or "request rejected" in response.lower():
+                        raise RuntimeError(
+                            f"Angel One API returned HTML error page. "
+                            f"This usually means: (1) IP not whitelisted, (2) Rate limit exceeded, "
+                            f"or (3) Invalid symbol token. Response: {response[:200]}"
+                        )
+                    else:
+                        raise RuntimeError(f"Unexpected response format: got string instead of JSON: {response[:200]}")
+                
+                # Handle response format
+                if isinstance(response, dict):
+                    if response.get("status") == False or "error" in response:
+                        error_msg = response.get("message", response.get("error", "Unknown error"))
+                        raise RuntimeError(f"Angel One historical data error: {error_msg}")
+                    
+                    data = response.get("data", [])
+                    if not data or data is None:
+                        # No data available for this chunk - might be expired contract or no data for date range
+                        if total_days > max_days_per_request:
+                            print(f"  [CHUNK {chunk_number}] No data returned for this date range")
+                    else:
+                        # Convert Angel One format to canonical candles
+                        chunk_candles = []
+                        for candle_row in data:
+                            if not isinstance(candle_row, list) or len(candle_row) < 6:
+                                continue
+                            
+                            # Angel One format: [timestamp, Open, High, Low, Close, Volume]
+                            timestamp_str = candle_row[0]
+                            open_price = float(candle_row[1]) if candle_row[1] else 0
+                            high = float(candle_row[2]) if candle_row[2] else 0
+                            low = float(candle_row[3]) if candle_row[3] else 0
+                            close = float(candle_row[4]) if candle_row[4] else 0
+                            volume = float(candle_row[5]) if len(candle_row) > 5 and candle_row[5] else 0
+                            
+                            # Parse timestamp (format: "2023-09-06T11:15:00+05:30")
+                            try:
+                                # Remove timezone offset and parse
+                                if "+" in timestamp_str:
+                                    timestamp_str = timestamp_str.split("+")[0]
+                                elif "-" in timestamp_str and timestamp_str.count("-") > 2:
+                                    # Has timezone offset like "2023-09-06T11:15:00-05:30"
+                                    parts = timestamp_str.rsplit("-", 1)
+                                    if len(parts) == 2 and ":" in parts[1]:
+                                        timestamp_str = parts[0]
+                                
+                                dt = datetime.fromisoformat(timestamp_str.replace("T", " "))
+                                if dt.tzinfo is None:
+                                    # Assume IST (UTC+5:30) if no timezone
+                                    dt = dt.replace(tzinfo=timezone(timedelta(hours=5, minutes=30)))
+                                dt = dt.astimezone(timezone.utc)
+                                timestamp_iso = dt.strftime("%Y-%m-%dT%H:%M:%SZ")
+                            except Exception as ts_err:
+                                # Skip invalid timestamps
+                                continue
+                            
+                            # Create canonical candle format
+                            candle = {
+                                "timestamp": timestamp_iso,
+                                "open": open_price,
+                                "high": high,
+                                "low": low,
+                                "close": close,
+                                "volume": volume,
+                                "source": "angelone_mcx",
+                            }
+                            chunk_candles.append(candle)
+                        
+                        all_candles.extend(chunk_candles)
+                        if total_days > max_days_per_request:
+                            print(f"  [CHUNK {chunk_number}] Fetched {len(chunk_candles)} candles (total so far: {len(all_candles)})")
+                
+                # Move to next chunk
+                current_from = chunk_to + timedelta(days=1)  # Start next chunk 1 day after previous end
+                chunk_number += 1
+                
+                # Rate limiting between chunks
+                if current_from < to_date:
+                    time.sleep(0.5)  # Wait 500ms between chunks
+            
+            if total_days > max_days_per_request:
+                print(f"  [OK] Successfully fetched {len(all_candles)} total candles across {chunk_number - 1} chunks")
+            
+            return all_candles
+                
+        except RuntimeError:
+            raise  # Re-raise our custom errors
+        except Exception as e:
+            error_str = str(e)
+            # Check for rate limiting
+            if "rate" in error_str.lower() or "429" in error_str or "access denied" in error_str.lower():
+                raise RuntimeError(
+                    f"Angel One rate limit exceeded. Please wait a few minutes and try again. "
+                    f"Original error: {error_str}"
+                )
+            raise RuntimeError(f"Failed to fetch historical data from Angel One: {e}")

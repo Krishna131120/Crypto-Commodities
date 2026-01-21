@@ -2,14 +2,14 @@
   "symbol": "USDT-USD",
   "timeframe": "1d",
   "asset_type": "crypto",
-  "generated_at": "2026-01-14T07:25:06.729911Z",
+  "generated_at": "2026-01-19T07:12:58.875361Z",
   "data_file": "data.json",
   "latest_file": "latest.json",
   "data_file_info": {
     "filename": "data.json",
-    "size_bytes": 20738,
-    "candle_count": 58,
+    "size_bytes": 22502,
+    "candle_count": 63,
     "first_timestamp": "2025-11-18T00:00:00Z",
-    "last_timestamp": "2026-01-14T00:00:00Z"
+    "last_timestamp": "2026-01-19T00:00:00Z"
   }
 }

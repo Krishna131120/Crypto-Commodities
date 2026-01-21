@@ -10854,9 +10854,89 @@
     "timestamp": "2026-01-14T00:00:00Z",
     "open": 8.99e-06,
     "high": 9.05e-06,
-    "low": 8.78e-06,
-    "close": 8.83e-06,
-    "volume": 70416213620.0,
+    "low": 8.66e-06,
+    "close": 8.73e-06,
+    "volume": 254423399188.0,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "SHIB-USDC",
+    "timeframe": "1d",
+    "timestamp": "2026-01-15T00:00:00Z",
+    "open": 8.74e-06,
+    "high": 8.75e-06,
+    "low": 8.29e-06,
+    "close": 8.41e-06,
+    "volume": 141415589488.0,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "SHIB-USDC",
+    "timeframe": "1d",
+    "timestamp": "2026-01-16T00:00:00Z",
+    "open": 8.41e-06,
+    "high": 8.61e-06,
+    "low": 8.15e-06,
+    "close": 8.55e-06,
+    "volume": 121827799770.0,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "SHIB-USDC",
+    "timeframe": "1d",
+    "timestamp": "2026-01-17T00:00:00Z",
+    "open": 8.55e-06,
+    "high": 8.6e-06,
+    "low": 8.43e-06,
+    "close": 8.48e-06,
+    "volume": 93669716661.0,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "SHIB-USDC",
+    "timeframe": "1d",
+    "timestamp": "2026-01-18T00:00:00Z",
+    "open": 8.48e-06,
+    "high": 8.52e-06,
+    "low": 8.08e-06,
+    "close": 8.1e-06,
+    "volume": 137403662684.0,
+    "source": "binance_rest",
+    "fallback_status": {
+      "active": false,
+      "reason": null
+    }
+  },
+  {
+    "schema_version": "ohlcv_v1",
+    "symbol": "SHIB-USDC",
+    "timeframe": "1d",
+    "timestamp": "2026-01-19T00:00:00Z",
+    "open": 8.1e-06,
+    "high": 8.1e-06,
+    "low": 7.45e-06,
+    "close": 7.87e-06,
+    "volume": 129877596886.0,
     "source": "binance_rest",
     "fallback_status": {
       "active": false,

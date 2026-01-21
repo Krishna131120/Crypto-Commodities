@@ -2,14 +2,14 @@
   "symbol": "ALGO-USDT",
   "timeframe": "1d",
   "asset_type": "crypto",
-  "generated_at": "2026-01-14T07:03:57.860997Z",
+  "generated_at": "2026-01-19T06:57:35.581617Z",
   "data_file": "data.json",
   "latest_file": "latest.json",
   "data_file_info": {
     "filename": "data.json",
-    "size_bytes": 864924,
-    "candle_count": 2399,
+    "size_bytes": 866724,
+    "candle_count": 2404,
     "first_timestamp": "2019-06-22T00:00:00Z",
-    "last_timestamp": "2026-01-14T00:00:00Z"
+    "last_timestamp": "2026-01-19T00:00:00Z"
   }
 }

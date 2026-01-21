@@ -123,7 +123,7 @@ def ensure_symbol_ready(
     symbol: str,
     timeframe: str,
     horizon_profile: Optional[str] = None,
-    years: float = 5.0,
+    years: float = 7.0,
 ) -> Dict[str, Any]:
     """
     Ensure data, features, and models exist for the requested symbol/timeframe.
