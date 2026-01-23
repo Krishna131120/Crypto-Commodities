@@ -2,40 +2,41 @@
   "stages": {
     "init": {
       "status": "completed",
-      "timestamp": "2025-11-28T11:30:34Z",
+      "timestamp": "2026-01-23T06:31:14Z",
       "data": {
-        "mode": "both",
+        "mode": "historical",
         "timeframe": "1d",
         "years": 5.0,
-        "train_requested": true,
-        "crypto_symbols": [
-          "XRP-USDT"
+        "train_requested": false,
+        "crypto_symbols": [],
+        "commodities_symbols": [
+          "CT=F"
         ],
-        "commodities_symbols": [],
-        "horizon_profiles": {
-          "crypto": "long"
-        }
+        "horizon_profiles": {}
       }
     },
     "prune": {
       "status": "completed",
-      "timestamp": "2025-11-28T11:30:34Z"
+      "timestamp": "2026-01-23T06:31:14Z"
     },
     "ingestion": {
       "status": "completed",
-      "timestamp": "2025-11-28T11:30:41Z"
+      "timestamp": "2026-01-23T06:31:15Z"
     },
     "features": {
       "status": "completed",
-      "timestamp": "2025-11-28T11:30:42Z"
+      "timestamp": "2026-01-23T06:31:16Z"
     },
     "training": {
-      "status": "completed",
-      "timestamp": "2025-11-28T11:33:07Z"
+      "status": "skipped",
+      "timestamp": "2026-01-23T06:31:16Z",
+      "data": {
+        "reason": "Not requested"
+      }
     },
     "pipeline": {
       "status": "completed",
-      "timestamp": "2025-11-28T11:33:07Z"
+      "timestamp": "2026-01-23T06:31:16Z"
     }
   }
 }

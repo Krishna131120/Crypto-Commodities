@@ -584,7 +584,7 @@ UNIVERSE: List[AssetMapping] = [
         trading_symbol="GOLDM",  # MCX Gold Mini - 100g (₹7k-10k margin)
         timeframe="1d",
         horizon_profile="short",
-        enabled=True,  # ✅ ENABLED: Now using AngelOne MCX API for historical and live data
+        enabled=False,  # ❌ DISABLED: MCX-only, no Yahoo Finance equivalent - use GC=F instead
     ),
     AssetMapping(
         logical_name="gold_guinea",
@@ -593,7 +593,7 @@ UNIVERSE: List[AssetMapping] = [
         trading_symbol="GOLDGUINEA",  # MCX Gold Guinea - 8g (₹600-850 margin)
         timeframe="1d",
         horizon_profile="short",
-        enabled=True,  # ✅ ENABLED: Now using AngelOne MCX API for historical and live data
+        enabled=False,  # ❌ DISABLED: MCX-only, no Yahoo Finance equivalent - use GC=F instead
     ),
     AssetMapping(
         logical_name="gold_petal",
@@ -602,7 +602,7 @@ UNIVERSE: List[AssetMapping] = [
         trading_symbol="GOLDPETAL",  # MCX Gold Petal - 1g (₹700-1k margin)
         timeframe="1d",
         horizon_profile="short",
-        enabled=True,  # ✅ ENABLED: Now using AngelOne MCX API for historical and live data
+        enabled=False,  # ❌ DISABLED: MCX-only, no Yahoo Finance equivalent - use GC=F instead
     ),
     AssetMapping(
         logical_name="silver",
@@ -620,7 +620,7 @@ UNIVERSE: List[AssetMapping] = [
         trading_symbol="SILVERM",  # MCX Silver Mini - 5kg (₹42k-64k margin)
         timeframe="1d",
         horizon_profile="short",
-        enabled=True,  # ✅ ENABLED for paper trading on Tradetron
+        enabled=False,  # ❌ DISABLED: MCX-only, no Yahoo Finance equivalent - use SI=F instead
     ),
     AssetMapping(
         logical_name="silver_micro",
@@ -629,7 +629,7 @@ UNIVERSE: List[AssetMapping] = [
         trading_symbol="SILVERMIC",  # MCX Silver Micro - 1kg (₹8.5k-12.7k margin)
         timeframe="1d",
         horizon_profile="short",
-        enabled=True,  # ✅ ENABLED for paper trading on Tradetron
+        enabled=False,  # ❌ DISABLED: MCX-only, no Yahoo Finance equivalent - use SI=F instead
     ),
     AssetMapping(
         logical_name="silver_1000",
@@ -638,7 +638,7 @@ UNIVERSE: List[AssetMapping] = [
         trading_symbol="SILVER1000",  # MCX Silver 1000 - 30kg
         timeframe="1d",
         horizon_profile="short",
-        enabled=True,  # ✅ ENABLED for paper trading on Tradetron
+        enabled=False,  # ❌ DISABLED: Symbol token not found in Angel One
     ),
     AssetMapping(
         logical_name="platinum",
@@ -696,7 +696,7 @@ UNIVERSE: List[AssetMapping] = [
         trading_symbol="ALUMINIUM",  # MCX Aluminium - 5 MT
         timeframe="1d",
         horizon_profile="short",
-        enabled=True,  # ✅ ENABLED for paper trading on Tradetron
+        enabled=False,  # ❌ DISABLED: MCX-only, using Yahoo Finance equivalents
     ),
     AssetMapping(
         logical_name="aluminium_mini",
@@ -723,7 +723,7 @@ UNIVERSE: List[AssetMapping] = [
         trading_symbol="COPPERMI",  # MCX Copper Mini - for Tradetron "COOPER MI"
         timeframe="1d",
         horizon_profile="short",
-        enabled=True,  # ✅ ENABLED for paper trading on Tradetron
+        enabled=False,  # ❌ DISABLED: Symbol token not found in Angel One
     ),
     AssetMapping(
         logical_name="lead",
@@ -732,7 +732,7 @@ UNIVERSE: List[AssetMapping] = [
         trading_symbol="LEAD",  # MCX Lead - 5 MT
         timeframe="1d",
         horizon_profile="short",
-        enabled=True,  # ✅ ENABLED for paper trading on Tradetron
+        enabled=False,  # ❌ DISABLED: MCX-only, using Yahoo Finance equivalents
     ),
     AssetMapping(
         logical_name="lead_mini",
@@ -750,7 +750,7 @@ UNIVERSE: List[AssetMapping] = [
         trading_symbol="NICKEL",  # MCX Nickel - 1 MT
         timeframe="1d",
         horizon_profile="short",
-        enabled=True,  # ✅ ENABLED for paper trading on Tradetron
+        enabled=False,  # ❌ DISABLED: Symbol token not found in Angel One
     ),
     AssetMapping(
         logical_name="zinc",
@@ -759,7 +759,7 @@ UNIVERSE: List[AssetMapping] = [
         trading_symbol="ZINC",  # MCX Zinc - 5 MT
         timeframe="1d",
         horizon_profile="short",
-        enabled=True,  # ✅ ENABLED for paper trading on Tradetron
+        enabled=False,  # ❌ DISABLED: MCX-only, using Yahoo Finance equivalents
     ),
     AssetMapping(
         logical_name="zinc_mini",
@@ -776,28 +776,28 @@ UNIVERSE: List[AssetMapping] = [
         logical_name="corn",
         asset_type="commodities",
         data_symbol="ZC=F",
-        trading_symbol="CORN",  # MCX Corn - Poor data quality for India
+        trading_symbol="CORN",  # CORN - Volatile agricultural commodity
         timeframe="1d",
         horizon_profile="short",
-        enabled=False,  # ← Disabled: Low liquidity on MCX
+        enabled=True,  # ✅ ENABLED: Yahoo Finance data available - good volatility
     ),
     AssetMapping(
         logical_name="soybean",
         asset_type="commodities",
         data_symbol="ZS=F",
-        trading_symbol="SOYBEAN",  # MCX Soybean - Poor data quality
+        trading_symbol="SOYBEAN",  # SOYBEAN - Volatile agricultural commodity
         timeframe="1d",
         horizon_profile="short",
-        enabled=False,  # ← Disabled: Low liquidity on MCX
+        enabled=True,  # ✅ ENABLED: Yahoo Finance data available - good volatility
     ),
     AssetMapping(
         logical_name="wheat",
         asset_type="commodities",
         data_symbol="ZW=F",
-        trading_symbol="WHEAT",  # MCX Wheat - Poor data quality
+        trading_symbol="WHEAT",  # WHEAT - Volatile agricultural commodity
         timeframe="1d",
         horizon_profile="short",
-        enabled=False,  # ← Disabled: Low liquidity on MCX
+        enabled=True,  # ✅ ENABLED: Yahoo Finance data available - good volatility
     ),
     AssetMapping(
         logical_name="cardamom",
@@ -806,16 +806,158 @@ UNIVERSE: List[AssetMapping] = [
         trading_symbol="CARDAMOM",  # MCX Cardamom - 100kg
         timeframe="1d",
         horizon_profile="short",
-        enabled=True,  # ✅ ENABLED for paper trading on Tradetron
+        enabled=False,  # ❌ DISABLED: MCX-only, no Yahoo Finance equivalent
     ),
     AssetMapping(
         logical_name="cotton",
         asset_type="commodities",
         data_symbol="CT=F",
-        trading_symbol="COTTON",  # MCX Cotton
+        trading_symbol="COTTON",  # Cotton #2
         timeframe="1d",
         horizon_profile="short",
-        enabled=True,  # ✅ ENABLED for paper trading on Tradetron
+        enabled=True,  # ✅ ENABLED: Yahoo Finance
+    ),
+    
+    # ========================================================================
+    # ADDITIONAL YAHOO FINANCE COMMODITIES (Energy, Metals, Agriculture, Livestock)
+    # ========================================================================
+    
+    # Energy - Additional
+    AssetMapping(
+        logical_name="heating_oil",
+        asset_type="commodities",
+        data_symbol="HO=F",
+        trading_symbol="HEATINGOIL",  # Heating Oil
+        timeframe="1d",
+        horizon_profile="short",
+        enabled=True,  # ✅ ENABLED: Yahoo Finance
+    ),
+    AssetMapping(
+        logical_name="rbob_gasoline",
+        asset_type="commodities",
+        data_symbol="RB=F",
+        trading_symbol="RBOB",  # RBOB Gasoline
+        timeframe="1d",
+        horizon_profile="short",
+        enabled=True,  # ✅ ENABLED: Yahoo Finance
+    ),
+    
+    # Precious Metals - Additional
+    AssetMapping(
+        logical_name="platinum",
+        asset_type="commodities",
+        data_symbol="PL=F",
+        trading_symbol="PLATINUM",  # Platinum
+        timeframe="1d",
+        horizon_profile="short",
+        enabled=True,  # ✅ ENABLED: Yahoo Finance
+    ),
+    AssetMapping(
+        logical_name="palladium",
+        asset_type="commodities",
+        data_symbol="PA=F",
+        trading_symbol="PALLADIUM",  # Palladium
+        timeframe="1d",
+        horizon_profile="short",
+        enabled=True,  # ✅ ENABLED: Yahoo Finance
+    ),
+    
+    # Agriculture - Grains (Additional)
+    AssetMapping(
+        logical_name="oats",
+        asset_type="commodities",
+        data_symbol="ZO=F",
+        trading_symbol="OATS",  # Oats
+        timeframe="1d",
+        horizon_profile="short",
+        enabled=True,  # ✅ ENABLED: Yahoo Finance
+    ),
+    AssetMapping(
+        logical_name="rough_rice",
+        asset_type="commodities",
+        data_symbol="ZR=F",
+        trading_symbol="RICE",  # Rough Rice
+        timeframe="1d",
+        horizon_profile="short",
+        enabled=True,  # ✅ ENABLED: Yahoo Finance
+    ),
+    
+    # Agriculture - Softs
+    AssetMapping(
+        logical_name="coffee",
+        asset_type="commodities",
+        data_symbol="KC=F",
+        trading_symbol="COFFEE",  # Coffee C
+        timeframe="1d",
+        horizon_profile="short",
+        enabled=True,  # ✅ ENABLED: Yahoo Finance
+    ),
+    AssetMapping(
+        logical_name="sugar",
+        asset_type="commodities",
+        data_symbol="SB=F",
+        trading_symbol="SUGAR",  # Sugar #11
+        timeframe="1d",
+        horizon_profile="short",
+        enabled=True,  # ✅ ENABLED: Yahoo Finance
+    ),
+    AssetMapping(
+        logical_name="cocoa",
+        asset_type="commodities",
+        data_symbol="CC=F",
+        trading_symbol="COCOA",  # Cocoa
+        timeframe="1d",
+        horizon_profile="short",
+        enabled=True,  # ✅ ENABLED: Yahoo Finance
+    ),
+    AssetMapping(
+        logical_name="orange_juice",
+        asset_type="commodities",
+        data_symbol="OJ=F",
+        trading_symbol="OJ",  # Orange Juice
+        timeframe="1d",
+        horizon_profile="short",
+        enabled=True,  # ✅ ENABLED: Yahoo Finance
+    ),
+    
+    # Livestock
+    AssetMapping(
+        logical_name="live_cattle",
+        asset_type="commodities",
+        data_symbol="LE=F",
+        trading_symbol="CATTLE",  # Live Cattle
+        timeframe="1d",
+        horizon_profile="short",
+        enabled=True,  # ✅ ENABLED: Yahoo Finance
+    ),
+    AssetMapping(
+        logical_name="feeder_cattle",
+        asset_type="commodities",
+        data_symbol="GF=F",
+        trading_symbol="FEEDERCATTLE",  # Feeder Cattle
+        timeframe="1d",
+        horizon_profile="short",
+        enabled=True,  # ✅ ENABLED: Yahoo Finance
+    ),
+    AssetMapping(
+        logical_name="lean_hogs",
+        asset_type="commodities",
+        data_symbol="HE=F",
+        trading_symbol="HOGS",  # Lean Hogs
+        timeframe="1d",
+        horizon_profile="short",
+        enabled=True,  # ✅ ENABLED: Yahoo Finance
+    ),
+    
+    # Other
+    AssetMapping(
+        logical_name="lumber",
+        asset_type="commodities",
+        data_symbol="LBS=F",
+        trading_symbol="LUMBER",  # Lumber
+        timeframe="1d",
+        horizon_profile="short",
+        enabled=True,  # ✅ ENABLED: Yahoo Finance
     ),
     AssetMapping(
         logical_name="kapas",
@@ -824,7 +966,7 @@ UNIVERSE: List[AssetMapping] = [
         trading_symbol="KAPAS",  # MCX Kapas - for Tradetron
         timeframe="1d",
         horizon_profile="short",
-        enabled=True,  # ✅ ENABLED for paper trading on Tradetron
+        enabled=False,  # ❌ DISABLED: No MCX mapping found
     ),
     AssetMapping(
         logical_name="kapaskhalli",
@@ -833,7 +975,7 @@ UNIVERSE: List[AssetMapping] = [
         trading_symbol="KAPASKHALLI",  # MCX Kapas Khalli - for Tradetron
         timeframe="1d",
         horizon_profile="short",
-        enabled=True,  # ✅ ENABLED for paper trading on Tradetron
+        enabled=False,  # ❌ DISABLED: No MCX mapping found
     ),
     AssetMapping(
         logical_name="steel_rpr",
@@ -842,7 +984,7 @@ UNIVERSE: List[AssetMapping] = [
         trading_symbol="STEELRPR",  # MCX Steel RPR - for Tradetron
         timeframe="1d",
         horizon_profile="short",
-        enabled=True,  # ✅ ENABLED for paper trading on Tradetron
+        enabled=False,  # ❌ DISABLED: No MCX mapping found
     ),
     AssetMapping(
         logical_name="potato",
@@ -851,7 +993,7 @@ UNIVERSE: List[AssetMapping] = [
         trading_symbol="POTATO",  # MCX Potato - for Tradetron
         timeframe="1d",
         horizon_profile="short",
-        enabled=True,  # ✅ ENABLED for paper trading on Tradetron
+        enabled=False,  # ❌ DISABLED: No MCX mapping available
     ),
     AssetMapping(
         logical_name="almond",
@@ -860,7 +1002,7 @@ UNIVERSE: List[AssetMapping] = [
         trading_symbol="ALMOND",  # MCX Almond - for Tradetron
         timeframe="1d",
         horizon_profile="short",
-        enabled=True,  # ✅ ENABLED for paper trading on Tradetron
+        enabled=False,  # ❌ DISABLED: No MCX mapping available
     ),
     AssetMapping(
         logical_name="crude_palm_oil",
@@ -869,7 +1011,7 @@ UNIVERSE: List[AssetMapping] = [
         trading_symbol="CPO",  # MCX Crude Palm Oil - 10 MT (Cpo 10 mt in Tradetron)
         timeframe="1d",
         horizon_profile="short",
-        enabled=True,  # ✅ ENABLED for paper trading on Tradetron
+        enabled=False,  # ❌ DISABLED: No valid symbol token in Angel One
     ),
     AssetMapping(
         logical_name="mentha_oil",
@@ -878,7 +1020,7 @@ UNIVERSE: List[AssetMapping] = [
         trading_symbol="MENTHAOIL",  # MCX Mentha Oil - 360kg (MenthoOil in Tradetron)
         timeframe="1d",
         horizon_profile="short",
-        enabled=True,  # ✅ ENABLED for paper trading on Tradetron
+        enabled=False,  # ❌ DISABLED: MCX-only, no Yahoo Finance equivalent
     ),
     # Binance trading pairs (auto-generated)
     AssetMapping(

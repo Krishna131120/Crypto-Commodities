@@ -122,11 +122,17 @@ def main():
     parser.add_argument(
         "--interval",
         type=int,
-        default=60,
-        help="Seconds between trading cycles (default: 60)",
+        default=30,
+        help="Seconds between trading cycles. Minimum: 30 seconds. Default: 30 seconds.",
     )
     
     args = parser.parse_args()
+    
+    # Validate interval (minimum 30 seconds to avoid API rate limiting)
+    if args.interval < 30:
+        print(f"⚠️  WARNING: Interval {args.interval} seconds is too short. Minimum is 30 seconds to avoid rate limiting.")
+        print(f"   Setting interval to 30 seconds.")
+        args.interval = 30
     
     # CRITICAL VALIDATION: Profit target is REQUIRED and must be valid
     if args.profit_target_pct is None:

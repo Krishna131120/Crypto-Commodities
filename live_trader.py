@@ -393,14 +393,37 @@ def run_trading_cycle(
                 # Skip data update if we can't determine asset type
                 pass
             elif asset_type == "commodities":
-                # COMMODITIES: Use AngelOneClient exclusively
-                if hasattr(execution_engine, 'client') and execution_engine.client.broker_name == "angelone":
-                    client = execution_engine.client  # Use AngelOneClient for commodities
-                    if verbose:
-                        print("  [INFO] Using AngelOneClient for commodities data updates (MCX exchange)")
+                # COMMODITIES: Use AngelOneClient for live trading, or skip for paper trading
+                client = None
+                skip_live_updates = False
+                
+                if hasattr(execution_engine, 'client'):
+                    if execution_engine.client.broker_name == "angelone":
+                        client = execution_engine.client  # Use AngelOneClient for commodities
+                        if verbose:
+                            print("  [INFO] Using AngelOneClient for commodities data updates (MCX exchange)")
+                    elif execution_engine.client.broker_name == "paper_trading":
+                        # Paper trading: Skip Angel One API calls, but still update Yahoo Finance data
+                        if verbose:
+                            print("  [INFO] Paper trading mode: Will fetch latest Yahoo Finance data (no Angel One calls)")
+                        skip_live_updates = False  # Changed to False - we DO want Yahoo updates!
+                        client = None  # No broker client needed for Yahoo Finance
+                    else:
+                        # If not AngelOneClient or PaperTradingClient, skip gracefully
+                        if verbose:
+                            print(f"  [WARN] Unsupported broker for commodities: {execution_engine.client.broker_name}")
+                        skip_live_updates = True
                 else:
-                    # If not AngelOneClient, this is an error for commodities trading
-                    raise RuntimeError("Commodities trading requires AngelOneClient. AlpacaClient is for crypto only.")
+                    if verbose:
+                        print("  [WARN] No client found on execution_engine, skipping live data updates")
+                    skip_live_updates = True
+                
+                # If skipping live updates, don't process the commodities loop
+                if skip_live_updates:
+                    if verbose:
+                        print(f"[UPDATE] Skipping live data updates for commodities (paper trading mode)")
+                    # Will still regenerate features in Step 2 using existing data
+                    pass
             elif asset_type == "crypto":
                 # CRYPTO: Skip broker-based price updates (crypto uses Binance for data, not Alpaca)
                 # Crypto prices are fetched via Binance API in get_current_price_from_features()
@@ -415,7 +438,7 @@ def run_trading_cycle(
             
             # Only process commodities broker-based updates here
             # Crypto prices are handled via Binance API in get_current_price_from_features()
-            if asset_type == "commodities":
+            if asset_type == "commodities" and not skip_live_updates and client:
                 for symbol in unique_symbols:
                     try:
                         # COMMODITIES-ONLY: Get asset mapping to verify it's a commodity

@@ -1101,7 +1101,7 @@ class InferencePipeline:
         # ADJUSTED: Lowered threshold from 0.25 to 0.15 to allow more mean-reversion signals
         # This helps identify more buying opportunities when assets are oversold
         # BUT: Still require minimum signal strength to avoid false signals
-        min_signal_strength = 0.15  # Only apply if combined signal > 15% (reduced from 25%, but still requires meaningful signal)
+        min_signal_strength = 0.05  # Very low threshold to allow most trades (was 0.15)
         should_apply_mean_reversion = abs(mean_reversion_adjustment) > min_signal_strength
         
         # Safety check 1: Don't override if model confidence is very low
@@ -1145,16 +1145,16 @@ class InferencePipeline:
             sma200_signal = feature_signals.get("sma200_signal", 0.0) or 0.0
             sma_signal = abs(sma50_signal) + abs(sma200_signal)  # Combined SMA signal strength
             
-            # ADJUSTED THRESHOLDS (more permissive to catch more oversold conditions):
-            # RSI >= 0.10 (was 0.15) - RSI 38 or lower is considered oversold (was 37)
-            # SMA >= 0.08 (was 0.12) - Price 1.5-2% below MA is considered oversold (was 2-3%)
-            # Combined >= 0.15 (was 0.20) - Lower threshold for combined signal
-            # These lower thresholds help catch oversold conditions when markets are falling
-            rsi_strong_enough = abs(rsi_signal) >= 0.10  # RSI 38 or lower = moderately oversold
-            sma_strong_enough = abs(sma_signal) >= 0.08  # Price 1.5-2% below MA = oversold
-            combined_strong_enough = abs(mean_reversion_adjustment) >= 0.15  # Combined signal threshold
+            # ADJUSTED THRESHOLDS (very permissive to allow trades):
+            # RSI >= 0.05 (very low threshold - allows most trades)
+            # SMA >= 0.05 (very low threshold - allows most trades)
+            # Combined >= 0.08 (very low threshold - allows most trades)
+            # These VERY low thresholds ensure trades execute even with weak signals
+            rsi_strong_enough = abs(rsi_signal) >= 0.05  # Very permissive
+            sma_strong_enough = abs(sma_signal) >= 0.05  # Very permissive  
+            combined_strong_enough = abs(mean_reversion_adjustment) >= 0.08  # Very permissive
             
-            # Block only if ALL signals are weak (more permissive condition)
+            # Block only if ALL signals are extremely weak (almost never blocks)
             if not (rsi_strong_enough or sma_strong_enough or combined_strong_enough):
                 should_apply_mean_reversion = False
                 consensus["mean_reversion_blocked"] = f"Insufficient oversold/overbought signals for short-term (RSI: {abs(rsi_signal):.2f}, SMA: {abs(sma_signal):.2f}, Combined: {abs(mean_reversion_adjustment):.2f})"

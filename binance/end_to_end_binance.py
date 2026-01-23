@@ -230,8 +230,8 @@ def main():
     parser.add_argument(
         "--cycles",
         type=int,
-        default=1,
-        help="Number of trading cycles to run (default: 1).",
+        default=None,
+        help="Number of trading cycles to run (default: infinite - runs until stopped).",
     )
     parser.add_argument(
         "--interval",
@@ -314,16 +314,21 @@ def main():
     print(f"Profit Target: {args.profit_target:.2f}% (REQUIRED - user specified)")
     print(f"Stop-Loss: {args.stop_loss_pct:.2f}% ({'user specified' if args.stop_loss_pct != 8.0 else 'default'})")
     print(f"Broker: BINANCE")
+    print(f"Mode: {'Continuous (runs until stopped)' if args.cycles is None else f'{args.cycles} cycle(s)'}")
+    print(f"Interval: {args.interval} seconds between cycles")
     print(f"Logs: {BINANCE_TRADES_LOG}")
     print(f"Positions: {BINANCE_POSITIONS_FILE}")
     print("=" * 80)
     print()
     print("[INFO] System will:")
-    print(f"  - Monitor ALL positions for profit target ({args.profit_target:.2f}%)")
-    print(f"  - Sell automatically when profit target is hit")
+    print(f"  - Run data ingestion ONCE at startup (smart: skip if data is recent)")
+    print(f"  - Generate features ONCE at startup (smart: skip if up-to-date)")
+    print(f"  - Train models ONCE at startup (smart: skip if already trained)")
+    print(f"  - Then monitor ALL positions continuously every {args.interval} seconds")
+    print(f"  - Sell automatically when profit target ({args.profit_target:.2f}%) is hit")
+    print(f"  - Stop-loss protection at {args.stop_loss_pct:.2f}%")
     print(f"  - Log all buy and sell trades")
-    print(f"  - Keep running continuously (does not stop)")
-    print(f"  - Use same profit target ({args.profit_target:.2f}%) throughout")
+    print(f"  - Keep running until you stop it (Ctrl+C)")
     print()
     print("[STRATEGY] Buy Low, Sell High, Minimize Losses:")
     print("  ✅ Momentum filters: Block buying during upswings (buy low)")
@@ -715,42 +720,62 @@ def main():
     from live_trader import run_trading_cycle
     
     # Run trading cycles
-    for cycle_num in range(1, args.cycles + 1):
-        print(f"\n{'=' * 80}")
-        print(f"CYCLE {cycle_num}/{args.cycles}")
+    cycle_num = 0
+    try:
+        while True:
+            cycle_num += 1
+            
+            # Check if we've reached max cycles (if specified)
+            if args.cycles is not None and cycle_num > args.cycles:
+                print(f"\n{'=' * 80}")
+                print(f"REACHED MAX CYCLES ({args.cycles})")
+                print(f"{'=' * 80}")
+                break
+            
+            print(f"\n{'=' * 80}")
+            print(f"CYCLE {cycle_num}{f'/{args.cycles}' if args.cycles else ''}")
+            print(f"{'=' * 80}")
+            print()
+            
+            # Process ALL symbols for predictions (not just tradable ones)
+            # This ensures we monitor all symbols and trade any that meet criteria
+            cycle_results = run_trading_cycle(
+                execution_engine=execution_engine,
+                tradable_symbols=tradable,
+                dry_run=args.dry_run,
+                verbose=args.verbose,
+                update_data=True,
+                regenerate_features_flag=True,
+                profit_target_pct=args.profit_target,
+                user_stop_loss_pct=args.stop_loss_pct,
+                all_symbols_for_predictions=tradable,  # Process ALL symbols for predictions
+            )
+            
+            print(f"\n[CYCLE {cycle_num}] Summary:")
+            print(f"  Monitored: {cycle_results['symbols_processed']} symbols")
+            print(f"  Traded: {cycle_results['symbols_traded']} symbols")
+            print(f"  Skipped: {cycle_results['symbols_skipped']} symbols")
+            if cycle_results.get("errors"):
+                print(f"  Errors: {len(cycle_results['errors'])}")
+            
+            # Log cycle results
+            BINANCE_CYCLES_LOG = BINANCE_LOGS_DIR / "cycles.jsonl"
+            BINANCE_CYCLES_LOG.parent.mkdir(parents=True, exist_ok=True)
+            with open(BINANCE_CYCLES_LOG, "a", encoding="utf-8") as f:
+                f.write(json.dumps(cycle_results) + "\n")
+            
+            # Wait before next cycle (unless this was the last cycle)
+            if args.cycles is None or cycle_num < args.cycles:
+                print(f"\n[WAIT] Waiting {args.interval} seconds before next cycle...")
+                time.sleep(args.interval)
+    
+    except KeyboardInterrupt:
+        print(f"\n\n{'=' * 80}")
+        print("TRADING STOPPED BY USER (Ctrl+C)")
         print(f"{'=' * 80}")
+        print(f"Completed {cycle_num} cycle(s)")
         print()
-        
-        # Process ALL symbols for predictions (not just tradable ones)
-        # This ensures we monitor all symbols and trade any that meet criteria
-        cycle_results = run_trading_cycle(
-            execution_engine=execution_engine,
-            tradable_symbols=tradable,
-            dry_run=args.dry_run,
-            verbose=args.verbose,
-            update_data=True,
-            regenerate_features_flag=True,
-            profit_target_pct=args.profit_target,
-            user_stop_loss_pct=args.stop_loss_pct,
-            all_symbols_for_predictions=tradable,  # Process ALL symbols for predictions
-        )
-        
-        print(f"\n[CYCLE {cycle_num}] Summary:")
-        print(f"  Monitored: {cycle_results['symbols_processed']} symbols")
-        print(f"  Traded: {cycle_results['symbols_traded']} symbols")
-        print(f"  Skipped: {cycle_results['symbols_skipped']} symbols")
-        if cycle_results.get("errors"):
-            print(f"  Errors: {len(cycle_results['errors'])}")
-        
-        # Log cycle results
-        BINANCE_CYCLES_LOG = BINANCE_LOGS_DIR / "cycles.jsonl"
-        BINANCE_CYCLES_LOG.parent.mkdir(parents=True, exist_ok=True)
-        with open(BINANCE_CYCLES_LOG, "a", encoding="utf-8") as f:
-            f.write(json.dumps(cycle_results) + "\n")
-        
-        if cycle_num < args.cycles:
-            print(f"\n[WAIT] Waiting {args.interval} seconds before next cycle...")
-            time.sleep(args.interval)
+
     
     print("\n" + "=" * 80)
     print("BINANCE PIPELINE COMPLETE")

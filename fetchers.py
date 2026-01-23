@@ -44,6 +44,15 @@ logger = logging.getLogger(__name__)
 
 
 # ============================================================================
+# CONFIGURATION: ANGEL ONE MCX API
+# ============================================================================
+# Set to True to use Angel One for commodities (requires static IP whitelisting)
+# Set to False for paper trading with Yahoo Finance only
+USE_ANGELONE_MCX = False  # 🔴 DISABLED for paper trading - change to True for real trading
+# ============================================================================
+
+
+# ============================================================================
 # UTILITY FUNCTIONS - Normalization
 # ============================================================================
 
@@ -2447,8 +2456,8 @@ def _download_yahoo_with_yfinance(
                         auto_adjust=False,
                         progress=False,
                         group_by="ticker",
-                        threads=False,
-                        session=session
+                        threads=False
+                        # session removed - let yfinance handle it
                     )
                 finally:
                     yf_logger.setLevel(old_level)  # Restore original log level
@@ -2670,7 +2679,7 @@ def save_yahoo_historical(
     """Save all historical candles to a single JSON file per symbol/timeframe."""
     if not candles:
         return
-    source_folder = source_hint or _infer_source_from_candles(candles, "yahoo")
+    source_folder = "yahoo"  # Always use yahoo for paper trading (no angelone_mcx)
     # Sort candles by timestamp
     candles.sort(key=lambda x: x.get("timestamp", ""))
     
@@ -3365,8 +3374,8 @@ def fetch_commodities_historical_with_fallback(
         # Check if data.json already exists and has sufficient data
         from pathlib import Path
         
-        # Try multiple possible source folders for commodities
-        possible_sources = ["yahoo_chart", "yahoo", "stooq", "angelone_mcx"]
+        # Try multiple possible source folders for commodities (ONLY yahoo for paper trading)
+        possible_sources = ["yahoo"]  # Removed angelone_mcx, stooq, yahoo_chart
         existing_data_found = False
         existing_candles = []
         
@@ -3395,12 +3404,9 @@ def fetch_commodities_historical_with_fallback(
             # Data exists and is sufficient - return it
             return existing_candles
     
-    # CRITICAL: For ALL commodities, try MCX data FIRST (since we trade on MCX)
-    # - If symbol maps to MCX trading symbol, use MCX data (AngelOne)
-    # - Only fallback to Yahoo Finance if MCX data unavailable
-    # 
-    # Why? We trade on MCX, so we should use MCX data for analysis too!
-    # Using COMEX data (GC=F) to predict MCX prices is inaccurate.
+    # PAPER TRADING MODE: SKIP Angel One MCX API completely
+    # Use ONLY Yahoo Finance for all commodities to avoid static IP errors
+    # This is for local paper trading - no MCX API needed
     
     # Check if this symbol maps to an MCX trading symbol
     from trading.symbol_universe import find_by_data_symbol
@@ -3408,8 +3414,8 @@ def fetch_commodities_historical_with_fallback(
     is_mcx_symbol = symbol.startswith("MCX_")
     maps_to_mcx = asset_mapping and asset_mapping.asset_type == "commodities" and asset_mapping.trading_symbol
     
-    # Try MCX data FIRST for ALL commodities (if they map to MCX trading symbols)
-    if is_mcx_symbol or maps_to_mcx:
+    # Try Angel One MCX API if enabled (requires static IP whitelisting)
+    if USE_ANGELONE_MCX and (is_mcx_symbol or maps_to_mcx):
         # Try MCX data FIRST (for both MCX_* symbols and Yahoo Finance symbols that map to MCX)
         try:
             from trading.angelone_client import AngelOneClient
@@ -3448,7 +3454,7 @@ def fetch_commodities_historical_with_fallback(
                             low=candle["low"],
                             close=candle["close"],
                             volume=candle.get("volume", 0),
-                            source="angelone_mcx"
+                            source="yahoo"  # Changed from angelone_mcx - paper trading uses Yahoo only
                         )
                         canonical_candles.append(canonical)
                     
@@ -3544,8 +3550,9 @@ def ingest_all_historical(
     """
     Ingest historical data for all configured symbols with automatic fallback.
     """
-    crypto_symbols = crypto_symbols or config.CRYPTO_SYMBOLS
-    commodities_symbols = commodities_symbols or config.COMMODITIES_SYMBOLS
+    # Only use defaults if None, but respect empty list []
+    crypto_symbols = config.CRYPTO_SYMBOLS if crypto_symbols is None else crypto_symbols
+    commodities_symbols = config.COMMODITIES_SYMBOLS if commodities_symbols is None else commodities_symbols
     
     print("=" * 80)
     print("PHASE 1: HISTORICAL DATA INGESTION")
@@ -3619,8 +3626,9 @@ def start_live_feeds_with_fallback(
     """
     Start live data feeds with automatic fallback.
     """
-    crypto_symbols = crypto_symbols or config.CRYPTO_SYMBOLS
-    commodities_symbols = commodities_symbols or config.COMMODITIES_SYMBOLS
+    # Only use defaults if None, but respect empty list []
+    crypto_symbols = config.CRYPTO_SYMBOLS if crypto_symbols is None else crypto_symbols
+    commodities_symbols = config.COMMODITIES_SYMBOLS if commodities_symbols is None else commodities_symbols
     
     print("\n" + "=" * 80)
     print("PHASE 2: LIVE DATA FEEDS")

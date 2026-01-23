@@ -26,8 +26,8 @@ from .broker_interface import BrokerClient
 class PaperTradingConfig:
     """Configuration for paper trading simulator."""
     
-    initial_equity: float = 100000.0  # Starting capital (Rs. 100,000 default)
-    initial_cash: float = 100000.0
+    initial_equity: float = 1000000.0  # Starting capital (Rs. 10,00,000 / 10 Lakhs default)
+    initial_cash: float = 1000000.0
     commission_rate: float = 0.001  # 0.1% commission per trade (simulated)
 
 

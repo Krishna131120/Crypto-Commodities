@@ -72,7 +72,7 @@ def _evaluate(y_true: np.ndarray, y_pred: np.ndarray) -> Dict[str, float]:
     Evaluate model predictions (returns) using regression and directional metrics.
     """
     mae = mean_absolute_error(y_true, y_pred)
-    rmse = mean_squared_error(y_true, y_pred, squared=False)
+    rmse = np.sqrt(mean_squared_error(y_true, y_pred))  # Fixed for sklearn 1.4+
     r2 = r2_score(y_true, y_pred)
     with np.errstate(divide="ignore", invalid="ignore"):
         directional = float(np.mean(np.sign(y_true) == np.sign(y_pred)))

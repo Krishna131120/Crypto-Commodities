@@ -1908,8 +1908,8 @@ def main():
     parser.add_argument(
         "--interval",
         type=int,
-        default=60,
-        help="Seconds between trading cycles. Runs forever. Minimum: 30 seconds. Default: 60 seconds.",
+        default=30,
+        help="Seconds between trading cycles. Runs forever. Minimum: 30 seconds. Default: 30 seconds.",
     )
     
     args = parser.parse_args()
@@ -1945,6 +1945,16 @@ def main():
     print(f"Commodities Horizon: {args.commodities_horizon}")
     print(f"Mode:             {'DRY RUN (no real orders)' if args.dry_run else 'LIVE PAPER TRADING'}")
     print("=" * 80)
+    print()
+    print("[STRATEGY] Buy Low, Sell High, Minimize Losses:")
+    print("  ✅ Momentum filters: Block buying during upswings (buy low)")
+    print("  ✅ RSI filters: Only buy when oversold (RSI < 30), only short when overbought (RSI > 70)")
+    print("  ✅ Mean reversion: Flips SHORT to LONG when oversold (buy low)")
+    print("  ✅ Trailing stop: Sell when price drops 2.5% from peak (sell at peak)")
+    print("  ✅ Stop-loss: Automatic protection (minimize losses)")
+    print("  ✅ Negative prediction filter: Block entries when predicted return < 0 (minimize losses)")
+    print("  ✅ Minimum return filter: Require 1.5% minimum predicted return (minimize losses)")
+    print("  ✅ Volatility-based sizing: Reduce position size in high volatility (minimize losses)")
     print()
     
     # Show available horizons

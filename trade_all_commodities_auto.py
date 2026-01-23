@@ -32,7 +32,7 @@ from typing import Any, Dict, List, Optional, Tuple
 from pipeline_runner import run_ingestion, regenerate_features
 from train_models import train_symbols
 from trading.angelone_client import AngelOneClient
-from tradetron.tradetron_client import TradetronClient
+from trading.paper_trading_client import PaperTradingClient, PaperTradingConfig
 from trading.execution_engine import ExecutionEngine, TradingRiskConfig
 from trading.position_manager import PositionManager
 from trading.symbol_universe import by_asset_type, find_by_data_symbol
@@ -42,9 +42,10 @@ from ml.risk import RiskManagerConfig
 from ml.horizons import print_horizon_summary, normalize_profile
 
 
-def setup_tradetron_client() -> TradetronClient:
-    """Setup Tradetron client (loads from .env file)."""
-    return TradetronClient()
+def setup_paper_trading_client(initial_equity: float = 1000000.0) -> PaperTradingClient:
+    """Setup paper trading client (local simulation, no external service needed)."""
+    config = PaperTradingConfig(initial_equity=initial_equity, initial_cash=initial_equity)
+    return PaperTradingClient(config=config)
 
 
 def setup_angelone_client(api_key: str, client_id: str, password: str, totp_secret: Optional[str] = None) -> AngelOneClient:
@@ -189,7 +190,7 @@ def rank_commodities_by_performance(
 
 
 def check_existing_positions(
-    client,  # Can be TradetronClient or AngelOneClient
+    client,  # PaperTradingClient or AngelOneClient
     position_manager: PositionManager,
     verbose: bool = True
 ) -> Tuple[List[Dict], List[str]]:
@@ -206,21 +207,27 @@ def check_existing_positions(
         # Get positions from broker
         all_positions = client.list_positions()
         if all_positions:
-            # Filter only MCX positions
-            mcx_positions = [
-                pos for pos in all_positions
-                if pos.get("exchange_segment", pos.get("_raw_exchange", "")).upper() == "MCX"
-            ]
-            
-            if mcx_positions:
+            # For paper trading, all positions are commodities (no MCX filter needed)
+            # For Angel One, filter only MCX positions
+            if hasattr(client, 'broker_name') and client.broker_name == "paper_trading":
+                # Paper trading - all positions are commodities
+                existing_positions = all_positions
+            else:
+                # Angel One - filter only MCX positions
+                mcx_positions = [
+                    pos for pos in all_positions
+                    if pos.get("exchange_segment", pos.get("_raw_exchange", "")).upper() == "MCX"
+                ]
                 existing_positions = mcx_positions
+            
+            if existing_positions:
                 if verbose:
-                    print(f"\n[EXISTING POSITIONS] Found {len(mcx_positions)} MCX commodity position(s):")
-                    for pos in mcx_positions:
+                    print(f"\n[EXISTING POSITIONS] Found {len(existing_positions)} commodity position(s):")
+                    for pos in existing_positions:
                         symbol = pos.get("symbol", "")
                         qty = float(pos.get("qty", 0) or 0)
                         avg_entry = float(pos.get("avg_entry_price", 0) or 0)
-                        ltp = float(pos.get("ltp", 0) or 0)
+                        ltp = float(pos.get("ltp", avg_entry) or avg_entry)
                         unrealized_pl = float(pos.get("unrealized_pl", 0) or 0)
                         side_str = "LONG" if qty > 0 else "SHORT"
                         print(f"  - {symbol}: {abs(qty)} {side_str} @ Rs.{avg_entry:.2f} -> Rs.{ltp:.2f} (P/L: Rs.{unrealized_pl:+.2f})")
@@ -282,8 +289,8 @@ def main():
     parser.add_argument(
         "--interval",
         type=int,
-        default=60,
-        help="Seconds between trading cycles (default: 60)",
+        default=30,
+        help="Seconds between trading cycles. Minimum: 30 seconds. Default: 30 seconds.",
     )
     parser.add_argument(
         "--skip-training",
@@ -311,19 +318,62 @@ def main():
         "--angelone-totp-secret",
         help="Angel One TOTP secret (or set ANGEL_ONE_TOTP_SECRET env var)",
     )
+    parser.add_argument(
+        "--paper-equity",
+        type=float,
+        default=1000000.0,
+        help="Initial equity for paper trading (default: 10,00,000 Rs.)",
+    )
+    parser.add_argument(
+        "--cycle-delay",
+        type=int,
+        default=None,
+        help="Alias for --interval (seconds between cycles). If set, overrides --interval.",
+    )
+    parser.add_argument(
+        "--max-positions",
+        type=int,
+        default=5,
+        help="Maximum number of concurrent positions (default: 5)",
+    )
+    parser.add_argument(
+        "--skip-data-update",
+        action="store_true",
+        help="Skip fetching fresh data (use existing data)",
+    )
+    parser.add_argument(
+        "--skip-feature-regen",
+        action="store_true",
+        help="Skip regenerating features (use existing features)",
+    )
     
     args = parser.parse_args()
     
+    # Handle cycle-delay alias
+    if args.cycle_delay is not None:
+        args.interval = args.cycle_delay
+    
+    # Extract arguments to variables
+    timeframe = args.timeframe
+    horizon = args.commodities_horizon
+    years = args.years
+    
+    # Validate interval (minimum 30 seconds to avoid API rate limiting)
+    if args.interval < 30:
+        print(f"WARNING: Interval {args.interval} seconds is too short. Minimum is 30 seconds to avoid rate limiting.")
+        print(f"   Setting interval to 30 seconds.")
+        args.interval = 30
+    
     # Validate profit target (REQUIRED - no default)
     if args.profit_target_pct is None or args.profit_target_pct <= 0:
-        print(f"❌ ERROR: Profit target is REQUIRED and must be positive.")
+        print(f"[ERROR] Profit target is REQUIRED and must be positive.")
         print(f"   You specified: {args.profit_target_pct}")
         print("   Example: --profit-target-pct 5.0 (for 5% profit target)")
         print("   Example: --profit-target-pct 1.0 (for 1% profit target)")
         sys.exit(1)
     
     if args.profit_target_pct > 1000:
-        print(f"❌ ERROR: Profit target seems unreasonably high: {args.profit_target_pct}%")
+        print(f"[ERROR] Profit target seems unreasonably high: {args.profit_target_pct}%")
         print("   Maximum recommended: 100.0% (100% profit target)")
         sys.exit(1)
     
@@ -370,77 +420,57 @@ def main():
     if not totp_secret:
         totp_secret = os.getenv("ANGEL_ONE_TOTP_SECRET")
     
-    # NOTE: For Tradetron paper trading, Angel One credentials are NOT required
-    # The script uses TradetronClient which loads from .env (TRADETRON_AUTH_TOKEN)
-    # Angel One credentials are only needed if you want to use AngelOneClient instead
-    # So we skip the Angel One requirement check - it's optional for Tradetron
+    # For paper trading, Angel One credentials are NOT required
+    # The script uses PaperTradingClient which simulates everything locally
+    # Angel One credentials are only needed if you want to use AngelOneClient for live trading
     if not api_key or not client_id or not password:
-        # This is OK for Tradetron - we'll use TradetronClient instead
-        print("[INFO] Angel One credentials not provided - will use Tradetron for paper trading")
-        print("[INFO] TradetronClient will be used (loads from TRADETRON_AUTH_TOKEN in .env)")
+        print("[INFO] Angel One credentials not provided - will use Paper Trading (local simulation)")
+        print("[INFO] PaperTradingClient will be used (no external service needed)")
     
-    timeframe = args.timeframe
-    horizon = args.commodities_horizon
-    years = max(args.years, 0.5)
+    # Show configuration summary
+    print("\n" + "=" * 80)
+    print("COMMODITIES AUTO-TRADING PIPELINE")
+    print("=" * 80)
+    print(f"Timeframe:     {timeframe}")
+    print(f"Horizon:       {horizon}")
+    print(f"Profit Target: {args.profit_target_pct:.2f}% (REQUIRED - user specified)")
+    print(f"Stop-Loss:     {args.stop_loss_pct:.2f}% ({'user specified' if args.stop_loss_pct != 2.0 else 'default'})")
+    print(f"Broker:        PAPER TRADING (Local Simulation)")
+    print(f"Initial Equity: Rs. {args.paper_equity:,.2f}")
+    print(f"Mode:          Continuous (runs until stopped)")
+    print(f"Interval:      {args.interval} seconds between cycles")
+    print("=" * 80)
+    print()
+    print("[INFO] System will:")
+    print(f"  - Check data ONCE at startup (smart: skip if data is recent)")
+    print(f"  - Generate features ONCE at startup (smart: skip if up-to-date)")
+    print(f"  - Train models ONCE at startup (smart: skip if already trained)")
+    print(f"  - Rank commodities by performance")
+    print(f"  - Then monitor ALL positions continuously every {args.interval} seconds")
+    print(f"  - Sell automatically when profit target ({args.profit_target_pct:.2f}%) is hit")
+    print(f"  - Stop-loss protection at {args.stop_loss_pct:.2f}%")
+    print(f"  - Log all buy and sell trades")
+    print(f"  - Keep running until you stop it (Ctrl+C)")
+    print()
+    print("[STRATEGY] Buy Low, Sell High, Minimize Losses:")
+    print("  ✅ Momentum filters: Block buying during upswings (buy low)")
+    print("  ✅ RSI filters: Only buy when oversold (RSI < 30)")
+    print("  ✅ Mean reversion: Buy at support, sell at resistance")
+    print(f"  ✅ Stop-loss: {args.stop_loss_pct:.1f}% protection (minimize losses)")
+    print("  ✅ Negative prediction filter: Block entries when predicted return < 0")
+    print("  ✅ Minimum return filter: Require 1.5% minimum predicted return")
+    print("  ✅ Volatility-based sizing: Reduce position size in high volatility")
+    print()
     
-    print("=" * 80)
-    print("AUTO-SELECT BEST COMMODITY TRADING SYSTEM")
-    print("=" * 80)
-    print(f"Trading Mode:   TRADETRON PAPER TRADING (virtual money, safe for testing)")
-    print(f"Execution:      {'DRY RUN (no orders)' if args.dry_run else 'PAPER TRADING (virtual orders)'}")
-    print(f"Timeframe:      {timeframe}")
-    print(f"Horizon:        {horizon}")
-    print(f"Years of Data:  {years}")
-    print(f"Profit Target:  {args.profit_target_pct:.2f}% (default: 5.0%, can override with --profit-target-pct)")
-    print(f"Stop-Loss:      {args.stop_loss_pct:.2f}% (STRICT)")
-    print(f"Interval:       {args.interval} seconds")
-    print(f"Position Size:  10% of equity per commodity (STRICT - based on buying power)")
-    print(f"Max Total:      50% of equity across all positions")
-    print()
-    print("IMPORTANT: This uses Tradetron PAPER TRADING:")
-    print("  - All trades executed in paper trading account (virtual money)")
-    print("  - NO real money is at risk")
-    print("  - Uses 'TT-PaperTrading' broker (built-in paper trading)")
-    print("  - Perfect for testing your strategy safely")
-    print("=" * 80)
-    print()
-    
-    # Setup Tradetron client (for PAPER TRADING ONLY)
-    print("=" * 80)
-    print("SETTING UP TRADETRON PAPER TRADING CONNECTION")
-    print("=" * 80)
-    print()
-    print("IMPORTANT: This script uses Tradetron PAPER TRADING (virtual money, no real risk)")
-    print("  - All trades are executed in Tradetron's paper trading account")
-    print("  - Uses 'TT-PaperTrading' broker (built-in, no external broker needed)")
-    print("  - NO real money is at risk - this is for testing only")
-    print("  - Make sure your Tradetron strategy is deployed in 'Paper Trading' mode")
-    print()
+    # Initialize paper trading client with specified equity
+    print(f"[SETUP] Initializing Paper Trading Client with Rs. {args.paper_equity:,.2f}")
     try:
-        tradetron_client = setup_tradetron_client()
-        print("[OK] Tradetron client initialized for PAPER TRADING")
-        
-        # Test account (Tradetron may not provide account API, but we can test connection)
-        account = tradetron_client.get_account()
-        equity = account.get("equity", 0)
-        buying_power = account.get("buying_power", 0)
-        print(f"[OK] Tradetron PAPER TRADING connection successful")
-        print(f"  Mode: PAPER TRADING (virtual money, safe for testing)")
-        print(f"  Note: Check Tradetron dashboard for actual paper trading account balance")
-        if equity > 0:
-            print(f"  Equity (placeholder): Rs.{equity:,.2f}")
-            print(f"  Buying Power (placeholder): Rs.{buying_power:,.2f}")
-            print(f"  [NOTE] Actual balance shown in Tradetron dashboard (paper trading account)")
-        print()
-        print("VERIFICATION REQUIRED:")
-        print("  1. Go to Tradetron dashboard → My Strategies")
-        print("  2. Verify your strategy is deployed in 'Paper Trading' mode")
-        print("  3. Verify broker is set to 'TT-PaperTrading' (not a real broker)")
-        print("  4. All trades will be executed in paper trading account (virtual money)")
-        print()
+        paper_client = setup_paper_trading_client(initial_equity=args.paper_equity)
+        print("[OK] Paper trading client initialized")
     except Exception as e:
-        print(f"[ERROR] Failed to initialize Tradetron: {e}")
-        print(f"  Make sure TRADETRON_AUTH_TOKEN is set in .env file")
+        print(f"[ERROR] Failed to initialize Paper Trading client: {e}")
+        import traceback
+        traceback.print_exc()
         sys.exit(1)
     
     # Initialize position manager early to check existing positions
@@ -450,7 +480,7 @@ def main():
     print("\n" + "=" * 80)
     print("CHECKING EXISTING POSITIONS")
     print("=" * 80)
-    existing_positions, tracked_symbols = check_existing_positions(tradetron_client, position_manager, verbose=True)
+    existing_positions, tracked_symbols = check_existing_positions(paper_client, position_manager, verbose=True)
     
     # If existing positions found, prioritize monitoring them
     if existing_positions or tracked_symbols:
@@ -463,49 +493,191 @@ def main():
     all_commodities = get_all_commodities()
     print(f"\n[INFO] Found {len(all_commodities)} total commodities in universe")
     
-    # Stage 1: Historical ingestion (if not skipping training)
+    # Stage 1: Historical ingestion (SMART: Check existing data first)
+    if not args.skip_training and not args.skip_data_update:
+        print("\n" + "=" * 80)
+        print("[1/4] CHECKING EXISTING DATA AND INGESTING IF NEEDED")
+        print("=" * 80)
+        
+        # Check which symbols have existing data
+        from pathlib import Path
+        from fetchers import get_last_timestamp_from_existing_data, load_json_file
+        
+        symbols_needing_full_fetch = []
+        symbols_needing_incremental = []
+        symbols_with_data = []
+        
+        for symbol in all_commodities:
+            data_path = Path("data/json/raw/commodities/yahoo_chart") / symbol / timeframe / "data.json"
+            if not data_path.exists():
+                data_path = Path("data/json/raw/commodities/stooq") / symbol / timeframe / "data.json"
+            
+            if data_path.exists():
+                # Check if data is recent (within last 24 hours for daily timeframe)
+                try:
+                    existing_candles = load_json_file(data_path)
+                    if existing_candles:
+                        last_timestamp = get_last_timestamp_from_existing_data("commodities", symbol, timeframe, "yahoo_chart")
+                        if last_timestamp:
+                            from datetime import datetime, timezone, timedelta
+                            age_hours = (datetime.now(timezone.utc) - last_timestamp).total_seconds() / 3600
+                            if age_hours < 24:
+                                symbols_with_data.append(symbol)
+                                print(f"  ✓ {symbol}: Data exists and is recent ({age_hours:.1f} hours old) - skipping fetch")
+                            else:
+                                symbols_needing_incremental.append(symbol)
+                                print(f"  ⚠️  {symbol}: Data exists but outdated ({age_hours:.1f} hours old) - will fetch incremental")
+                        else:
+                            symbols_needing_incremental.append(symbol)
+                            print(f"  ⚠️  {symbol}: Data exists but timestamp unclear - will fetch incremental")
+                    else:
+                        symbols_needing_full_fetch.append(symbol)
+                        print(f"  ⚠️  {symbol}: Data file exists but empty - will fetch full historical")
+                except Exception as e:
+                    symbols_needing_incremental.append(symbol)
+                    print(f"  ⚠️  {symbol}: Error checking data ({e}) - will fetch incremental")
+            else:
+                symbols_needing_full_fetch.append(symbol)
+                print(f"  ⚠️  {symbol}: No data found - will fetch full historical")
+        
+        # Only fetch for symbols that need it
+        if symbols_needing_full_fetch or symbols_needing_incremental:
+            print(f"\n  Fetching data for {len(symbols_needing_full_fetch)} new + {len(symbols_needing_incremental)} incremental symbol(s)...")
+            run_ingestion(
+                mode="historical",
+                crypto_symbols=[],  # EMPTY - don't train crypto in commodities bot
+                commodities_symbols=all_commodities,  # pipeline_runner handles incremental automatically
+                timeframe=timeframe,
+                years=years,
+            )
+            print("    ✓ Historical data ingestion complete.")
+        else:
+            print(f"\n  ✓ All {len(symbols_with_data)} symbols have recent data - skipping fetch")
+    elif args.skip_data_update:
+        print("\n[1/4] SKIPPED: Data update (using existing data)")
+    else:
+        print("\n[1/4] SKIPPED: Data ingestion (training phase skipped)")
+    
+    # Stage 2: Feature generation (SMART: Only regenerate if data is new or features missing)
+    if not args.skip_training and not args.skip_feature_regen:
+        print("\n" + "=" * 80)
+        print("[2/4] CHECKING FEATURES AND REGENERATING IF NEEDED")
+        print("=" * 80)
+        
+        from pathlib import Path
+        
+        symbols_needing_features = []
+        symbols_with_features = []
+        
+        for symbol in all_commodities:
+            feature_path = Path("data/features/commodities") / symbol / timeframe / "features.json"
+            data_path = Path("data/json/raw/commodities/yahoo_chart") / symbol / timeframe / "data.json"
+            if not data_path.exists():
+                data_path = Path("data/json/raw/commodities/stooq") / symbol / timeframe / "data.json"
+            
+            # Check if features exist and are newer than data
+            if feature_path.exists() and data_path.exists():
+                try:
+                    feature_mtime = feature_path.stat().st_mtime
+                    data_mtime = data_path.stat().st_mtime
+                    # If features are newer than data, skip regeneration
+                    if feature_mtime >= data_mtime:
+                        symbols_with_features.append(symbol)
+                        print(f"  ✓ {symbol}: Features exist and are up-to-date - skipping")
+                    else:
+                        symbols_needing_features.append(symbol)
+                        print(f"  ⚠️  {symbol}: Features outdated (data newer) - will regenerate")
+                except Exception:
+                    symbols_needing_features.append(symbol)
+                    print(f"  ⚠️  {symbol}: Error checking features - will regenerate")
+            else:
+                symbols_needing_features.append(symbol)
+                if not feature_path.exists():
+                    print(f"  ⚠️  {symbol}: Features missing - will generate")
+                else:
+                    print(f"  ⚠️  {symbol}: Data missing - cannot generate features")
+        
+        # Only regenerate for symbols that need it
+        if symbols_needing_features:
+            print(f"\n  Regenerating features for {len(symbols_needing_features)} symbol(s)...")
+            regenerate_features("commodities", set(symbols_needing_features), timeframe)
+            print("    ✓ Feature generation complete.")
+        else:
+            print(f"\n  ✓ All {len(symbols_with_features)} symbols have up-to-date features - skipping regeneration")
+    elif args.skip_feature_regen:
+        print("\n[2/4] SKIPPED: Feature regeneration (using existing features)")
+    else:
+        print("\n[2/4] SKIPPED: Feature generation (training phase skipped)")
+    
+    # Stage 3: Model training (SMART: Only train if features are new or models missing)
     if not args.skip_training:
         print("\n" + "=" * 80)
-        print("[1/4] INGESTING HISTORICAL DATA FOR ALL COMMODITIES")
+        print("[3/4] CHECKING MODELS AND TRAINING IF NEEDED")
         print("=" * 80)
-        run_ingestion(
-            mode="historical",
-            crypto_symbols=None,
-            commodities_symbols=all_commodities,
-            timeframe=timeframe,
-            years=years,
-        )
-        print("    ✓ Historical data ingestion complete.")
         
-        # Stage 2: Feature generation
-        print("\n" + "=" * 80)
-        print("[2/4] REGENERATING FEATURES FOR ALL COMMODITIES")
-        print("=" * 80)
-        regenerate_features("commodities", set(all_commodities), timeframe)
-        print("    ✓ Feature generation complete.")
+        from pathlib import Path
+        from core.model_paths import horizon_dir, summary_path
+        from ml.horizons import normalize_profile
         
-        # Stage 3: Model training
-        print("\n" + "=" * 80)
-        print("[3/4] TRAINING MODELS FOR ALL COMMODITIES")
-        print("=" * 80)
-        print("    Training all commodities with strict overfitting prevention...")
-        horizon_map = {"commodities": horizon}
-        try:
-            train_symbols(
-                crypto_symbols=[],
-                commodities_symbols=all_commodities,
-                timeframe=timeframe,
-                output_dir="models",
-                horizon_profiles=horizon_map,
-            )
-            print("    ✓ Model training complete.")
-        except Exception as train_exc:
-            print(f"    ✗ Model training failed: {train_exc}")
-            import traceback
-            traceback.print_exc()
-            sys.exit(1)
+        # Normalize horizon profile name
+        normalized_horizon = normalize_profile(horizon)
+        
+        symbols_needing_training = []
+        symbols_with_models = []
+        
+        for symbol in all_commodities:
+            # Use the proper model path function that handles normalization
+            model_dir = horizon_dir("commodities", symbol, timeframe, normalized_horizon)
+            summary_file = summary_path("commodities", symbol, timeframe, normalized_horizon)
+            feature_path = Path("data/features/commodities") / symbol / timeframe / "features.json"
+            
+            # Check if model exists and is newer than features
+            if summary_file.exists() and feature_path.exists():
+                try:
+                    model_mtime = summary_file.stat().st_mtime
+                    feature_mtime = feature_path.stat().st_mtime
+                    # If model is newer than features, skip training
+                    if model_mtime >= feature_mtime:
+                        symbols_with_models.append(symbol)
+                        print(f"  ✓ {symbol}: Model exists and is up-to-date - skipping training")
+                    else:
+                        symbols_needing_training.append(symbol)
+                        print(f"  ⚠️  {symbol}: Model outdated (features newer) - will retrain")
+                except Exception:
+                    symbols_needing_training.append(symbol)
+                    print(f"  ⚠️  {symbol}: Error checking model - will train")
+            else:
+                symbols_needing_training.append(symbol)
+                if not summary_file.exists():
+                    print(f"  ⚠️  {symbol}: Model missing - will train")
+                else:
+                    print(f"  ⚠️  {symbol}: Features missing - cannot train")
+        
+        # Only train for symbols that need it
+        if symbols_needing_training:
+            print(f"\n  Training models for {len(symbols_needing_training)} symbol(s)...")
+            print("    NOTE: Each model training starts with 'Trial 0' - this is normal.")
+            print()
+            
+            horizon_map = {"commodities": horizon}
+            try:
+                train_symbols(
+                    crypto_symbols=[],
+                    commodities_symbols=symbols_needing_training,
+                    timeframe=timeframe,
+                    output_dir="models",
+                    horizon_profiles=horizon_map,
+                )
+                print("    ✓ Model training complete.")
+            except Exception as train_exc:
+                print(f"    ✗ Model training failed: {train_exc}")
+                import traceback
+                traceback.print_exc()
+                sys.exit(1)
+        else:
+            print(f"\n  ✓ All {len(symbols_with_models)} symbols have up-to-date models - skipping training")
     else:
-        print("\n[SKIP] Training phase skipped (using existing models)")
+        print("\n[3/4] SKIPPED: Training phase (using existing models)")
     
     # Stage 4: Rank commodities
     if not args.skip_ranking:
@@ -515,7 +687,7 @@ def main():
         ranked = rank_commodities_by_performance(all_commodities, timeframe, horizon, verbose=True)
         
         if not ranked:
-            print("❌ ERROR: No commodities could be ranked. Train models first or check model directories.")
+            print("[ERROR] No commodities could be ranked. Train models first or check model directories.")
             sys.exit(1)
         
         # Show ALL ranked commodities in a table (top 10)
@@ -525,7 +697,7 @@ def main():
         print(f"{'Rank':<6} {'Symbol':<20} {'Score':<10} {'R²':<8} {'Test R²':<10} {'Conf':<8} {'Models':<8} {'Tradable':<10}")
         print(f"{'-'*90}")
         for i, item in enumerate(ranked[:10], 1):
-            tradable_mark = "✅ YES" if item["tradable"] else "❌ NO"
+            tradable_mark = "[YES]" if item["tradable"] else "[NO]"
             print(f"{i:<6} {item['symbol']:<20} {item['score']:<10.4f} {item['r2_score']:<8.3f} {item['test_r2']:<10.3f} {item['confidence']:<8.1f}% {item['successful_models']:<8} {tradable_mark:<10}")
         print(f"{'='*80}\n")
         
@@ -542,7 +714,7 @@ def main():
             best_rank = ranked.index(best_item) + 1
             
             print(f"{'='*80}")
-            print(f"✅ TRADING ALL TRADABLE COMMODITIES: {len(selected_symbols)} commodities")
+            print(f"[OK] TRADING ALL TRADABLE COMMODITIES: {len(selected_symbols)} commodities")
             print(f"{'='*80}")
             print(f"  Total Ranked: {len(ranked)} commodities")
             print(f"  Tradable:     {len(tradable_ranked)} commodities (will be traded)")
@@ -561,10 +733,10 @@ def main():
             print(f"  - Entry: Based on model predictions (buy low signal)")
             print(f"  - Exit: Profit target hit, stop-loss hit, or trailing stop")
             print(f"  - All positions monitored side by side in parallel")
-            print(f"  - All trades logged in real-time to tradetron/commodities_trades.jsonl")
+            print(f"  - All trades logged in real-time to data/logs/trades.jsonl")
             print(f"{'='*80}\n")
         else:
-            print("❌ ERROR: No tradable commodities found. All models failed robustness checks.")
+            print("[ERROR] No tradable commodities found. All models failed robustness checks.")
             print("   Top ranked commodities (not tradable):")
             for item in ranked[:5]:
                 print(f"     - {item['symbol']}: Score={item['score']:.4f} (not tradable)")
@@ -666,9 +838,9 @@ def main():
                         print(f"  [WARNING] Failed to sync {mcx_symbol}: {sync_exc}")
         
         if synced_count > 0:
-            print(f"  ✓ Synced {synced_count} existing position(s) with profit target: {args.profit_target_pct:.2f}%")
+            print(f"  [OK] Synced {synced_count} existing position(s) with profit target: {args.profit_target_pct:.2f}%")
         else:
-            print("  ✓ All existing positions already tracked")
+            print("  [OK] All existing positions already tracked")
         print("=" * 80)
     
     # Filter tradable list to selected symbols OR existing positions
@@ -691,7 +863,7 @@ def main():
     ]
     
     if not tradable:
-        print("❌ ERROR: No tradable symbols found after filtering")
+        print("[ERROR] No tradable symbols found after filtering")
         print(f"   Requested: {requested_set}")
         print(f"   Available: {[info['asset'].data_symbol for info in all_tradable]}")
         sys.exit(1)
@@ -707,15 +879,15 @@ def main():
     # Initialize execution engine with STRICT buying power limits
     try:
         # Get current buying power to show user
-        account = tradetron_client.get_account()
+        account = paper_client.get_account()
         equity = float(account.get("equity", 0) or 0)
         buying_power = float(account.get("buying_power", 0) or 0)
         
         print(f"\n{'='*80}")
         print(f"💰 ACCOUNT & POSITION SIZING (STRICT BUYING POWER LIMITS)")
         print(f"{'='*80}")
-        print(f"  Equity:        Rs.{equity:,.2f}")
-        print(f"  Buying Power:  Rs.{buying_power:,.2f}")
+        print(f"  Equity:        Rs.{equity:,.2f} (virtual)")
+        print(f"  Buying Power:  Rs.{buying_power:,.2f} (virtual)")
         print(f"  Max Position:  10% of equity = Rs.{equity * 0.10:,.2f} per commodity")
         print(f"  Max Total:     50% of equity = Rs.{equity * 0.50:,.2f} across all positions")
         print(f"  Position sizing will be STRICTLY based on available buying power")
@@ -732,12 +904,12 @@ def main():
             slippage_buffer_pct=0.001,  # 0.1% slippage buffer
         )
         execution_engine = ExecutionEngine(
-            client=tradetron_client,
+            client=paper_client,
             risk_config=risk_config,
             position_manager=position_manager,
-            log_path=Path("tradetron") / "commodities_trades.jsonl",
+            log_path=Path("data") / "logs" / "trades.jsonl",
         )
-        print("    ✓ Execution engine initialized with strict buying power limits")
+        print("    [OK] Execution engine initialized with strict buying power limits")
     except Exception as exc:
         print(f"    ✗ Failed to initialize ExecutionEngine: {exc}")
         import traceback
@@ -748,24 +920,27 @@ def main():
     print("\n" + "=" * 80)
     print("READY TO START PAPER TRADING")
     print("=" * 80)
-    print(f"  Trading Platform: TRADETRON PAPER TRADING")
+    print(f"  Trading Platform: LOCAL PAPER TRADING (no external service)")
     print(f"  Selected Commodity: {selected_symbols[0] if selected_symbols else 'N/A'}")
     print(f"  Existing Positions: {len(existing_positions)} (will be monitored)")
     print(f"  Profit Target: {args.profit_target_pct:.2f}%")
     print(f"  Stop-Loss: {args.stop_loss_pct:.2f}% ({'USER-SPECIFIED' if args.stop_loss_pct != 2.0 else 'DEFAULT'})")
-    print(f"  Execution Mode: {'DRY RUN (no orders)' if args.dry_run else 'PAPER TRADING (virtual orders)'}")
+    print(f"  Execution Mode: {'DRY RUN (no orders)' if args.dry_run else 'PAPER TRADING (simulated orders)'}")
     print()
     print("SAFETY CONFIRMATION:")
-    print("  - Using Tradetron PAPER TRADING (virtual money)")
+    print("  - Using LOCAL PAPER TRADING (virtual money, local simulation)")
     print("  - NO real money is at risk")
-    print("  - All trades executed in paper trading account")
+    print("  - NO external service needed (no TradeTron, no Angel One)")
+    print("  - All trades simulated locally on your computer")
+    print("  - Positions tracked in: data/positions/active_positions.json")
+    print("  - Trade logs saved to: data/logs/trades.jsonl")
     print("  - Safe for testing your strategy")
     print("=" * 80)
     print()
     
     if not args.dry_run:
         print("Starting PAPER TRADING in 3 seconds...")
-        print("  (This is paper trading - virtual money only, no real risk)")
+        print("  (This is local paper trading - virtual money only, no real risk)")
         time.sleep(3)
     
     # Run trading cycles
@@ -806,18 +981,14 @@ def main():
                 
                 # Show positions
                 try:
-                    all_positions = tradetron_client.list_positions()
-                    mcx_positions = [
-                        pos for pos in all_positions
-                        if pos.get("exchange_segment", pos.get("_raw_exchange", "")).upper() == "MCX"
-                    ]
-                    if mcx_positions:
-                        print(f"\n  📊 ACTIVE POSITIONS: {len(mcx_positions)}")
-                        for pos in mcx_positions:
+                    all_positions = paper_client.list_positions()
+                    if all_positions:
+                        print(f"\n  📊 ACTIVE POSITIONS: {len(all_positions)}")
+                        for pos in all_positions:
                             symbol = pos.get("symbol", "")
                             qty = float(pos.get("qty", 0) or 0)
                             avg_entry = float(pos.get("avg_entry_price", 0) or 0)
-                            ltp = float(pos.get("ltp", 0) or 0)
+                            ltp = float(pos.get("ltp", avg_entry) or avg_entry)
                             unrealized_pl = float(pos.get("unrealized_pl", 0) or 0)
                             side_str = "LONG" if qty > 0 else "SHORT"
                             print(f"    {symbol}: {abs(qty)} {side_str} @ Rs.{avg_entry:.2f} -> Rs.{ltp:.2f} (P/L: Rs.{unrealized_pl:+.2f})")
