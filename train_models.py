@@ -2939,24 +2939,17 @@ def train_for_symbol(
         )
     except Exception as exc:
         error_msg = str(exc)
-        # Don't log tensorboard errors as failures - it's optional
-        if "tensorboard" in error_msg.lower():
-            # Tensorboard is optional - just skip DQN training silently
-            if verbose:
-                print(f"[DQN] Skipped: TensorBoard not installed (optional dependency)")
-            results["dqn"] = {"status": "skipped", "reason": "TensorBoard not installed (optional)"}
-        else:
-            # Real error - log it
-            results["dqn"] = {"status": "failed", "reason": error_msg}
-            logger.error(
-                f"DQN training failed: {error_msg}",
-                category="MODEL",
-                symbol=symbol,
-                asset_type=asset_type,
-                data={"model": "DQN", "error": error_msg}
-            )
-            if verbose:
-                print(f"[DQN] Failed: {exc}")
+        # Log DQN training errors
+        results["dqn"] = {"status": "failed", "reason": error_msg}
+        logger.error(
+            f"DQN training failed: {error_msg}",
+            category="MODEL",
+            symbol=symbol,
+            asset_type=asset_type,
+            data={"model": "DQN", "error": error_msg}
+        )
+        if verbose:
+            print(f"[DQN] Failed: {exc}")
     
     # Log overfitting warnings
     if overfitting_warnings:

@@ -25,7 +25,7 @@ import json
 import os
 import sys
 import time
-from datetime import datetime
+from datetime import datetime, timezone, timedelta
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
@@ -500,7 +500,6 @@ def main():
         print("=" * 80)
         
         # Check which symbols have existing data
-        from pathlib import Path
         from fetchers import get_last_timestamp_from_existing_data, load_json_file
         
         symbols_needing_full_fetch = []
@@ -508,7 +507,7 @@ def main():
         symbols_with_data = []
         
         for symbol in all_commodities:
-            data_path = Path("data/json/raw/commodities/yahoo_chart") / symbol / timeframe / "data.json"
+            data_path = Path("data/json/raw/commodities/yahoo") / symbol / timeframe / "data.json"
             if not data_path.exists():
                 data_path = Path("data/json/raw/commodities/stooq") / symbol / timeframe / "data.json"
             
@@ -517,9 +516,8 @@ def main():
                 try:
                     existing_candles = load_json_file(data_path)
                     if existing_candles:
-                        last_timestamp = get_last_timestamp_from_existing_data("commodities", symbol, timeframe, "yahoo_chart")
+                        last_timestamp = get_last_timestamp_from_existing_data("commodities", symbol, timeframe, "yahoo")
                         if last_timestamp:
-                            from datetime import datetime, timezone, timedelta
                             age_hours = (datetime.now(timezone.utc) - last_timestamp).total_seconds() / 3600
                             if age_hours < 24:
                                 symbols_with_data.append(symbol)
@@ -564,14 +562,12 @@ def main():
         print("[2/4] CHECKING FEATURES AND REGENERATING IF NEEDED")
         print("=" * 80)
         
-        from pathlib import Path
-        
         symbols_needing_features = []
         symbols_with_features = []
         
         for symbol in all_commodities:
             feature_path = Path("data/features/commodities") / symbol / timeframe / "features.json"
-            data_path = Path("data/json/raw/commodities/yahoo_chart") / symbol / timeframe / "data.json"
+            data_path = Path("data/json/raw/commodities/yahoo") / symbol / timeframe / "data.json"
             if not data_path.exists():
                 data_path = Path("data/json/raw/commodities/stooq") / symbol / timeframe / "data.json"
             
@@ -615,7 +611,6 @@ def main():
         print("[3/4] CHECKING MODELS AND TRAINING IF NEEDED")
         print("=" * 80)
         
-        from pathlib import Path
         from core.model_paths import horizon_dir, summary_path
         from ml.horizons import normalize_profile
         
@@ -625,32 +620,60 @@ def main():
         symbols_needing_training = []
         symbols_with_models = []
         
+        # Required model files for a complete training
+        required_model_files = [
+            "random_forest.joblib",
+            "lightgbm.joblib",
+            "xgboost.joblib",
+            "stacked_blend.joblib",
+            "dqn.joblib",  # Now that TensorFlow is installed, DQN should train
+            "summary.json",
+            "feature_scaler.joblib"
+        ]
+        
         for symbol in all_commodities:
             # Use the proper model path function that handles normalization
             model_dir = horizon_dir("commodities", symbol, timeframe, normalized_horizon)
             summary_file = summary_path("commodities", symbol, timeframe, normalized_horizon)
             feature_path = Path("data/features/commodities") / symbol / timeframe / "features.json"
             
-            # Check if model exists and is newer than features
-            if summary_file.exists() and feature_path.exists():
+            # Check if ALL required model files exist
+            all_models_exist = True
+            missing_files = []
+            
+            if model_dir.exists():
+                for required_file in required_model_files:
+                    file_path = model_dir / required_file
+                    if not file_path.exists():
+                        all_models_exist = False
+                        missing_files.append(required_file)
+            else:
+                all_models_exist = False
+                missing_files = required_model_files
+            
+            # If all models exist, check if features are newer (need retrain)
+            if all_models_exist and summary_file.exists() and feature_path.exists():
                 try:
                     model_mtime = summary_file.stat().st_mtime
                     feature_mtime = feature_path.stat().st_mtime
                     # If model is newer than features, skip training
                     if model_mtime >= feature_mtime:
                         symbols_with_models.append(symbol)
-                        print(f"  ✓ {symbol}: Model exists and is up-to-date - skipping training")
+                        print(f"  ✓ {symbol}: All models exist and are up-to-date - skipping training")
                     else:
                         symbols_needing_training.append(symbol)
-                        print(f"  ⚠️  {symbol}: Model outdated (features newer) - will retrain")
+                        print(f"  ⚠️  {symbol}: Models outdated (features newer) - will retrain")
                 except Exception:
                     symbols_needing_training.append(symbol)
-                    print(f"  ⚠️  {symbol}: Error checking model - will train")
+                    print(f"  ⚠️  {symbol}: Error checking model timestamps - will train")
             else:
                 symbols_needing_training.append(symbol)
-                if not summary_file.exists():
-                    print(f"  ⚠️  {symbol}: Model missing - will train")
-                else:
+                if not all_models_exist:
+                    if len(missing_files) <= 3:
+                        print(f"  ⚠️  {symbol}: Missing models: {', '.join(missing_files)} - will train")
+                    else:
+                        print(f"  ⚠️  {symbol}: Missing {len(missing_files)} model files - will train")
+                elif not feature_path.exists():
                     print(f"  ⚠️  {symbol}: Features missing - cannot train")
         
         # Only train for symbols that need it
@@ -873,8 +896,9 @@ def main():
     print(f"{'='*80}")
     for info in tradable:
         asset = info["asset"]
-        mcx_symbol = asset.get_mcx_symbol(horizon) if hasattr(asset, 'get_mcx_symbol') else asset.trading_symbol
-        print(f"  - {asset.data_symbol} -> MCX: {mcx_symbol} (horizon: {info['horizon']})")
+        # Commodities always use paper trading with Yahoo Finance symbols (no MCX mapping needed)
+        trading_symbol = asset.data_symbol  # Use Yahoo Finance symbol directly
+        print(f"  - {asset.data_symbol} (Paper Trading with live Yahoo Finance prices, horizon: {info['horizon']})")
     
     # Initialize execution engine with STRICT buying power limits
     try:
@@ -950,7 +974,7 @@ def main():
     try:
         while True:
             cycle_count += 1
-            now = datetime.utcnow().isoformat() + "Z"
+            now = datetime.now(timezone.utc).isoformat().replace('+00:00', 'Z')
             print(f"\n{'='*80}")
             print(f"[CYCLE {cycle_count}] {now}")
             print(f"{'='*80}")

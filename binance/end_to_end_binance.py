@@ -146,6 +146,7 @@ def discover_tradable_symbols(asset_type: str = "crypto", timeframe: str = "1d",
         
         tradable.append({
             "asset": asset,
+            "model_dir": model_dir,  # CRITICAL: Add model_dir to match expected structure
             "data_symbol": data_symbol,
             "timeframe": timeframe,
             "horizon": used_horizon,
@@ -468,32 +469,60 @@ def main():
         symbols_needing_training = []
         symbols_with_models = []
         
+        # Required model files for a complete training
+        required_model_files = [
+            "random_forest.joblib",
+            "lightgbm.joblib",
+            "xgboost.joblib",
+            "stacked_blend.joblib",
+            "dqn.joblib",  # Now that TensorFlow is installed, DQN should train
+            "summary.json",
+            "feature_scaler.joblib"
+        ]
+        
         for symbol in crypto_symbols:
             # Use the proper model path function that handles normalization
             model_dir = horizon_dir("crypto", symbol, timeframe, normalized_horizon)
             summary_file = summary_path("crypto", symbol, timeframe, normalized_horizon)
             feature_path = Path("data/features/crypto") / symbol / timeframe / "features.json"
             
-            # Check if model exists and is newer than features
-            if summary_file.exists() and feature_path.exists():
+            # Check if ALL required model files exist
+            all_models_exist = True
+            missing_files = []
+            
+            if model_dir.exists():
+                for required_file in required_model_files:
+                    file_path = model_dir / required_file
+                    if not file_path.exists():
+                        all_models_exist = False
+                        missing_files.append(required_file)
+            else:
+                all_models_exist = False
+                missing_files = required_model_files
+            
+            # If all models exist, check if features are newer (need retrain)
+            if all_models_exist and summary_file.exists() and feature_path.exists():
                 try:
                     model_mtime = summary_file.stat().st_mtime
                     feature_mtime = feature_path.stat().st_mtime
                     # If model is newer than features, skip training
                     if model_mtime >= feature_mtime:
                         symbols_with_models.append(symbol)
-                        print(f"  ✓ {symbol}: Model exists and is up-to-date - skipping training")
+                        print(f"  ✓ {symbol}: All models exist and are up-to-date - skipping training")
                     else:
                         symbols_needing_training.append(symbol)
-                        print(f"  ⚠️  {symbol}: Model outdated (features newer) - will retrain")
+                        print(f"  ⚠️  {symbol}: Models outdated (features newer) - will retrain")
                 except Exception:
                     symbols_needing_training.append(symbol)
-                    print(f"  ⚠️  {symbol}: Error checking model - will train")
+                    print(f"  ⚠️  {symbol}: Error checking model timestamps - will train")
             else:
                 symbols_needing_training.append(symbol)
-                if not summary_file.exists():
-                    print(f"  ⚠️  {symbol}: Model missing - will train")
-                else:
+                if not all_models_exist:
+                    if len(missing_files) <= 3:
+                        print(f"  ⚠️  {symbol}: Missing models: {', '.join(missing_files)} - will train")
+                    else:
+                        print(f"  ⚠️  {symbol}: Missing {len(missing_files)} model files - will train")
+                elif not feature_path.exists():
                     print(f"  ⚠️  {symbol}: Features missing - cannot train")
         
         # Only train for symbols that need it
@@ -505,11 +534,10 @@ def main():
             
             # Track timing for progress display
             from datetime import datetime, timedelta
-            import time
             training_start_time = time.time()
             total_symbols = len(symbols_needing_training)
             
-            horizon_map = {symbol: horizon for symbol in symbols_needing_training}
+            horizon_map = {"crypto": horizon}  # Map asset_type to horizon, not symbol to horizon
             
             # Override training logger to use data/logs/training/ instead of logs/training/
             # This ensures training logs go to data folder (outside binance) as requested

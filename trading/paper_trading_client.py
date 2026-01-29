@@ -212,6 +212,16 @@ class PaperTradingClient(BrokerClient):
         order_value = qty_to_trade * fill_price
         commission = order_value * self.config.commission_rate
         
+        # BUYING POWER VALIDATION for BUY orders
+        if side_lower == "buy":
+            required_cash = order_value + commission
+            if self._cash < required_cash:
+                raise ValueError(
+                    f"Insufficient buying power for {symbol_upper}: "
+                    f"Required Rs.{required_cash:,.2f}, Available Rs.{self._cash:,.2f}. "
+                    f"Reduce position size or wait for existing positions to close."
+                )
+        
         # Update position
         if side_lower == "buy":
             if existing_pos:
@@ -253,16 +263,12 @@ class PaperTradingClient(BrokerClient):
                 else:
                     raise ValueError(f"Insufficient position: have {old_qty}, trying to sell {qty_to_trade}")
             else:
-                # Short selling (if allowed)
-                # For simplicity, we'll allow it in paper trading
-                self._positions[symbol_upper] = {
-                    "symbol": symbol_upper,
-                    "qty": -qty_to_trade,  # Negative for short
-                    "avg_entry_price": fill_price,
-                    "ltp": fill_price,
-                    "market_value": abs(qty_to_trade * fill_price),
-                    "unrealized_pl": 0.0,
-                }
+                # SHORT SELLING BLOCKED - No position exists, cannot sell
+                raise ValueError(
+                    f"Cannot SELL {symbol_upper} without existing position. "
+                    f"Short selling is disabled for paper trading. "
+                    f"Only LONG positions allowed."
+                )
             
             # Add cash (minus commission)
             self._cash += (order_value - commission)

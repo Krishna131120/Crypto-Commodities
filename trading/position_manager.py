@@ -11,7 +11,7 @@ This module handles:
 from __future__ import annotations
 
 import json
-from dataclasses import dataclass, asdict
+from dataclasses import dataclass, asdict, field
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, List, Optional
@@ -46,6 +46,7 @@ class Position:
     highest_price: Optional[float] = None  # Track highest price for trailing stop (LONG positions)
     lowest_price: Optional[float] = None  # Track lowest price for trailing stop (SHORT positions)
     trailing_stop_triggered: bool = False  # Flag if trailing stop has been triggered
+    metadata: Dict[str, Any] = field(default_factory=dict)  # Store additional metadata (e.g., prediction info)
 
 
 class PositionManager:
@@ -112,6 +113,7 @@ class PositionManager:
         stop_loss_pct: float,
         stop_loss_order_id: Optional[str] = None,
         take_profit_order_id: Optional[str] = None,
+        metadata: Optional[Dict[str, Any]] = None,
     ) -> Position:
         """
         Save a new position or update existing one (for pyramiding).
@@ -163,6 +165,10 @@ class PositionManager:
             if existing_position.initial_entry_price is None:
                 existing_position.initial_entry_price = existing_position.entry_price
             
+            # Update metadata if provided
+            if metadata:
+                existing_position.metadata.update(metadata)
+            
             self._save_positions()
             return existing_position
         else:
@@ -198,6 +204,7 @@ class PositionManager:
                 take_profit_order_id=take_profit_order_id,
                 highest_price=entry_price if side == "long" else None,  # Initialize for trailing stop
                 lowest_price=entry_price if side == "short" else None,  # Initialize for trailing stop
+                metadata=metadata or {},
             )
             
             self._positions[symbol] = position

@@ -892,28 +892,13 @@ def train_dqn(
         return Monitor(TradingEnv(val_obs, val_returns))
 
     vec_env = DummyVecEnv([_make_train_env])
-    # Make tensorboard optional - don't fail if not installed
-    # Try to create model with tensorboard first, but silently fallback if not available
-    try:
-        model = DQN(
-            "MlpPolicy",
-            vec_env,
-            verbose=0,
-            tensorboard_log="logs/tensorboard",
-            **DQN_CONFIG,
-        )
-    except Exception as e:
-        # If tensorboard fails, create model without it (silent fallback)
-        if "tensorboard" in str(e).lower():
-            # Suppress the error - tensorboard is optional
-            model = DQN(
-                "MlpPolicy",
-                vec_env,
-                verbose=0,
-                **DQN_CONFIG,
-            )
-        else:
-            raise
+    # Create DQN model without TensorBoard logging to avoid compatibility issues
+    model = DQN(
+        "MlpPolicy",
+        vec_env,
+        verbose=0,
+        **DQN_CONFIG,
+    )
     eval_env = DummyVecEnv([_make_eval_env])
     eval_callback = EvalCallback(
         eval_env,

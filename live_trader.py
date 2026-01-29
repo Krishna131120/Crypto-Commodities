@@ -143,73 +143,13 @@ def get_current_price_from_features(asset_type: str, symbol: str, timeframe: str
         
         return None
     
-    # For commodities, use AngelOneClient (MCX exchange) - NOT Alpaca
+    # For commodities, use Yahoo Finance data directly (paper trading only)
+    # NOTE: Angel One/MCX integration is disabled for now - only Yahoo Finance paper trading
     else:
-        # 1) Try AngelOneClient first (MCX commodities)
-        try:
-            from trading.angelone_client import AngelOneClient
-            from trading.symbol_universe import find_by_data_symbol as _find
-            from trading.mcx_symbol_mapper import get_mcx_contract_symbol
-
-            asset_mapping = _find(symbol)
-            if asset_mapping:
-                # Get MCX symbol for the commodity
-                # Use get_mcx_contract_symbol to convert GC=F -> GOLDDEC24 (or current month)
-                mcx_symbol = get_mcx_contract_symbol(asset_mapping.data_symbol)
-                
-                # Try to get AngelOneClient from environment
-                client = AngelOneClient()
-                
-                # METHOD 1: Try to get price from existing position (if we have one)
-                # This is more reliable than market data API which requires symbol tokens
-                try:
-                    position = client.get_position(mcx_symbol)
-                    if position and position.get("ltp"):
-                        price_val = float(position.get("ltp"))
-                        if price_val > 0:
-                            if verbose:
-                                print(f"  [PRICE] {symbol}: ₹{price_val:.2f} from Angel One position (MCX: {mcx_symbol})")
-                            return price_val
-                except Exception:
-                    pass  # Continue to market data method
-                
-                # METHOD 2: Try market data API (may require symbol tokens - known limitation)
-                max_retries = 8 if force_live else 5
-                retry_delay = 0.5 if force_live else 1.0
-                last_trade = client.get_last_trade(
-                    mcx_symbol,
-                    max_retries=max_retries,
-                    retry_delay=retry_delay,
-                    force_retry=force_live
-                )
-                if last_trade:
-                    price = last_trade.get("price") or last_trade.get("p") or last_trade.get("ltp")
-                    if price:
-                        price_val = float(price)
-                        if verbose:
-                            print(f"  [PRICE] {symbol}: ₹{price_val:.2f} from Angel One MCX market data (symbol: {mcx_symbol})")
-                        return price_val
-        except Exception as angelone_exc:
-            if verbose:
-                import traceback
-                error_str = str(angelone_exc)
-                print(f"  [WARN] {symbol}: Angel One price fetch failed: {error_str}")
-                # Check if it's the known "Request Rejected" issue (symbol token required)
-                if "Request Rejected" in error_str or "HTML" in error_str:
-                    print(f"  [INFO] Angel One API requires symbol TOKENS (numeric IDs) not symbol names.")
-                    print(f"  [INFO] Market data API may not work until symbol token lookup is implemented.")
-                    print(f"  [INFO] Using fallback: data.json price (may be stale)")
-                else:
-                    print(f"  [DEBUG] Full error: {traceback.format_exc()}")
-            if force_live:
-                return None
-            pass
+        # For paper trading, go straight to Yahoo Finance data
+        # Skip all Angel One/MCX logic entirely
         
-        # 2) Fallback: local data.json (only if force_live=False)
-        if force_live:
-            return None
-        
-        data_path = Path("data/json/raw") / asset_type / "yahoo_chart" / symbol / timeframe / "data.json"
+        data_path = Path("data/json/raw") / asset_type / "yahoo" / symbol / timeframe / "data.json"
         if data_path.exists():
             try:
                 payload = json.loads(data_path.read_text(encoding="utf-8"))
@@ -219,15 +159,17 @@ def get_current_price_from_features(asset_type: str, symbol: str, timeframe: str
                     if price_val > 0:
                         timestamp = latest.get("timestamp", "unknown")
                         if verbose:
-                            print(f"  [PRICE] {symbol}: ${price_val:.2f} from local Yahoo data.json (latest close, timestamp: {timestamp})")
+                            print(f"  [PRICE] {symbol}: ${price_val:.2f} from Yahoo Finance (latest close, timestamp: {timestamp})")
                         return price_val
                 elif isinstance(payload, dict) and "close" in payload:
                     price_val = float(payload["close"])
                     if price_val > 0:
                         if verbose:
-                            print(f"  [PRICE] {symbol}: ${price_val:.2f} from local Yahoo data.json (latest close)")
+                            print(f"  [PRICE] {symbol}: ${price_val:.2f} from Yahoo Finance (latest close)")
                         return price_val
-            except Exception:
+            except Exception as e:
+                if verbose:
+                    print(f"  [WARN] {symbol}: Failed to read Yahoo Finance data: {e}")
                 pass
         
         return None
@@ -1233,6 +1175,19 @@ def run_trading_cycle(
     
     for symbol_info in symbols_to_process:
         asset = symbol_info["asset"]
+        
+        # Defensive check: ensure model_dir exists
+        if "model_dir" not in symbol_info:
+            if verbose:
+                print(f"[ERROR] {asset.data_symbol}: Missing model_dir in symbol_info. Skipping.")
+                print(f"  symbol_info keys: {list(symbol_info.keys())}")
+            results["symbols_skipped"] += 1
+            results["errors"].append({
+                "symbol": asset.data_symbol,
+                "error": "Missing model_dir in symbol_info"
+            })
+            continue
+        
         model_dir = symbol_info["model_dir"]
         horizon = symbol_info["horizon"]
         data_symbol = asset.data_symbol
@@ -1623,14 +1578,18 @@ def run_trading_cycle(
             # Determine if we're in top5 mode (tradable_symbols is a subset of all symbols)
             is_top5_mode = all_symbols_for_predictions and len(trading_symbols_set) < len(all_symbols_for_predictions)
             
+            # Check if this is a high-confidence SHORT signal (for paper trading)
+            is_short_with_good_confidence = (action == "short" and confidence >= 0.60)  # 60%+ confidence for SHORT
+            
             # Trading logic:
-            # - If top5 mode: trade if in top5 OR if LONG with 60%+ confidence OR if mean-reversion suggests LONG
-            # - If NOT top5 mode: trade if LONG with 60%+ confidence OR if mean-reversion suggests LONG
+            # - If top5 mode: trade if in top5 OR if LONG/SHORT with 60%+ confidence OR if mean-reversion suggests LONG
+            # - If NOT top5 mode: trade if LONG/SHORT with 60%+ confidence OR if mean-reversion suggests LONG
+            # NOTE: SHORT trades are allowed in paper trading (simulated shorts)
             if is_top5_mode:
-                should_trade = is_in_tradable_set or is_long_with_good_confidence or is_mean_reversion_long_signal
+                should_trade = is_in_tradable_set or is_long_with_good_confidence or is_short_with_good_confidence or is_mean_reversion_long_signal
             else:
-                # Not in top5 mode - trade any symbol that meets criteria
-                should_trade = is_long_with_good_confidence or is_mean_reversion_long_signal
+                # Not in top5 mode - trade any symbol that meets criteria (LONG or SHORT with 60%+ confidence)
+                should_trade = is_long_with_good_confidence or is_short_with_good_confidence or is_mean_reversion_long_signal
             
             if not should_trade:
                 # Show prediction but don't execute trade

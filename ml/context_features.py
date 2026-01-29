@@ -198,8 +198,8 @@ def _compute_spread_features(
         ref_df = _load_symbol_candles(asset_type, ref_symbol, timeframe)
         if ref_df is None:
             continue
-        ref_aligned = ref_df["close"].reindex(base_df.index).fillna(method="ffill")
-        base_close = base_df["close"].reindex(base_df.index).fillna(method="ffill")
+        ref_aligned = ref_df["close"].reindex(base_df.index).ffill()
+        base_close = base_df["close"].reindex(base_df.index).ffill()
         spread = base_close - ref_aligned
         ratio = base_close / ref_aligned.replace(0, np.nan)
         out[f"spread_{symbol}_{ref_symbol}"] = spread
@@ -209,7 +209,7 @@ def _compute_spread_features(
         )
     if not out:
         return pd.DataFrame(index=index)
-    return pd.DataFrame(out).reindex(index).fillna(method="ffill").fillna(method="bfill")
+    return pd.DataFrame(out).reindex(index).ffill().bfill()
 
 
 def _compute_vol_index_features(index: pd.DatetimeIndex) -> pd.DataFrame:
@@ -265,7 +265,7 @@ def _compute_intraday_aggregates(
         return pd.DataFrame(index=daily_index)
     frame = pd.DataFrame(aggregates)
     frame.index = pd.DatetimeIndex(frame.index, tz="UTC")
-    return frame.reindex(daily_index).fillna(method="ffill").fillna(method="bfill")
+    return frame.reindex(daily_index).ffill().bfill()
 
 
 def build_context_features(

@@ -31,10 +31,11 @@ from .alpaca_client import AlpacaClient
 from .binance_client import BinanceClient
 from .broker_interface import BrokerClient
 from .symbol_universe import AssetMapping
-from .position_manager import PositionManager
+from .position_manager import Position, PositionManager
 from .symbol_loss_tracker import SymbolLossTracker
 from .mcx_symbol_mapper import round_to_lot_size, get_mcx_lot_size
 from ml.horizons import get_horizon_risk_config, normalize_profile
+from ml.rl_feedback import get_feedback_learner
 
 
 @dataclass
@@ -105,6 +106,18 @@ class TradingRiskConfig:
             # Crypto - wider stop-loss (8% default, can be overridden by horizon profile)
             return self.default_stop_loss_pct  # 0.08 for crypto (8% as decimal)
 
+    def can_trade_side(self, asset_type: str, side: str) -> bool:
+        """
+        Check if a specific side is allowed for an asset type.
+        """
+        if side.lower() == "long":
+            return True
+        
+        if side.lower() == "short":
+            return self.allow_short
+            
+        return False
+
 
 class ExecutionEngine:
     """
@@ -148,6 +161,9 @@ class ExecutionEngine:
         self.default_horizon = normalize_profile(default_horizon) if default_horizon else None
         self.position_manager = position_manager or PositionManager()
         self.loss_tracker = SymbolLossTracker()  # Track symbol-level losses
+        
+        # Initialize RL feedback learner
+        self.rl_learner = get_feedback_learner()
         
         # Cooldown tracking: prevent re-entry too soon after exits
         self.cooldown_file = self.log_path.parent / "trade_cooldowns.json"
@@ -221,12 +237,24 @@ class ExecutionEngine:
         is_commodities = asset_type == "commodities"
         
         # Create a risk config that uses horizon-specific values, falling back to base config
-        # SHORTING FOR COMMODITIES: Currently DISABLED (will be enabled in a future update)
-        # Use risk config's allow_short setting, but override to False for commodities
+        # SHORTING FOR COMMODITIES: 
+        # - ENABLED for paper trading (simulated shorts for testing/simulation)
+        # - DISABLED for real money trading (Angel One) until full support is added
+        # Determine if this is paper trading
+        is_paper_trading = self.client.broker_name == "paper_trading"
+        
         if is_commodities:
-            allow_short_for_asset = False  # Disabled for commodities
+            if is_paper_trading:
+                if not self.risk.allow_short:
+                    allow_short_for_asset = False
+                    # Only print once at start, not every trade
+                else:
+                    allow_short_for_asset = False  # CHANGED: Default to LONG-only for paper trading commodities
+                    # This is the safer default - shorting should be opt-in
+            else:
+                allow_short_for_asset = False  # Disabled for real money commodities (Angel One)
         else:
-            allow_short_for_asset = self.risk.allow_short  # Use config for other assets
+            allow_short_for_asset = self.risk.allow_short  # Use config for other assets (crypto)
         
         # CRITICAL STRATEGY: Buy low, sell at peak, minimize losses
         # 1. Momentum filters: Prevent buying at peaks (buy low)
@@ -266,17 +294,26 @@ class ExecutionEngine:
             trailing_stop_pct=trailing_stop,
         )
 
-        # Get trading symbol - commodities MUST use MCX with DHAN (no Alpaca fallback)
+        # Get trading symbol - commodities MUST use MCX with Angel One for REAL trading
+        # For PAPER TRADING, allow commodities to use paper_trading broker
         
-        # For commodities, ALWAYS use MCX contract symbol with Angel One (enforced)
+        # For commodities, use MCX contract symbol with Angel One (enforced for real trading only)
         if is_commodities:
-            if self.client.broker_name != "angelone":
+            # Allow paper trading for commodities (for testing/simulation)
+            # Only enforce Angel One broker for real money trading
+            if self.client.broker_name != "angelone" and self.client.broker_name != "paper_trading":
                 raise RuntimeError(
                     f"Commodities ({asset.data_symbol}) require Angel One broker for MCX trading. "
                     f"Current broker: {self.client.broker_name}. "
-                    f"Please use AngelOneClient() instead of AlpacaClient() for commodities."
+                    f"Please use AngelOneClient() for real trading or paper_trading for simulation."
                 )
-            trading_symbol = asset.get_mcx_symbol(effective_horizon).upper()
+            
+            # For paper trading, use Yahoo symbol directly (no MCX mapping needed)
+            # For Angel One, use MCX contract symbol
+            if self.client.broker_name == "paper_trading":
+                trading_symbol = asset.data_symbol.upper()  # Use Yahoo symbol for paper trading
+            else:
+                trading_symbol = asset.get_mcx_symbol(effective_horizon).upper()  # Use MCX symbol for Angel One
         else:
             trading_symbol = asset.trading_symbol.upper()
         account = self.client.get_account()
@@ -376,25 +413,30 @@ class ExecutionEngine:
             side_in_market = "flat"
 
         # Determine target side from model action.
-        # COMMODITIES: SHORTING DISABLED for now (will be enabled later)
+        # COMMODITIES: SHORTING DISABLED for real money trading (Angel One)
+        # COMMODITIES: SHORTING ENABLED for paper trading (testing/simulation)
         if action == "short":
-            if is_commodities:
-                # Shorting not available for commodities yet - inform user and set to flat
-                print(f"  [INFO] Model predicts SHORT, but shorting is not available for commodities yet.")
-                print(f"  [INFO] Shorting will be enabled in a future update.")
-                print(f"  [INFO] Setting target to FLAT (no new position).")
+            if not effective_risk.allow_short: # Check if shorting is allowed by the effective risk config
+                print(f"  [INFO] Model predicts SHORT, but shorting is not allowed for {asset_type} by risk config (allow_short={effective_risk.allow_short}).")
                 if side_in_market == "long":
-                    # We have a LONG position - will monitor and exit after a few cycles if prediction stays SHORT
-                    print(f"  [INFO] Current position is LONG. Will monitor and exit if SHORT prediction persists.")
-                target_side = "flat"
-            elif effective_risk.allow_short:
-                # Crypto or other assets with shorting enabled
-                target_side = "short"
+                    # We have a LONG position - KEEP it until profit target or stop-loss
+                    print(f"  [STRATEGY] Current position is LONG. Keeping position - will exit ONLY on profit target or stop-loss.")
+                    print(f"  [STRATEGY] Model prediction ignored for exits to let trades run to target.")
+                    # Don't change target_side - effectively holding the position
+                    target_side = "long"  # Keep LONG, don't go flat based on model
+                else:
+                    print(f"  [INFO] Setting target to FLAT (no new position).")
+                    target_side = "flat"
             else:
-                # Shorting disabled for this asset type
-                target_side = "flat"
+                # Shorting is allowed
+                target_side = "short"
         elif action == "long":
-            target_side = "long"
+            if not self.risk.can_trade_side(asset_type, "long"): # Check if long is allowed by the base risk config
+                print(f"  [INFO] Model predicts LONG, but long trading is not allowed for {asset_type} by risk config.")
+                print(f"  [INFO] Setting target to FLAT (no new position).")
+                target_side = "flat"
+            else:
+                target_side = "long"
         else:
             target_side = "flat"
         
@@ -487,8 +529,8 @@ class ExecutionEngine:
             must_exit_position = True
         
         # ENHANCED TRADING LOGIC: Stricter filtering for commodities (real money)
-        # For commodities, require higher confidence and model agreement
-        # For crypto, allow more lenient entry (paper trading)
+        # For commodities with paper trading, use lenient filters (same as crypto)
+        # For commodities with real money (Angel One), use strict filters
         
         # Get model agreement info from consensus (if available)
         model_agreement = consensus.get("model_agreement_ratio", None)
@@ -496,13 +538,17 @@ class ExecutionEngine:
         agreement_count = consensus.get("agreement_count", None)
         
         # Calculate minimum agreement requirement
-        # For commodities (real money): require at least 66% model agreement
-        # For crypto (paper trading): more lenient (50% agreement)
-        if is_commodities:
+        # PAPER TRADING: Use lenient filters (50% agreement, lower confidence)
+        # REAL MONEY (Angel One): Use strict filters (66% agreement, higher confidence)
+        is_paper_trading = self.client.broker_name == "paper_trading"
+        
+        if is_commodities and not is_paper_trading:
+            # Real money commodities trading - STRICT filters
             min_agreement_ratio = 0.66  # 66% of models must agree
             min_confidence_for_commodities = max(effective_risk.min_confidence, 0.15)  # At least 15% confidence for commodities
         else:
-            min_agreement_ratio = 0.50  # 50% agreement for crypto
+            # Paper trading OR crypto - LENIENT filters
+            min_agreement_ratio = 0.50  # 50% agreement
             min_confidence_for_commodities = effective_risk.min_confidence  # Use horizon-specific threshold
         
         # Check model agreement if available
@@ -636,8 +682,9 @@ class ExecutionEngine:
                 return orders
             
             # For commodities (real money): STRICT filtering
-            if is_commodities:
-                # Commodities require:
+            # For commodities (paper trading): LENIENT filtering (same as crypto)
+            if is_commodities and not is_paper_trading:
+                # REAL MONEY commodities require:
                 # 1. Confidence >= threshold (15% minimum)
                 # 2. Model agreement >= 66% (if multiple models)
                 # 3. Action must match target side
@@ -653,6 +700,29 @@ class ExecutionEngine:
                         print(f"  [FILTER] Model prediction is {action.upper()} - no trade signal")
                     elif action != target_side:
                         print(f"  [FILTER] Action mismatch: model says {action.upper()}, target is {target_side.upper()}")
+                    return None
+            elif is_commodities and is_paper_trading:
+                # PAPER TRADING commodities: MORE LENIENT filters (like crypto)
+                # Allow trades with 50% model agreement and lower confidence
+                print(f"  [PAPER TRADING] Using lenient filters for commodities (50% agreement, action: {action.upper()}, target: {target_side.upper()})")
+                
+                # Still check basic agreement (already calculated with 50% threshold for paper trading)
+                if not agreement_met:
+                    print(f"  [FILTER] Model agreement {model_agreement*100:.1f}% below required {min_agreement_ratio*100:.0f}% (paper trading)")
+                    return None
+                # IMPORTANT: Check if SHORT is even allowed before executing
+                if action == "short" and target_side == "short":
+                    if effective_risk.allow_short:
+                        print(f"  [PAPER TRADING] Executing SHORT signal (confidence: {confidence*100:.1f}%)")
+                        # Continue to enter short position
+                    else:
+                        print(f"  [PAPER TRADING] SHORT signal blocked - allow_short=False in config")
+                        return None
+                elif action == "long" and target_side == "long":
+                    print(f"  [PAPER TRADING] Executing LONG signal (confidence: {confidence*100:.1f}%)")
+                    # Continue to enter long position  
+                elif action == "hold" or target_side == "flat":
+                    print(f"  [FILTER] Model prediction is {action.upper()} - no trade signal")
                     return None
             else:
                 # Crypto (paper trading): More lenient BUT with quality filters
@@ -1389,6 +1459,15 @@ class ExecutionEngine:
                 orders["realized_pl_pct"] = realized_pl_pct
                 orders["market_value_at_exit"] = actual_exit_price * abs(existing_qty)
                 
+                # Retrieve original prediction metadata from position for RL feedback
+                if tracked_position and hasattr(tracked_position, "metadata"):
+                    orders["entry_prediction"] = tracked_position.metadata
+                    # Also populate top-level fields for easier logging
+                    if tracked_position.metadata:
+                        orders["entry_predicted_return"] = tracked_position.metadata.get("predicted_return")
+                        orders["entry_confidence"] = tracked_position.metadata.get("confidence")
+                        orders["entry_prediction_timestamp"] = tracked_position.metadata.get("prediction_timestamp")
+                
                 # CRITICAL: Record trade in loss tracker
                 self.loss_tracker.record_trade(trading_symbol, realized_pl, realized_pl_pct)
             
@@ -1406,7 +1485,7 @@ class ExecutionEngine:
             print(f"{'='*80}")
             print(f"\n💰 INVESTMENT SUMMARY:")
             print(f"  Initial Investment: {currency_symbol}{initial_investment:,.2f}")
-            print(f"    └─ Entry Price:   {currency_symbol}{avg_entry_price:,.2f}")
+            print(f"    └─ Entry Price:   {currency_symbol}{avg_entry_price:,.6f}")
             print(f"    └─ Quantity:      {abs(existing_qty):,.2f} {'lots' if is_commodities else 'units'}")
             print(f"    └─ Side:          {side_in_market.upper()}")
             print(f"  Exit Value:         {currency_symbol}{exit_value:,.2f}")
@@ -1836,6 +1915,15 @@ class ExecutionEngine:
                                     except (ValueError, TypeError):
                                         pass
                         
+                        # Capture prediction metadata for RL feedback
+                        prediction_metadata = {
+                            "predicted_return": predicted_return,
+                            "confidence": confidence_value,
+                            "horizon_profile": effective_horizon,
+                            "prediction_timestamp": orders.get("timestamp"),
+                            "model_agreement": model_agreement_ratio,
+                        }
+
                         self.position_manager.save_position(
                             symbol=trading_symbol,
                             data_symbol=asset.data_symbol,
@@ -1847,6 +1935,7 @@ class ExecutionEngine:
                             stop_loss_pct=effective_risk.default_stop_loss_pct * 100.0,  # Convert decimal to percentage (0.08 -> 8.0)
                             stop_loss_order_id=None,  # Will be set later if needed
                             take_profit_order_id=None,  # Will be set later if needed
+                            metadata=prediction_metadata,
                         )
                     except Exception as save_exc:
                         print(f"  ⚠️  Warning: Failed to save new position to position manager: {save_exc}")
@@ -2373,6 +2462,15 @@ class ExecutionEngine:
                 
                 # Save position to position manager (profit target is REQUIRED, so always track)
                 try:
+                    # Capture prediction metadata for RL feedback
+                    prediction_metadata = {
+                        "predicted_return": predicted_return,
+                        "confidence": confidence_value,
+                        "horizon_profile": effective_horizon,
+                        "prediction_timestamp": orders.get("timestamp"),
+                        "model_agreement": model_agreement_ratio,
+                    }
+
                     self.position_manager.save_position(
                         symbol=trading_symbol,
                         data_symbol=asset.data_symbol,
@@ -2384,6 +2482,7 @@ class ExecutionEngine:
                         stop_loss_pct=effective_risk.default_stop_loss_pct * 100.0,  # Convert decimal to percentage (0.08 -> 8.0)
                         stop_loss_order_id=stop_loss_order_id,
                         take_profit_order_id=take_profit_order_id,
+                        metadata=prediction_metadata,
                     )
                     orders["position_tracked"] = True
                 except Exception as pos_exc:
@@ -2471,309 +2570,6 @@ class ExecutionEngine:
                     self._log(orders)
                     return orders
                 
-                # Handle crypto short rejections gracefully (paper trading limitation)
-                # In live trading, shorts may work, so we attempt them but handle rejections
-                if target_side == "short" and is_crypto and ("insufficient balance" in error_msg.lower() or "403" in error_msg or "422" in error_msg or "wash trade" in error_msg.lower()):
-                    # Crypto short rejected by Alpaca (paper trading doesn't support it)
-                    # Log as execution attempt but stay flat
-                    orders["decision"] = "enter_short_rejected"
-                    orders["entry_notional"] = trade_notional
-                    orders["entry_qty"] = implied_qty
-                    orders["trade_side"] = side
-                    orders["stop_loss_price"] = stop_loss_price
-                    orders["take_profit_price"] = take_profit_price
-                    orders["stop_loss_pct"] = self.risk.default_stop_loss_pct
-                    orders["take_profit_pct"] = stop_pct * tp_mult
-                    orders["final_side"] = "flat"  # Stay flat since short was rejected
-                    orders["final_qty"] = existing_qty  # Keep existing position (should be 0 if entering from flat)
-                    orders["alpaca_error"] = error_msg
-                    orders["execution_status"] = "rejected_by_alpaca"
-                    orders["note"] = f"SHORT order attempted but rejected by Alpaca (paper trading limitation). Model signal: SHORT. In live trading, this may execute successfully."
-                    if is_crypto:
-                        orders["stop_loss_note"] = "Crypto positions: stop-loss must be managed separately (bracket orders not supported)"
-                    self._log(orders)
-                    return orders  # Return the order record so it's counted as "traded" (attempted)
-                else:
-                    # For other errors (long orders, non-crypto), re-raise to let caller handle
-                    raise
-
-                
-                # CRITICAL: Verify order execution for commodities (real money)
-                if is_commodities and entry_resp and not dry_run:
-                    # Wait a moment and verify the order was accepted
-                    import time
-                    time.sleep(0.5)
-                    
-                    # Verify position was created
-                    verify_position = self.client.get_position(trading_symbol)
-                    if verify_position:
-                        verify_qty = float(verify_position.get("qty", 0) or 0)
-                        if target_side == "long" and verify_qty <= 0:
-                            raise RuntimeError(f"Order submitted but position not created (expected LONG, got qty={verify_qty}) - order rejected")
-                        elif target_side == "short" and verify_qty >= 0:
-                            raise RuntimeError(f"Order submitted but position not created (expected SHORT, got qty={verify_qty}) - order rejected")
-                        print(f"  ✅ Order verified: Position created ({verify_qty:.2f} {target_side.upper()})")
-                    else:
-                        # Position not found - order was rejected
-                        raise RuntimeError(f"Order submitted but position not found in broker - order was rejected")
-                
-                # CRITICAL FIX: Submit broker-level stop-loss and take-profit orders
-                # For commodities (MCX), use AngelOneClient stop-loss orders
-                # For crypto, use AlpacaClient stop-loss orders
-                # UNLESS manual_stop_loss is enabled - then user manages stop-losses manually
-                stop_loss_order_id = None
-                take_profit_order_id = None
-                
-                if stop_loss_price and not effective_risk.manual_stop_loss:
-                    try:
-                        # Submit stop-loss order (broker-level protection - CRITICAL for real money)
-                        stop_side = "sell" if target_side == "long" else "buy"
-                        
-                        # Check if client has submit_stop_order method
-                        if hasattr(self.client, 'submit_stop_order'):
-                            stop_order_resp = self.client.submit_stop_order(
-                                symbol=trading_symbol,
-                                qty=implied_qty if not is_commodities else int(implied_qty),  # MCX requires integer
-                                stop_price=stop_loss_price,
-                                side=stop_side,
-                                time_in_force="gtc",
-                                client_order_id=f"{trading_symbol}_stop_{datetime.utcnow().strftime('%Y%m%d%H%M%S')}",
-                            )
-                            stop_loss_order_id = stop_order_resp.get("id")
-                            currency = "₹" if is_commodities else "$"
-                            print(f"  ✅ Stop-loss order placed at broker level: {currency}{stop_loss_price:.2f} (Order ID: {stop_loss_order_id})")
-                        else:
-                            print(f"  ⚠️  WARNING: Broker client doesn't support submit_stop_order method - stop-loss at system level only")
-                    except Exception as stop_exc:
-                        currency = "₹" if is_commodities else "$"
-                        print(f"  ⚠️  WARNING: Failed to place broker-level stop-loss order: {stop_exc}")
-                        print(f"     Stop-loss will only work while monitoring script is running (CRITICAL RISK)")
-                        if is_commodities:
-                            print(f"     ⚠️  REAL MONEY RISK: Position is NOT protected at broker level!")
-                elif effective_risk.manual_stop_loss and stop_loss_price:
-                    currency = "₹" if is_commodities else "$"
-                    print(f"  📝 MANUAL STOP-LOSS MODE: Stop-loss calculated at {currency}{stop_loss_price:.2f} but NOT submitted (you manage it manually)")
-                
-                # Submit take-profit limit order (broker-level protection)
-                # Profit target is REQUIRED, so always try to place take-profit order
-                if profit_target_price:
-                    try:
-                        tp_side = "sell" if target_side == "long" else "buy"
-                        
-                        # Check if client has submit_take_profit_order method
-                        if hasattr(self.client, 'submit_take_profit_order'):
-                            tp_order_resp = self.client.submit_take_profit_order(
-                                symbol=trading_symbol,
-                                qty=implied_qty if not is_commodities else int(implied_qty),  # MCX requires integer
-                                limit_price=profit_target_price,
-                                side=tp_side,
-                                time_in_force="gtc",
-                                client_order_id=f"{trading_symbol}_tp_{datetime.utcnow().strftime('%Y%m%d%H%M%S')}",
-                            )
-                            take_profit_order_id = tp_order_resp.get("id")
-                            currency = "₹" if is_commodities else "$"
-                            print(f"  ✅ Take-profit order placed at broker level: {currency}{profit_target_price:.2f} ({effective_profit_target:.2f}% target, Order ID: {take_profit_order_id})")
-                        else:
-                            print(f"  ⚠️  WARNING: Broker client doesn't support submit_take_profit_order method - take-profit at system level only")
-                    except Exception as tp_exc:
-                        currency = "₹" if is_commodities else "$"
-                        print(f"  ⚠️  WARNING: Failed to place broker-level take-profit order: {tp_exc}")
-                        print(f"     Take-profit will only work while monitoring script is running")
-                
-                # Calculate all trade details for comprehensive documentation
-                entry_cost = notional_rounded if is_crypto else (implied_qty * current_price)
-                expected_profit_at_target = (profit_target_price - current_price) * implied_qty if target_side == "long" else (current_price - profit_target_price) * implied_qty
-                expected_profit_pct = effective_profit_target  # Always use user-specified profit target (required)
-                max_loss_at_stop = abs((current_price - stop_loss_price) * implied_qty) if target_side == "long" else abs((stop_loss_price - current_price) * implied_qty)
-                max_loss_pct = effective_risk.default_stop_loss_pct * 100
-                risk_reward_ratio = abs(expected_profit_at_target / max_loss_at_stop) if max_loss_at_stop > 0 else 0
-                expected_value_at_target = entry_cost + expected_profit_at_target
-                expected_value_at_stop = entry_cost - max_loss_at_stop
-                
-                orders["decision"] = "enter_long" if target_side == "long" else "enter_short"
-                orders["entry_notional"] = entry_cost
-                orders["entry_qty"] = implied_qty
-                orders["trade_side"] = side
-                orders["entry_price"] = current_price
-                orders["stop_loss_price"] = stop_loss_price
-                orders["stop_loss_pct"] = effective_risk.default_stop_loss_pct
-                orders["profit_target_price"] = profit_target_price
-                orders["profit_target_pct"] = effective_profit_target  # Always user-specified (required)
-                orders["take_profit_price"] = take_profit_price
-                orders["take_profit_pct"] = stop_pct * tp_mult  # For reference only (profit_target_pct is what's used)
-                orders["final_side"] = target_side
-                orders["final_qty"] = implied_qty if target_side == "long" else -implied_qty
-                orders["entry_order"] = entry_resp
-                orders["execution_status"] = "success"
-                
-                # For crypto, we now use separate stop-loss orders (broker-level)
-                # For non-crypto, we use bracket orders
-                orders["bracket_order_used"] = not is_crypto and ("stop_loss_price" in order_kwargs or "take_profit_limit_price" in order_kwargs)
-                orders["broker_level_stop_loss_status"] = "enabled" if (orders["bracket_order_used"] or stop_loss_order_id) else "system_monitoring"
-                orders["stop_loss_order_id"] = stop_loss_order_id
-                orders["take_profit_order_id"] = take_profit_order_id
-                
-                # Comprehensive trade documentation
-                orders["trade_documentation"] = {
-                    "entry_details": {
-                        "symbol": trading_symbol,
-                        "data_symbol": asset.data_symbol,
-                        "asset_type": asset.asset_type,
-                        "side": target_side,
-                        "entry_price": current_price,
-                        "quantity": implied_qty,
-                        "entry_cost": entry_cost,
-                        "entry_time": datetime.utcnow().isoformat(timespec="seconds") + "Z",
-                        "order_id": entry_resp.get("id"),
-                        "order_status": entry_resp.get("status"),
-                    },
-                    "risk_management": {
-                        "stop_loss_price": stop_loss_price,
-                        "stop_loss_pct": effective_risk.default_stop_loss_pct * 100,
-                        "max_loss_amount": max_loss_at_stop,
-                        "max_loss_pct": max_loss_pct,
-                        "stop_loss_at_broker": orders["bracket_order_used"],  # True if bracket order used
-                    },
-                    "profit_target": {
-                        "profit_target_pct": effective_profit_target,  # Always set (required)
-                        "profit_target_price": profit_target_price,
-                        "expected_profit_amount": expected_profit_at_target,
-                        "expected_profit_pct": effective_profit_target,  # Use user-specified value
-                    },
-                    "risk_reward": {
-                        "risk_reward_ratio": risk_reward_ratio,
-                        "risk_amount": max_loss_at_stop,
-                        "reward_amount": expected_profit_at_target,
-                    },
-                    "account_status": {
-                        "equity": equity,
-                        "buying_power_before": buying_power,
-                        "buying_power_after": buying_power - entry_cost,
-                    },
-                }
-                
-                # Calculate expected values at target and stop-loss
-                expected_value_at_target = entry_cost + expected_profit_at_target
-                expected_value_at_stop = entry_cost - max_loss_at_stop  # Loss reduces value
-                
-                # Determine currency symbol based on asset type
-                currency_symbol = "₹" if is_commodities else "$"
-                
-                # Enhanced user-friendly display for real money trading
-                print(f"\n{'='*80}")
-                if is_commodities:
-                    print(f"[REAL MONEY TRADING] NEW POSITION ENTERED: {trading_symbol}")
-                    print(f"{'='*80}")
-                    print(f"\n[WARNING] REAL MONEY IS AT RISK - This is a live trade with actual capital")
-                else:
-                    print(f"NEW POSITION ENTERED: {trading_symbol}")
-                    print(f"{'='*80}")
-                
-                print(f"\n[INVESTMENT] YOUR INVESTMENT DETAILS:")
-                print(f"  Initial Investment: {currency_symbol}{entry_cost:,.2f}")
-                print(f"    Symbol:            {trading_symbol} ({asset.data_symbol})")
-                if is_commodities and self.client.broker_name == "angelone":
-                    print(f"    Exchange:          MCX (Multi Commodity Exchange)")
-                    print(f"    Contract:          {trading_symbol} (MCX Futures Contract)")
-                print(f"    Side:              {target_side.upper()}")
-                print(f"    Entry Price:       {currency_symbol}{current_price:,.2f}")
-                print(f"    Quantity:          {implied_qty:,.2f}")
-                if is_commodities and self.client.broker_name == "angelone":
-                    lot_size = get_mcx_lot_size(asset.data_symbol)
-                    lots = int(implied_qty / lot_size) if lot_size > 0 else 0
-                    print(f"    Lot Size:          {lot_size} (MCX minimum tradable unit)")
-                    print(f"    Lots:              {lots} lot(s)")
-                    print(f"    Lot Price:         {currency_symbol}{current_price * lot_size:,.2f} per lot")
-                print(f"    Order ID:          {entry_resp.get('id', 'N/A')}")
-                
-                # Add account details
-                print(f"\n[ACCOUNT] ACCOUNT STATUS:")
-                print(f"  Equity:             {currency_symbol}{equity:,.2f}")
-                print(f"  Buying Power:       {currency_symbol}{buying_power:,.2f}")
-                print(f"  Buying Power After: {currency_symbol}{buying_power - entry_cost:,.2f}")
-                print(f"  Position Size:      {effective_risk.max_notional_per_symbol_pct*100:.1f}% of equity (max per symbol)")
-                print(f"  Investment %:       {(entry_cost / equity * 100):.2f}% of total equity")
-                
-                print(f"\n[PROFIT TARGET] WHERE YOU WILL EXIT WITH PROFIT (USER SPECIFIED):")
-                print(f"  Target Price:       {currency_symbol}{profit_target_price:,.2f} ({effective_profit_target:+.2f}% from entry - YOUR TARGET)")
-                print(f"  Expected Profit:    {currency_symbol}{expected_profit_at_target:+,.2f}")
-                print(f"  Total Value:        {currency_symbol}{expected_value_at_target:,.2f}")
-                print(f"  Return on Investment: {((expected_profit_at_target / entry_cost) * 100):+.2f}%")
-                
-                print(f"\n[STOP-LOSS] YOUR MAXIMUM RISK (REAL MONEY):")
-                if user_stop_loss_pct is not None:
-                    print(f"  Stop Price:         {currency_symbol}{stop_loss_price:,.2f} ({user_stop_loss_pct*100:.2f}% from entry - USER SPECIFIED)")
-                else:
-                    print(f"  Stop Price:         {currency_symbol}{stop_loss_price:,.2f} ({effective_risk.default_stop_loss_pct*100:.2f}% from entry - DEFAULT)")
-                print(f"  Maximum Loss:        {currency_symbol}{max_loss_at_stop:,.2f} ({max_loss_pct:.2f}% of investment)")
-                print(f"  Total Value at Stop: {currency_symbol}{expected_value_at_stop:,.2f}")
-                print(f"  Protection Level:    {'[ENABLED] Broker-level (executes even if system is down)' if orders['bracket_order_used'] or stop_loss_order_id else '[MONITORING] System-level (requires script running)'}")
-                if is_commodities:
-                    print(f"  [IMPORTANT]         Stop-loss is CRITICAL for real money trading")
-                    print(f"                      Position will auto-exit if price hits stop-loss")
-                
-                print(f"\n[ANALYSIS] RISK/REWARD BREAKDOWN:")
-                print(f"  Risk/Reward Ratio:   {risk_reward_ratio:.2f}:1")
-                print(f"  Risk Amount:         {currency_symbol}{max_loss_at_stop:,.2f}")
-                print(f"  Reward Amount:       {currency_symbol}{expected_profit_at_target:,.2f}")
-                
-                # Add prediction details
-                consensus_action = orders.get("model_action", target_side)
-                consensus_return = orders.get("predicted_return", 0.0)
-                consensus_confidence = orders.get("confidence", 0.0) * 100 if orders.get("confidence", 0.0) < 1.0 else orders.get("confidence", 0.0)
-                predicted_price = current_price * (1.0 + consensus_return) if consensus_return != 0 else current_price
-                
-                print(f"\n[PREDICTION] MODEL PREDICTION DETAILS:")
-                print(f"  Model Action:        {consensus_action.upper()}")
-                print(f"  Predicted Return:    {consensus_return*100:+.2f}%")
-                print(f"  Predicted Price:     {currency_symbol}{predicted_price:,.2f}")
-                print(f"  Current Price:       {currency_symbol}{current_price:,.2f}")
-                print(f"  Confidence:          {consensus_confidence:.1f}%")
-                
-                # Add model agreement info if available
-                model_agreement = orders.get("model_agreement_ratio")
-                total_models = orders.get("total_models")
-                agreement_count = orders.get("agreement_count")
-                if model_agreement is not None and total_models is not None:
-                    if agreement_count is not None:
-                        display_agreement_count = agreement_count
-                    else:
-                        display_agreement_count = int(round(model_agreement * total_models))
-                    print(f"  Model Agreement:     {model_agreement*100:.1f}% ({display_agreement_count}/{total_models} models agree)")
-                
-                print(f"{'='*80}\n")
-                
-                # Save position to position manager (profit target is REQUIRED, so always track)
-                try:
-                    self.position_manager.save_position(
-                        symbol=trading_symbol,
-                        data_symbol=asset.data_symbol,
-                        asset_type=asset.asset_type,
-                        side=target_side,
-                        entry_price=orders.get("entry_price", current_price),  # Use filled price if available
-                        quantity=implied_qty,
-                        profit_target_pct=effective_profit_target,  # Always set (required)
-                        stop_loss_pct=effective_risk.default_stop_loss_pct * 100.0,  # Convert decimal to percentage (0.08 -> 8.0)
-                        stop_loss_order_id=stop_loss_order_id,
-                        take_profit_order_id=take_profit_order_id,
-                    )
-                    orders["position_tracked"] = True
-                except Exception as pos_exc:
-                    # Log error but don't fail the trade
-                    orders["position_tracked"] = False
-                    orders["position_tracking_error"] = str(pos_exc)
-                
-                # Note about stop-loss execution
-                if is_crypto and not orders["bracket_order_used"]:
-                    orders["stop_loss_note"] = "Crypto positions: stop-loss managed by system (bracket orders may not be supported). Monitor actively."
-                    print(f"[WARNING] {trading_symbol}: Stop-loss is NOT at broker level. System must be running for stop-loss to execute.")
-                elif orders["bracket_order_used"]:
-                    print(f"[INFO] {trading_symbol}: Stop-loss and take-profit are at broker level (bracket order). Will execute even if system is down.")
-                
-                self._log(orders)
-                return orders
-            except RuntimeError as exc:
-                error_msg = str(exc)
                 # Handle crypto short rejections gracefully (paper trading limitation)
                 # In live trading, shorts may work, so we attempt them but handle rejections
                 if target_side == "short" and is_crypto and ("insufficient balance" in error_msg.lower() or "403" in error_msg or "422" in error_msg or "wash trade" in error_msg.lower()):
@@ -2968,7 +2764,8 @@ class ExecutionEngine:
                 "flip_to_short",
                 "flip_to_flat",
                 "model_changed_to_hold",
-                # NOTE: "would_exit_position" is REMOVED - it's a dry-run, not an actual trade
+                "exit_long", # Added for clarity
+                "exit_short", # Added for clarity
             ]
             
             # CRITICAL: Never log dry_run trades - they are not actual executed trades
@@ -2985,7 +2782,7 @@ class ExecutionEngine:
                 if "disabled" in decision.lower():
                     return
                 # Check if it's a test entry or other non-executed decision
-                if decision in ["test_entry", "hold", "flat"]:
+                if decision in ["test_entry", "hold", "flat", "no_action_needed", "monitoring_short_prediction"]:
                     return
                 # If decision is empty or unknown, don't log it
                 if not decision or decision == "unknown":
@@ -3007,7 +2804,7 @@ class ExecutionEngine:
                     return
             
             # For exit trades, verify close_order exists and has valid order ID
-            if decision in ["exit_position", "flip_to_flat", "model_changed_to_hold"]:
+            if decision in ["exit_position", "flip_to_flat", "model_changed_to_hold", "exit_long", "exit_short"]:
                 close_order = record.get("close_order")
                 if not close_order or not close_order.get("id"):
                     # No valid order response - trade was not executed
@@ -3038,7 +2835,7 @@ class ExecutionEngine:
                         record["entry_order_status"] = entry_order.get("status")
             
             # For exit trades, ensure exit_price and P/L are clearly logged
-            if record.get("decision") in ["exit_position", "flip_to_flat", "model_changed_to_hold"]:
+            if record.get("decision") in ["exit_position", "flip_to_flat", "model_changed_to_hold", "exit_long", "exit_short"]:
                 # Ensure exit_price is present
                 if "exit_price" not in record and "current_price" in record:
                     record["exit_price"] = record["current_price"]
@@ -3084,6 +2881,37 @@ class ExecutionEngine:
             # Write to log file
             with open(self.log_path, "a", encoding="utf-8") as handle:
                 handle.write(json.dumps(record, ensure_ascii=False) + "\n")
+                
+            # CRITICAL: Send feedback to RL learner for closed positions
+            # Only if we have realized P/L and it's an exit trade
+            if "realized_pl_pct" in record and record.get("decision") in ["exit_position", "exit_long", "exit_short", "flip_to_flat", "model_changed_to_hold"]:
+                try:
+                    # Extract metadata from record or position (if passed)
+                    # We need to retrieve the original prediction to close the loop
+                    trading_symbol = record.get("trading_symbol")
+                    
+                    # Get the metadata that was stored when the position was opened
+                    # This metadata is stored in the 'entry_prediction' field of the log record
+                    # when the position is closed.
+                    entry_prediction_metadata = record.get("entry_prediction", {})
+                    
+                    # Construct feedback
+                    self.rl_learner.add_feedback(
+                        symbol=record.get("data_symbol", record.get("trading_symbol", "unknown")),
+                        asset_type=record.get("asset", "unknown"), # Use asset.logical_name or asset.asset_type
+                        timeframe="1d",  # Defaulting to 1d as simpler integration, ideally from asset
+                        prediction_timestamp=entry_prediction_metadata.get("prediction_timestamp", record.get("timestamp")),
+                        action_taken=entry_prediction_metadata.get("action_taken", record.get("entry_side", "hold")), # Use entry side
+                        predicted_return=entry_prediction_metadata.get("predicted_return", 0.0),
+                        predicted_price=entry_prediction_metadata.get("predicted_price", 0.0), # This might not be stored, use 0.0
+                        actual_return=record.get("realized_pl_pct", 0.0) / 100.0,
+                        actual_price=record.get("exit_price", 0.0),
+                        reward=None, # Will be calculated by the learner
+                        metadata=entry_prediction_metadata # Pass all entry metadata
+                    )
+                except Exception as rl_exc:
+                    print(f"  [WARN] Failed to send RL feedback: {rl_exc}")
+                    
         except Exception as exc:
             # Don't fail the trade if logging fails, but warn
             print(f"  [WARN] Failed to log trade: {exc}")
@@ -3150,7 +2978,7 @@ class ExecutionEngine:
             realized_pl_pct = ((exit_price - tracked_position.entry_price) / tracked_position.entry_price) * 100 if tracked_position.entry_price > 0 else 0
         else:  # short
             realized_pl = (tracked_position.entry_price - exit_price) * exit_quantity
-            realized_pl_pct = ((tracked_position.entry_price - exit_price) / tracked_position.entry_price) * 100 if tracked_position.entry_price > 0 else 0
+            realized_pl_pct = ((tracked_position.entry_price - exit_price) / entry_price) * 100 if tracked_position.entry_price > 0 else 0
         
         # Close the position in PositionManager with actual exit price and P/L
         self.position_manager.close_position(
@@ -3184,6 +3012,15 @@ class ExecutionEngine:
         if exit_order_id:
             orders["close_order"] = {"id": exit_order_id, "filled_at": filled_at}
         
+        # Retrieve original prediction metadata from position for RL feedback
+        if tracked_position and hasattr(tracked_position, "metadata"):
+            orders["entry_prediction"] = tracked_position.metadata
+            # Also populate top-level fields for easier logging
+            if tracked_position.metadata:
+                orders["entry_predicted_return"] = tracked_position.metadata.get("predicted_return")
+                orders["entry_confidence"] = tracked_position.metadata.get("confidence")
+                orders["entry_prediction_timestamp"] = tracked_position.metadata.get("prediction_timestamp")
+
         # Print detailed exit information
         currency_symbol = "₹" if asset.asset_type == "commodities" else "$"
         initial_investment = tracked_position.entry_price * exit_quantity
@@ -3270,6 +3107,17 @@ class ExecutionEngine:
             # Sync position to PositionManager
             # PositionManager expects quantity: positive for long, negative for short
             position_quantity = quantity if side == "long" else -quantity
+            
+            # When syncing, we don't have prediction metadata, so we pass an empty dict
+            prediction_metadata = {
+                "predicted_return": 0.0,
+                "confidence": 0.0,
+                "horizon_profile": "unknown",
+                "prediction_timestamp": datetime.utcnow().isoformat(timespec="seconds") + "Z",
+                "model_agreement": 0.0,
+                "synced_from_broker": True,
+            }
+
             position = self.position_manager.save_position(
                 symbol=trading_symbol,
                 data_symbol=asset.data_symbol,
@@ -3279,6 +3127,7 @@ class ExecutionEngine:
                 quantity=position_quantity,
                 profit_target_pct=profit_target_pct,
                 stop_loss_pct=stop_loss_pct,
+                metadata=prediction_metadata,
             )
             
             currency_symbol = "₹" if asset.asset_type == "commodities" else "$"

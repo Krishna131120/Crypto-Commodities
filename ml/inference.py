@@ -453,12 +453,46 @@ class InferencePipeline:
             # Skip stacked_blend - it's a meta-model that needs predictions from other models
             if name == "stacked_blend":
                 continue
+                
             try:
                 # Suppress sklearn feature name warnings - we're using numpy arrays which is correct
                 import warnings
                 with warnings.catch_warnings():
                     warnings.filterwarnings("ignore", message="X does not have valid feature names")
-                    if hasattr(model, "predict_proba") and "directional" in name:
+                    
+                    if name == "dqn":
+                        # CRITICAL FIX for DQN: SB3 models return (action, state)
+                        # Action is discrete: 0=Short, 1=Hold, 2=Long (mapped from -1,0,1 in env)
+                        # We must convert this to a predicted return for the consensus logic
+                        action_arr, _ = model.predict(features, deterministic=True)
+                        action_idx = int(action_arr[0]) if hasattr(action_arr, '__iter__') else int(action_arr)
+                        
+                        # Map action to synthetic return based on typical volatility
+                        # This ensures the consensus logic respects the DQN's decision
+                        typical_vol = get_typical_volatility(self.asset_type)
+                        
+                        if action_idx == 0:  # Short
+                            pred_return = -typical_vol * 1.5  # Strong short signal
+                            action = "short"
+                        elif action_idx == 2:  # Long
+                            pred_return = typical_vol * 1.5   # Strong long signal
+                            action = "long"
+                        else:  # 1 = Hold
+                            pred_return = 0.0
+                            action = "hold"
+                            
+                        # Use a fixed high confidence for DQN as it's a direct policy decision
+                        confidence = 0.6  # Moderate-high confidence default
+                        
+                        model_outputs[name] = {
+                            "predicted_return": pred_return,
+                            "action": action,
+                            "confidence": confidence,
+                            "raw_prediction": float(action_idx),
+                        }
+                        base_model_outputs[name] = pred_return
+                    
+                    elif hasattr(model, "predict_proba") and "directional" in name:
                         prob = float(model.predict_proba(features)[0, 1])
                         pred_return = self._prob_to_return(prob)
                         base_model_outputs[name] = pred_return
@@ -1098,10 +1132,10 @@ class InferencePipeline:
         mean_reversion_return_adjustment = mean_reversion_adjustment * max_adjustment
         
         # SAFETY CHECKS: Only apply adjustment if conditions are safe
-        # ADJUSTED: Lowered threshold from 0.25 to 0.15 to allow more mean-reversion signals
-        # This helps identify more buying opportunities when assets are oversold
-        # BUT: Still require minimum signal strength to avoid false signals
-        min_signal_strength = 0.05  # Very low threshold to allow most trades (was 0.15)
+        # EXTREMELY PERMISSIVE: Lowered threshold from 0.05 to 0.01 to allow almost all mean-reversion signals
+        # This helps identify buying opportunities even when signals are very weak
+        # BUT: Still require minimum signal strength to avoid completely absent signals
+        min_signal_strength = 0.01  # Extremely low threshold to allow almost all trades (was 0.05)
         should_apply_mean_reversion = abs(mean_reversion_adjustment) > min_signal_strength
         
         # Safety check 1: Don't override if model confidence is very low
@@ -1145,16 +1179,17 @@ class InferencePipeline:
             sma200_signal = feature_signals.get("sma200_signal", 0.0) or 0.0
             sma_signal = abs(sma50_signal) + abs(sma200_signal)  # Combined SMA signal strength
             
-            # ADJUSTED THRESHOLDS (very permissive to allow trades):
-            # RSI >= 0.05 (very low threshold - allows most trades)
-            # SMA >= 0.05 (very low threshold - allows most trades)
-            # Combined >= 0.08 (very low threshold - allows most trades)
-            # These VERY low thresholds ensure trades execute even with weak signals
-            rsi_strong_enough = abs(rsi_signal) >= 0.05  # Very permissive
-            sma_strong_enough = abs(sma_signal) >= 0.05  # Very permissive  
-            combined_strong_enough = abs(mean_reversion_adjustment) >= 0.08  # Very permissive
+            # EXTREMELY PERMISSIVE THRESHOLDS (allow almost all trades):
+            # RSI >= 0.01 (almost always passes, even when RSI is missing/0)
+            # SMA >= 0.01 (almost always passes if any SMA signal exists)
+            # Combined >= 0.01 (almost always passes)
+            # These thresholds are so low that trades will execute unless signals are completely absent
+            rsi_strong_enough = abs(rsi_signal) >= 0.01  # Extremely permissive
+            sma_strong_enough = abs(sma_signal) >= 0.01  # Extremely permissive  
+            combined_strong_enough = abs(mean_reversion_adjustment) >= 0.01  # Extremely permissive
             
-            # Block only if ALL signals are extremely weak (almost never blocks)
+            # Block only if ALL signals are completely absent (almost never blocks)
+            # This allows trades to happen based on SMA alone when RSI is missing
             if not (rsi_strong_enough or sma_strong_enough or combined_strong_enough):
                 should_apply_mean_reversion = False
                 consensus["mean_reversion_blocked"] = f"Insufficient oversold/overbought signals for short-term (RSI: {abs(rsi_signal):.2f}, SMA: {abs(sma_signal):.2f}, Combined: {abs(mean_reversion_adjustment):.2f})"
